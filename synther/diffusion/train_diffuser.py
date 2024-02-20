@@ -8,6 +8,9 @@ import gym
 import numpy as np
 import torch
 import wandb
+import sys
+
+sys.path.append('/p/fzv6enresearch/SynthER/')
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
