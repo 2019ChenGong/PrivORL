@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Synthetic Experience Replay
 
 [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
@@ -103,3 +104,6 @@ would like to particularly thank the authors of:
 
 Please contact [Cong Lu](mailto:cong.lu@stats.ox.ac.uk) or [Philip Ball](mailto:ball@robots.ox.ac.uk) for any queries.
 We welcome any suggestions or contributions! 
+=======
+# DPTrajectorySyn
+>>>>>>> 9375057197beec9d80d027b34665b736299f5cfd
