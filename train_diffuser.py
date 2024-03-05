@@ -1,20 +1,18 @@
 # Train diffusion model on D4RL transitions.
 import argparse
 import pathlib
-
+import os
 import d4rl
 import gin
 import gym
 import numpy as np
 import torch
 import wandb
-import sys
-
-sys.path.append('/p/fzv6enresearch/SynthER/')
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import make_inputs, split_diffusion_samples, construct_diffusion_model
+
 
 
 @gin.configurable
@@ -93,7 +91,20 @@ if __name__ == '__main__':
     parser.add_argument('--save_num_samples', type=int, default=int(5e6))
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
+    # dp
+    parser.add_argument('--dp_delta', type=float, default=1e-6)
+    parser.add_argument('--dp_epsilon', type=float, default=1.)
+    parser.add_argument('--dp_max_grad_norm', type=float, default=1.)
+    parser.add_argument('--dp_max_physical_batch_size', type=int, default=8192)
+    parser.add_argument('--dp_n_splits', type=int, default=4)
+
     args = parser.parse_args()
+
+    for config_file in args.gin_config_files:
+        if not os.path.exists(config_file):
+            
+            print(f"Error: Config file '{config_file}' not found.")
+            exit(1)
 
     gin.parse_config_files_and_bindings(args.gin_config_files, args.gin_params)
 
@@ -117,6 +128,11 @@ if __name__ == '__main__':
     # Create the diffusion model and trainer.
     diffusion = construct_diffusion_model(inputs=inputs)
     trainer = Trainer(
+        args.dp_delta,
+        args.dp_epsilon,
+        args.dp_max_grad_norm,
+        args.dp_max_physical_batch_size,
+        args.dp_n_splits,
         diffusion,
         dataset,
         results_folder=args.results_folder,
@@ -132,7 +148,9 @@ if __name__ == '__main__':
             name=args.results_folder.split('/')[-1],
         )
         # Train model.
-        trainer.train()
+        # trainer.train()
+        # trainer.train_dp()
+        trainer.train_dp()
     else:
         trainer.ema.to(trainer.accelerator.device)
         # Load the last checkpoint.

@@ -25,6 +25,10 @@ from synther.diffusion.norm import BaseNormalizer
 from synther.online.utils import make_inputs_from_replay_buffer
 
 
+from opacus import PrivacyEngine
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
 # helpers
 def exists(val):
     return val is not None
@@ -267,6 +271,11 @@ class ElucidatedDiffusion(nn.Module):
 class Trainer(object):
     def __init__(
             self,
+            dp_delta,
+            dp_epsilon,
+            dp_max_grad_norm,
+            dp_max_physical_batch_size,
+            dp_n_splits,
             diffusion_model,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
@@ -275,6 +284,9 @@ class Trainer(object):
             train_lr: float = 1e-4,
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
+
+            train_epochs: int = 100,
+
             ema_update_every: int = 10,
             ema_decay: float = 0.995,
             adam_betas: Tuple[float, float] = (0.9, 0.99),
@@ -298,7 +310,16 @@ class Trainer(object):
 
         self.save_and_sample_every = save_and_sample_every
         self.train_num_steps = train_num_steps
+
+        self.train_epochs = train_epochs
+
         self.gradient_accumulate_every = gradient_accumulate_every
+
+        self.dp_delta = dp_delta
+        self.dp_epsilon = dp_epsilon
+        self.dp_max_grad_norm = dp_max_grad_norm
+        self.dp_max_physical_batch_size = dp_max_physical_batch_size
+        self.dp_n_splits = dp_n_splits
 
         if dataset is not None:
             # If dataset size is less than 800K use the small batch size
@@ -310,7 +331,8 @@ class Trainer(object):
             # dataset and dataloader
             dl = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True, num_workers=cpu_count())
             dl = self.accelerator.prepare(dl)
-            self.dl = cycle(dl)
+            self.dl = dl
+            # self.dl = cycle(dl)
         else:
             # No dataloader, train batch by batch
             self.batch_size = train_batch_size
@@ -431,6 +453,164 @@ class Trainer(object):
 
                     if self.step != 0 and self.step % self.save_and_sample_every == 0:
                         self.save(self.step)
+
+                pbar.update(1)
+
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
+
+        accelerator.print('training complete')
+
+    # Train for the full number of steps.
+    def train_dp(self):
+        accelerator = self.accelerator
+        device = accelerator.device
+        privacy_engine = PrivacyEngine()
+        # self.model = DPDDP(self.model)
+        # self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
+        #     module=self.model,
+        #     optimizer=self.opt,
+        #     data_loader=self.dl,
+        #     target_epsilon=self.dp_epsilon,
+        #     target_delta=self.dp_delta,
+        #     epochs=self.train_num_steps,
+        #     max_grad_norm=self.dp_max_grad_norm
+        # )
+    
+        self.model, self.opt, self.dl = privacy_engine.make_private(
+            module=self.model,
+            optimizer=self.opt,
+            data_loader=self.dl,
+            # target_epsilon=self.dp_epsilon,   
+            # target_delta=self.dp_delta,
+            # epochs=self.train_num_steps,
+            noise_multiplier=1.1,
+            max_grad_norm=self.dp_max_grad_norm
+        )
+
+        with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
+            for epoch in range(self.train_epochs):
+            # while self.step < self.train_num_steps:
+                with BatchMemoryManager(
+                        data_loader=self.dl,
+                        max_physical_batch_size=self.dp_max_physical_batch_size,
+                        optimizer=self.opt) as memory_safe_data_loader:
+                        
+                    total_loss = 0.
+
+                    for batch_idx, data in enumerate(memory_safe_data_loader):
+                        data = data[0].to(device)
+
+                        with self.accelerator.autocast():
+                            loss = self.model(data)
+                            # loss = loss / self.gradient_accumulate_every
+                            total_loss += loss.item()
+
+                        self.accelerator.backward(loss)
+
+                        accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+                        pbar.set_description(f'Epoch {epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {total_loss:.4f}')
+                        wandb.log({
+                            'epoch': epoch + 1,
+                            'batch': batch_idx + 1,
+                            'step': self.step,
+                            'loss': total_loss,
+                            'lr': self.opt.param_groups[0]['lr']
+                        })
+
+                        # accelerator.wait_for_everyone()
+
+                        self.opt.step()
+                        self.opt.zero_grad()
+
+                        # accelerator.wait_for_everyone()
+
+                        self.step += 1
+                        if accelerator.is_main_process:
+                            self.ema.to(device)
+                            self.ema.update()
+
+                            if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                                self.save(self.step)
+
+                    pbar.update(1)
+
+                    if self.lr_scheduler is not None:
+                        self.lr_scheduler.step()
+
+        accelerator.print('training complete')
+
+    def train_dp_1(self):
+        accelerator = self.accelerator
+        device = accelerator.device
+        privacy_engine = PrivacyEngine()
+        # self.model = DPDDP(self.model)
+        # self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
+        #     module=self.model,
+        #     optimizer=self.opt,
+        #     data_loader=self.dl,
+        #     target_epsilon=self.dp_epsilon,
+        #     target_delta=self.dp_delta,
+        #     epochs=self.train_num_steps,
+        #     max_grad_norm=self.dp_max_grad_norm
+        # )
+    
+        self.model, self.opt, self.dl = privacy_engine.make_private(
+            module=self.model,
+            optimizer=self.opt,
+            data_loader=self.dl,
+            # target_epsilon=self.dp_epsilon,   
+            # target_delta=self.dp_delta,
+            # epochs=self.train_num_steps,
+            noise_multiplier=1.1,
+            max_grad_norm=self.dp_max_grad_norm
+        )
+
+        with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
+            for epoch in range(self.train_epochs):
+            # while self.step < self.train_num_steps:
+                # with BatchMemoryManager(
+                #         data_loader=self.dl,
+                #         max_physical_batch_size=self.dp_max_physical_batch_size,
+                #         optimizer=self.opt) as memory_safe_data_loader:
+                        
+                total_loss = 0.
+
+                for batch_idx, data in enumerate(self.dl):
+                    data = data[0].to(device)
+
+                    with self.accelerator.autocast():
+                        loss = self.model(data)
+                        loss = loss / self.gradient_accumulate_every
+                        total_loss += loss.item()
+
+                    self.accelerator.backward(loss)
+
+                if (batch_idx + 1) % self.gradient_accumulate_every == 0:
+                    accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+                    pbar.set_description(f'Epoch {epoch + 1}/{self.train_n_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {total_loss:.4f}')
+                    wandb.log({
+                        'epoch': epoch + 1,
+                        'batch': batch_idx + 1,
+                        'step': self.step,
+                        'loss': total_loss,
+                        'lr': self.opt.param_groups[0]['lr']
+                    })
+
+                    accelerator.wait_for_everyone()
+
+                    self.opt.step()
+                    self.opt.zero_grad()
+
+                    accelerator.wait_for_everyone()
+
+                    self.step += 1
+                    if accelerator.is_main_process:
+                        self.ema.to(device)
+                        self.ema.update()
+
+                        if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                            self.save(self.step)
 
                 pbar.update(1)
 

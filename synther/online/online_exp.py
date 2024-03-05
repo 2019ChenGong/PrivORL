@@ -16,7 +16,7 @@ from redq.utils.logx import EpochLogger
 from redq.utils.run_utils import setup_logger_kwargs
 
 from synther.diffusion.elucidated_diffusion import REDQTrainer
-from synther.diffusion.train_diffuser import SimpleDiffusionGenerator
+from train_diffuser import SimpleDiffusionGenerator
 from synther.diffusion.utils import construct_diffusion_model
 from synther.online.redq_rlpd_agent import REDQRLPDAgent
 
