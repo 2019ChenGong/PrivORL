@@ -74,6 +74,13 @@ class SimpleDiffusionGenerator:
         return observations, actions, rewards, next_observations, terminals
 
 
+def load_data(dataset_name):
+    env = gym.make(dataset_name)
+    inputs = make_inputs(env)
+    inputs = torch.from_numpy(inputs).float()
+    return inputs
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
@@ -115,10 +122,15 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     # Create the environment and dataset.
-    env = gym.make(args.dataset)
-    inputs = make_inputs(env)
-    inputs = torch.from_numpy(inputs).float()
-    dataset = torch.utils.data.TensorDataset(inputs)
+    datasets_name = ['hopper-medium-replay-v2', 'hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
+
+    public_inputs = []
+    for dataset_name in datasets_name:
+        inputs = load_data(dataset_name)
+        public_inputs.append(inputs)
+    public_inputs = torch.cat(public_inputs, dim=0)
+
+    public_dataset = torch.utils.data.TensorDataset(public_inputs)
 
     results_folder = pathlib.Path(args.results_folder)
     results_folder.mkdir(parents=True, exist_ok=True)
@@ -126,15 +138,15 @@ if __name__ == '__main__':
         f.write(gin.config_str())
 
     # Create the diffusion model and trainer.
-    diffusion = construct_diffusion_model(inputs=inputs)
+    diffusion = construct_diffusion_model(inputs=public_inputs)
     trainer = Trainer(
-        args.dp_delta,
-        args.dp_epsilon,
-        args.dp_max_grad_norm,
-        args.dp_max_physical_batch_size,
-        args.dp_n_splits,
-        diffusion,
-        dataset,
+        dp_delta=None,
+        dp_epsilon=None,
+        dp_max_grad_norm=None,
+        dp_max_physical_batch_size=None,
+        dp_n_splits=None,
+        diffusion_model=diffusion,
+        dataset=public_dataset,
         results_folder=args.results_folder,
     )
 
@@ -148,28 +160,27 @@ if __name__ == '__main__':
             name=args.results_folder.split('/')[-1],
         )
         # Train model.
-        # trainer.train()
+        trainer.train()
         # trainer.train_dp()
-        trainer.train_dp()
     else:
         trainer.ema.to(trainer.accelerator.device)
         # Load the last checkpoint.
         trainer.load(milestone=trainer.train_num_steps)
 
-    # Generate samples and save them.
-    if args.save_samples:
-        generator = SimpleDiffusionGenerator(
-            env=env,
-            ema_model=trainer.ema.ema_model,
-        )
-        observations, actions, rewards, next_observations, terminals = generator.sample(
-            num_samples=args.save_num_samples,
-        )
-        np.savez_compressed(
-            results_folder / args.save_file_name,
-            observations=observations,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_observations,
-            terminals=terminals,
-        )
+    # # Generate samples and save them.
+    # if args.save_samples:
+    #     generator = SimpleDiffusionGenerator(
+    #         env=env,
+    #         ema_model=trainer.ema.ema_model,
+    #     )
+    #     observations, actions, rewards, next_observations, terminals = generator.sample(
+    #         num_samples=args.save_num_samples,
+    #     )
+    #     np.savez_compressed(
+    #         results_folder / args.save_file_name,
+    #         observations=observations,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_observations,
+    #         terminals=terminals,
+    #     )
