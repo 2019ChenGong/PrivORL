@@ -276,6 +276,7 @@ class Trainer(object):
             dp_max_grad_norm,
             dp_max_physical_batch_size,
             dp_n_splits,
+            load_checkpoint,
             diffusion_model,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
@@ -285,7 +286,8 @@ class Trainer(object):
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
 
-            train_epochs: int = 100,
+            train_epochs: int = 10,
+            finetune_epochs: int = 10,
 
             ema_update_every: int = 10,
             ema_decay: float = 0.995,
@@ -361,6 +363,12 @@ class Trainer(object):
         # step counter state
         self.step = 0
 
+        # epoch counter state
+        self.epoch = 0
+
+        # ckpt
+        self.load_checkpoint = load_checkpoint
+
         # prepare model, dataloader, optimizer with accelerator
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
 
@@ -388,6 +396,7 @@ class Trainer(object):
 
         data = {
             'step': self.step,
+            'epoch': self.epoch,
             'model': self.accelerator.get_state_dict(self.model),
             'opt': self.opt.state_dict(),
             'ema': self.ema.state_dict(),
@@ -400,12 +409,14 @@ class Trainer(object):
         accelerator = self.accelerator
         device = accelerator.device
 
-        data = torch.load(str(self.results_folder / f'model-{milestone}.pt'), map_location=device)
+        data = torch.load('results/model-420000.pt')
 
         model = self.accelerator.unwrap_model(self.model)
         model.load_state_dict(data['model'])
+        self.model = model
 
         self.step = data['step']
+        # self.epoch = data['epoch']
         self.opt.load_state_dict(data['opt'])
         self.ema.load_state_dict(data['ema'])
 
@@ -489,7 +500,7 @@ class Trainer(object):
         # )
 
         with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
-            for epoch in range(self.train_epochs):
+            for self.epoch in range(self.train_epochs):
             # while self.step < self.train_num_steps:
                 # with BatchMemoryManager(
                 #         data_loader=self.dl,
@@ -509,9 +520,9 @@ class Trainer(object):
                     self.accelerator.backward(loss)
 
                     accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                    pbar.set_description(f'Epoch {epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
+                    pbar.set_description(f'Epoch {self.epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
                     wandb.log({
-                        'epoch': epoch + 1,
+                        'epoch': self.epoch + 1,
                         'batch': batch_idx + 1,
                         'step': self.step,
                         'loss': loss,
@@ -542,18 +553,103 @@ class Trainer(object):
 
 
     # Train for the full number of steps.
+    # def finetune(self):
+    #     accelerator = self.accelerator
+    #     device = accelerator.device
+    #     privacy_engine = PrivacyEngine()
+    #     # self.model = DPDDP(self.model)
+
+    #     ckpt = torch.load('results/model-420000.pt')
+    #     self.model.load_state_dict(ckpt['model'])
+    #     self.opt.load_state_dict(ckpt['opt'])
+        
+    #     self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
+    #         module=self.model,
+    #         optimizer=self.opt,
+    #         data_loader=self.dl,
+    #         target_epsilon=self.dp_epsilon,
+    #         target_delta=self.dp_delta,
+    #         epochs=self.train_num_steps,
+    #         max_grad_norm=self.dp_max_grad_norm
+    #     )
+    
+    #     # self.model, self.opt, self.dl = privacy_engine.make_private(
+    #     #     module=self.model,
+    #     #     optimizer=self.opt,
+    #     #     data_loader=self.dl,
+    #     #     # target_epsilon=self.dp_epsilon,   
+    #     #     # target_delta=self.dp_delta,
+    #     #     # epochs=self.train_num_steps,
+    #     #     noise_multiplier=1.1,
+    #     #     max_grad_norm=self.dp_max_grad_norm
+    #     # )
+
+    #     with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
+    #         for epoch in range(self.train_epochs):
+    #         # while self.step < self.train_num_steps:
+    #             with BatchMemoryManager(
+    #                     data_loader=self.dl,
+    #                     max_physical_batch_size=self.dp_max_physical_batch_size,
+    #                     optimizer=self.opt) as memory_safe_data_loader:
+                        
+    #                 total_loss = 0.
+
+    #                 for batch_idx, data in enumerate(memory_safe_data_loader):
+    #                     data = data[0].to(device)
+
+    #                     with self.accelerator.autocast():
+    #                         loss = self.model(data)
+    #                         # loss = loss / self.gradient_accumulate_every
+    #                         total_loss += loss.item()
+
+    #                     self.accelerator.backward(loss)
+
+    #                     accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+    #                     pbar.set_description(f'Epoch {epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
+    #                     wandb.log({
+    #                         'epoch': epoch + 1,
+    #                         'batch': batch_idx + 1,
+    #                         'step': self.step,
+    #                         'loss': loss,
+    #                         'lr': self.opt.param_groups[0]['lr']
+    #                     })
+
+    #                     # accelerator.wait_for_everyone()
+
+    #                     self.opt.step()
+    #                     self.opt.zero_grad()
+
+    #                     # accelerator.wait_for_everyone()
+
+    #                     self.step += 1
+    #                     if accelerator.is_main_process:
+    #                         self.ema.to(device)
+    #                         self.ema.update()
+
+    #                         if self.step != 0 and self.step % self.save_and_sample_every == 0:
+    #                             self.save(self.step)
+
+    #                 pbar.update(1)
+
+    #                 if self.lr_scheduler is not None:
+    #                     self.lr_scheduler.step()
+
+    #     accelerator.print('training complete')
+
+
     def train_dp(self):
         accelerator = self.accelerator
         device = accelerator.device
         privacy_engine = PrivacyEngine()
         # self.model = DPDDP(self.model)
+
         self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
             module=self.model,
             optimizer=self.opt,
             data_loader=self.dl,
             target_epsilon=self.dp_epsilon,
             target_delta=self.dp_delta,
-            epochs=self.train_num_steps,
+            epochs=self.train_epochs,
             max_grad_norm=self.dp_max_grad_norm
         )
     
@@ -568,7 +664,7 @@ class Trainer(object):
         #     max_grad_norm=self.dp_max_grad_norm
         # )
 
-        with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
+        with tqdm(initial=self.epoch, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
             for epoch in range(self.train_epochs):
             # while self.step < self.train_num_steps:
                 with BatchMemoryManager(
@@ -589,9 +685,9 @@ class Trainer(object):
                         self.accelerator.backward(loss)
 
                         accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                        pbar.set_description(f'Epoch {epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
+                        pbar.set_description(f'Epoch {self.epoch + epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
                         wandb.log({
-                            'epoch': epoch + 1,
+                            'epoch': self.epoch + epoch + 1,
                             'batch': batch_idx + 1,
                             'step': self.step,
                             'loss': loss,
@@ -619,6 +715,7 @@ class Trainer(object):
                         self.lr_scheduler.step()
 
         accelerator.print('training complete')
+
 
     def train_dp_1(self):
         accelerator = self.accelerator

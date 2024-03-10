@@ -74,6 +74,13 @@ class SimpleDiffusionGenerator:
         return observations, actions, rewards, next_observations, terminals
 
 
+def load_data(dataset_name):
+    env = gym.make(dataset_name)
+    input = make_inputs(env)
+    input = torch.from_numpy(input).float()
+    return input
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
@@ -87,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--results_folder', type=str, default='./results')
     parser.add_argument('--use_gpu', action='store_true', default=True)
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--save_samples', action='store_true', default=True)
+    # parser.add_argument('--save_samples', action='store_true', default=True)
     parser.add_argument('--save_num_samples', type=int, default=int(5e6))
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
@@ -113,11 +120,24 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     if args.use_gpu:
         torch.cuda.manual_seed(args.seed)
-
+    print(args.load_checkpoint)
+    print(args.load_checkpoint)
+    print(args.load_checkpoint)
+    print(args.load_checkpoint)
+    print(args.load_checkpoint)
+    print(args.load_checkpoint)
     # Create the environment and dataset.
-    env = gym.make(args.dataset)
-    inputs = make_inputs(env)
-    inputs = torch.from_numpy(inputs).float()
+    if not args.load_checkpoint:
+        datasets_name = ['hopper-medium-replay-v2', 'hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
+
+        inputs = []
+        for dataset_name in datasets_name:
+            input = load_data(dataset_name)
+            inputs.append(input)
+        inputs = torch.cat(inputs, dim=0)
+    else:
+        inputs = load_data(args.dataset)
+
     dataset = torch.utils.data.TensorDataset(inputs)
 
     results_folder = pathlib.Path(args.results_folder)
@@ -133,6 +153,7 @@ if __name__ == '__main__':
         args.dp_max_grad_norm,
         args.dp_max_physical_batch_size,
         args.dp_n_splits,
+        args.load_checkpoint,
         diffusion,
         dataset,
         results_folder=args.results_folder,
@@ -148,18 +169,28 @@ if __name__ == '__main__':
             name=args.results_folder.split('/')[-1],
         )
         # Train model.
-        # trainer.train()
+        trainer.train()
         # trainer.train_dp()
-        trainer.train_dp()
     else:
         trainer.ema.to(trainer.accelerator.device)
         # Load the last checkpoint.
         trainer.load(milestone=trainer.train_num_steps)
 
+        # continue training
+        wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            config=args,
+            group=args.wandb_group,
+            name=args.results_folder.split('/')[-1],
+        )
+        trainer.train_dp()
+        # trainer.finetune()
+
     # Generate samples and save them.
-    if args.save_samples:
+    if args.load_checkpoint:
         generator = SimpleDiffusionGenerator(
-            env=env,
+            env=gym.make(dataset_name),
             ema_model=trainer.ema.ema_model,
         )
         observations, actions, rewards, next_observations, terminals = generator.sample(
