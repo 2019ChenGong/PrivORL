@@ -11,7 +11,7 @@ import wandb
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
-from synther.diffusion.utils import make_inputs, split_diffusion_samples, construct_diffusion_model
+from synther.diffusion.utils import make_inputs, make_half_inputs, split_diffusion_samples, construct_diffusion_model
 
 
 
@@ -74,9 +74,17 @@ class SimpleDiffusionGenerator:
         return observations, actions, rewards, next_observations, terminals
 
 
+# full dataset
 def load_data(dataset_name):
     env = gym.make(dataset_name)
     input = make_inputs(env)
+    input = torch.from_numpy(input).float()
+    return input
+
+# half dataset
+def load_half_data(dataset_name, is_first):
+    env = gym.make(dataset_name)
+    input = make_half_inputs(env, is_first)
     input = torch.from_numpy(input).float()
     return input
 
@@ -98,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_num_samples', type=int, default=int(5e6))
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
+    parser.add_argument('--full_pretrain', action='store_true')
     # dp
     parser.add_argument('--dp_delta', type=float, default=1e-6)
     parser.add_argument('--dp_epsilon', type=float, default=1.)
@@ -128,15 +137,27 @@ if __name__ == '__main__':
     print(args.load_checkpoint)
     # Create the environment and dataset.
     if not args.load_checkpoint:
-        datasets_name = ['hopper-medium-replay-v2', 'hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
+        if args.full_pretrain:
+            datasets_name = ['hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
 
-        inputs = []
-        for dataset_name in datasets_name:
-            input = load_data(dataset_name)
-            inputs.append(input)
-        inputs = torch.cat(inputs, dim=0)
+            inputs = []
+            for dataset_name in datasets_name:
+                input = load_data(dataset_name)
+                inputs.append(input)
+            inputs = torch.cat(inputs, dim=0)
+        else:
+            datasets_name = ['hopper-medium-replay-v2', 'hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
+
+            inputs = []
+            for dataset_name in datasets_name:
+                input = load_half_data(dataset_name, True)
+                inputs.append(input)
+            inputs = torch.cat(inputs, dim=0)
     else:
-        inputs = load_data(args.dataset)
+        if args.full_pretrain:
+            inputs = load_data(args.dataset)
+        else:
+            inputs = load_half_data(args.dataset, False)
 
     dataset = torch.utils.data.TensorDataset(inputs)
 

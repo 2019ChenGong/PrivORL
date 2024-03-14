@@ -286,7 +286,7 @@ class Trainer(object):
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
 
-            train_epochs: int = 10,
+            train_epochs: int = 100,
             finetune_epochs: int = 10,
 
             ema_update_every: int = 10,
@@ -409,14 +409,14 @@ class Trainer(object):
         accelerator = self.accelerator
         device = accelerator.device
 
-        data = torch.load('results/model-420000.pt')
+        data = torch.load('results_part/model-210000.pt')
 
         model = self.accelerator.unwrap_model(self.model)
         model.load_state_dict(data['model'])
         self.model = model
 
         self.step = data['step']
-        # self.epoch = data['epoch']
+        self.epoch = data['epoch']
         self.opt.load_state_dict(data['opt'])
         self.ema.load_state_dict(data['ema'])
 
@@ -541,8 +541,8 @@ class Trainer(object):
                         self.ema.to(device)
                         self.ema.update()
 
-                        if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                            self.save(self.step)
+                        if self.epoch != 0 and self.epoch % 10 == 0:
+                            self.save(self.epoch)
 
                 pbar.update(1)
 
@@ -706,8 +706,8 @@ class Trainer(object):
                             self.ema.to(device)
                             self.ema.update()
 
-                            if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                                self.save(self.step)
+                            # if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                            #     self.save(self.step)
 
                     pbar.update(1)
 

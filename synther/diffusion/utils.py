@@ -32,6 +32,33 @@ def make_inputs(
     return inputs
 
 
+def make_half_inputs(
+        env: gym.Env,
+        is_first,
+        modelled_terminals: bool = False,
+) -> np.ndarray:
+    dataset = d4rl.qlearning_dataset(env)
+    half_index = int(0.5 * len(dataset['observations']))
+
+    if is_first:
+        obs = dataset['observations'][:half_index]
+        actions = dataset['actions'][:half_index]
+        next_obs = dataset['next_observations'][:half_index]
+        rewards = dataset['rewards'][:half_index]
+    else:
+        obs = dataset['observations'][half_index:]
+        actions = dataset['actions'][:half_index:]
+        next_obs = dataset['next_observations'][half_index:]
+        rewards = dataset['rewards'][half_index:]
+
+    inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
+    
+    if modelled_terminals:
+        terminals = dataset['terminals'].astype(np.float32)
+        inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
+    return inputs
+
+
 # Convert diffusion samples back to (s, a, r, s') format.
 @gin.configurable
 def split_diffusion_samples(

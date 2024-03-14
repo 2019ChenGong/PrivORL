@@ -2,6 +2,9 @@ bin/
 logs/
 wandb/
 online_logs/
+results
+results_full
+results_part
 
 fuse.cfg
 
