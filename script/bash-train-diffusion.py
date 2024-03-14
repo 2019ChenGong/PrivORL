@@ -5,11 +5,11 @@ import csv
 import time
 import subprocess
 
-datasets = ["hopper-medium-replay-v2", "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
+datasets = ["hopper", "halfcheetah", "walker2d-medium"]
 
-dp_epsilon = [0.3]
-unlearning_steps = [10000, 100000]
-seeds = [0, 1, 2]
+dp_epsilons = [0.3]
+num_samples = [5e6]
+seeds = [0]
 gpus = ['0', '1', '2', '3', '4']
 
 max_workers = 8
@@ -34,33 +34,17 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
 
     for dataset in datasets:
         for seed in seeds:
-            for unlearning_step in unlearning_steps:
-                file_folder = f"./Total_trained/{env}/"
-                folders = get_directories(file_folder)
-                for folder in folders:
-                    model_param = os.path.join(folder, 'params.json')
-                    search_pattern = os.path.join(folder, '*_1000000.pt')
-                    model_files = glob.glob(search_pattern)
-                    if not model_files:
-                        continue
-                    model = os.path.join(folder, os.path.basename(model_files[0]))
-                    
-
-                    part = os.path.basename(folder).split('_')[0]
-                    start_time = os.path.basename(folder).split('_')[1]
-                    algo = "PLASP" if part == "PLASWithPerturbation" else part
-
+            for num_sample in num_samples:
+                for dp_epsilon in dp_epsilons:
+                    dataset = dataset + "-medium-replay-v2"
+                    store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp"
                     arguments = [
-                        '--dataset', env,
-                        '--model', model_param,
-                        '--model_params', model,
-                        '--number_of_finetuning', unlearning_step,
+                        '--dataset', dataset,
                         '--seed', seed,
-                        '--unlearning_rate', 0.3,
-                        '--algo', algo,
-                        '--gpu', gpus[gpu_index] 
+                        '--dp_epsilon', 0.3,
+                        '--save_file_name', store_path,
                     ]
-                    script_path = 'total_fine_tune.py'
+                    script_path = 'train_diffuser.py'
                     command = ['python', script_path] + [str(arg) for arg in arguments]
 
                     futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
