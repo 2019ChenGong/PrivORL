@@ -5,6 +5,8 @@ online_logs/
 results
 results_full
 results_part
+full_pre.out
+part_pre.out
 
 fuse.cfg
 
