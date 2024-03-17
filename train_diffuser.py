@@ -8,6 +8,7 @@ import gym
 import numpy as np
 import torch
 import wandb
+import ast
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
@@ -82,16 +83,18 @@ def load_data(dataset_name):
     return input
 
 # half dataset
-def load_half_data(dataset_name, is_first):
+def load_half_data(dataset_name):
     env = gym.make(dataset_name)
-    input = make_half_inputs(env, is_first)
-    input = torch.from_numpy(input).float()
-    return input
+    input_train, input_tune = make_half_inputs(env)
+    input_train = torch.from_numpy(input_train).float()
+    input_tune = torch.from_numpy(input_tune).float()
+    return input_train, input_tune
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
+    parser.add_argument('--datasets_name', type=str, default=['hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'])
     parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/resmlp_denoiser.gin'])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[])
     # wandb config
@@ -106,7 +109,8 @@ if __name__ == '__main__':
     parser.add_argument('--save_num_samples', type=int, default=int(5e6))
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
-    parser.add_argument('--full_pretrain', action='store_true')
+    parser.add_argument('--load_path', type=str, default='./results')
+    parser.add_argument('--full_pretrain', action='store_true') # finetune one dataset using other complete datasets
     # dp
     parser.add_argument('--dp_delta', type=float, default=1e-6)
     parser.add_argument('--dp_epsilon', type=float, default=1.)
@@ -138,8 +142,8 @@ if __name__ == '__main__':
     # Create the environment and dataset.
     if not args.load_checkpoint:
         if args.full_pretrain:
-            datasets_name = ['hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
-
+            datasets_name = args.datasets_name
+            datasets_name = ast.literal_eval(datasets_name)
             inputs = []
             for dataset_name in datasets_name:
                 input = load_data(dataset_name)
@@ -150,14 +154,14 @@ if __name__ == '__main__':
 
             inputs = []
             for dataset_name in datasets_name:
-                input = load_half_data(dataset_name, True)
+                input, _ = load_half_data(dataset_name)
                 inputs.append(input)
             inputs = torch.cat(inputs, dim=0)
     else:
         if args.full_pretrain:
             inputs = load_data(args.dataset)
         else:
-            inputs = load_half_data(args.dataset, False)
+            _ ,inputs = load_half_data(args.dataset)
 
     dataset = torch.utils.data.TensorDataset(inputs)
 
@@ -175,6 +179,7 @@ if __name__ == '__main__':
         args.dp_max_physical_batch_size,
         args.dp_n_splits,
         args.load_checkpoint,
+        args.load_path,
         diffusion,
         dataset,
         results_folder=args.results_folder,
@@ -211,7 +216,7 @@ if __name__ == '__main__':
     # Generate samples and save them.
     if args.load_checkpoint:
         generator = SimpleDiffusionGenerator(
-            env=gym.make(dataset_name),
+            env=gym.make(args.dataset),
             ema_model=trainer.ema.ema_model,
         )
         observations, actions, rewards, next_observations, terminals = generator.sample(

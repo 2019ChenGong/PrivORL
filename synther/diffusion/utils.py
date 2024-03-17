@@ -13,6 +13,7 @@ from synther.diffusion.denoiser_network import ResidualMLPDenoiser
 from synther.diffusion.elucidated_diffusion import ElucidatedDiffusion
 from synther.diffusion.norm import normalizer_factory
 
+from sklearn.model_selection import train_test_split
 
 # Make transition dataset from data.
 @gin.configurable
@@ -34,29 +35,16 @@ def make_inputs(
 
 def make_half_inputs(
         env: gym.Env,
-        is_first,
         modelled_terminals: bool = False,
 ) -> np.ndarray:
     dataset = d4rl.qlearning_dataset(env)
-    half_index = int(0.5 * len(dataset['observations']))
-
-    if is_first:
-        obs = dataset['observations'][:half_index]
-        actions = dataset['actions'][:half_index]
-        next_obs = dataset['next_observations'][:half_index]
-        rewards = dataset['rewards'][:half_index]
-    else:
-        obs = dataset['observations'][half_index:]
-        actions = dataset['actions'][:half_index:]
-        next_obs = dataset['next_observations'][half_index:]
-        rewards = dataset['rewards'][half_index:]
-
+    obs = dataset['observations']
+    actions = dataset['actions']
+    next_obs = dataset['next_observations']
+    rewards = dataset['rewards']
     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
-    
-    if modelled_terminals:
-        terminals = dataset['terminals'].astype(np.float32)
-        inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
-    return inputs
+    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=0.5, random_state=10, shuffle=True)
+    return inputs_pretrain, inputs_finetune
 
 
 # Convert diffusion samples back to (s, a, r, s') format.

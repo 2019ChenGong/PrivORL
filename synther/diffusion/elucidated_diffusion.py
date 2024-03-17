@@ -277,6 +277,7 @@ class Trainer(object):
             dp_max_physical_batch_size,
             dp_n_splits,
             load_checkpoint,
+            load_path,
             diffusion_model,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
@@ -286,7 +287,7 @@ class Trainer(object):
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
 
-            train_epochs: int = 100,
+            train_epochs: int = 10,
             finetune_epochs: int = 10,
 
             ema_update_every: int = 10,
@@ -358,6 +359,7 @@ class Trainer(object):
         if self.accelerator.is_main_process:
             self.ema = EMA(diffusion_model, beta=ema_decay, update_every=ema_update_every)
             self.results_folder = pathlib.Path(results_folder)
+            self.load_path = pathlib.Path(load_path)
             self.results_folder.mkdir(exist_ok=True)
 
         # step counter state
@@ -396,7 +398,7 @@ class Trainer(object):
 
         data = {
             'step': self.step,
-            'epoch': self.epoch,
+            # 'epoch': self.epoch,
             'model': self.accelerator.get_state_dict(self.model),
             'opt': self.opt.state_dict(),
             'ema': self.ema.state_dict(),
@@ -409,14 +411,14 @@ class Trainer(object):
         accelerator = self.accelerator
         device = accelerator.device
 
-        data = torch.load('results_part/model-210000.pt')
+        data = torch.load(self.load_path)
 
         model = self.accelerator.unwrap_model(self.model)
         model.load_state_dict(data['model'])
         self.model = model
 
         self.step = data['step']
-        self.epoch = data['epoch']
+        # self.epoch = data['epoch']
         self.opt.load_state_dict(data['opt'])
         self.ema.load_state_dict(data['ema'])
 
@@ -541,8 +543,8 @@ class Trainer(object):
                         self.ema.to(device)
                         self.ema.update()
 
-                        if self.epoch != 0 and self.epoch % 10 == 0:
-                            self.save(self.epoch)
+                        if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                            self.save(self.step)
 
                 pbar.update(1)
 
