@@ -46,26 +46,38 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             for dataset in datasets:
                 for num_sample in num_samples:
                     for dp_epsilon in dp_epsilons:
-                        # # dp diffusion
-                        dataset_name = datasets_name[dataset]
+                        
+                        # offline RL 
+                        config = f"synther/corl/yaml/{algo}/{dataset}/medium_replay_v2.yaml"
                         dataset = dataset + "-medium-replay-v2"
                         results_folder = f"./results_{dataset}"
-                        finetune_load_path = os.path.join(results_folder, "model-390000.pt")
-                        store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz"
+                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz")
                         
                         arguments = [
-                            '--dataset', dataset,
+                            # '--dataset', dataset,
                             # '--datasets_name', dataset_name,
                             '--seed', seed,
-                            '--load_checkpoint',
-                            '--full_pretrain', # make sure finetune one dataset using other complete datasets
+                            '--checkpoints_path',checkpoints_path,
+                            '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            '--results_folder', results_folder,
-                            '--load_path', finetune_load_path,
-                            '--save_file_name', store_path,
+                            '--diffusion.path', offlineRL_load_path,
+                            '--name', name
                         ]
-                        script_path = 'train_diffuser.py'
-                
+                        if algo == "td3_bc":
+                            script_path = 'td3_bc.py'
+                        # elif algo == "iql":
+                        #     script_path = './synther/corl/algorithms/iql.py'
+                        # elif algo == "cql":
+                        #     script_path = './synther/corl/algorithms/cql.py'
+                        # elif algo == "edac":
+                        #     script_path = './synther/corl/algorithms/edac.py'
+                        elif algo == "iql":
+                            script_path = 'iql.py'
+                        elif algo == "cql":
+                            script_path = 'cql.py'
+                        elif algo == "edac":
+                            script_path = 'edac.py'
+                        
                         command = ['python', script_path] + [str(arg) for arg in arguments]
 
                         futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))

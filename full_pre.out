@@ -1,40 +1,0 @@
-nohup: ignoring input
-Warning: Flow failed to import. Set the environment variable D4RL_SUPPRESS_IMPORT_ERROR=1 to suppress this message.
-No module named 'flow'
-/u/fzv6en/anaconda3/envs/dpsynrl/lib/python3.9/site-packages/glfw/__init__.py:916: GLFWError: (65544) b'X11: The DISPLAY environment variable is missing'
-  warnings.warn(message, GLFWError)
-Warning: CARLA failed to import. Set the environment variable D4RL_SUPPRESS_IMPORT_ERROR=1 to suppress this message.
-No module named 'carla'
-pybullet build time: Nov 28 2023 23:52:03
-/u/fzv6en/anaconda3/envs/dpsynrl/lib/python3.9/site-packages/gym/spaces/box.py:84: UserWarning: [33mWARN: Box bound precision lowered by casting to float32[0m
-  logger.warn(f"Box bound precision lowered by casting to {self.dtype}")
-True
-True
-True
-True
-True
-True
-load datafile:   0%|          | 0/11 [00:00<?, ?it/s]load datafile:  27%|██▋       | 3/11 [00:00<00:00, 23.43it/s]load datafile:  55%|█████▍    | 6/11 [00:00<00:00, 26.08it/s]load datafile:  82%|████████▏ | 9/11 [00:00<00:00, 19.70it/s]load datafile: 100%|██████████| 11/11 [00:00<00:00, 25.41it/s]
-Skipping normalization for dimensions [26].
-Means: tensor([ 1.2306e+00, -4.3715e-02, -4.4538e-01, -9.3733e-02,  9.0947e-02,
-         1.3694e+00, -1.9986e-01, -2.2828e-02, -5.2868e-01, -1.4457e-01,
-        -1.9642e-01,  9.1483e-02,  3.7910e-01, -1.6377e-04,  2.3725e+00,
-         1.2306e+00, -4.3757e-02, -4.4583e-01, -9.3838e-02,  9.1038e-02,
-         1.3708e+00, -2.0013e-01, -2.2884e-02, -5.2922e-01, -1.4480e-01,
-        -1.9673e-01,  0.0000e+00])
-Stds: tensor([0.1757, 0.0637, 0.3439, 0.1956, 0.5548, 1.0511, 1.1583, 0.7964, 1.4802,
-        1.6548, 5.1095, 0.5368, 0.5816, 0.7573, 1.0508, 0.1758, 0.0637, 0.3438,
-        0.1957, 0.5551, 1.0507, 1.1589, 0.7968, 1.4810, 1.6558, 5.1121, 1.0000])
-Number of trainable parameters: 25520027.
-Using batch size: 256
-using cosine learning rate scheduler
-Traceback (most recent call last):
-  File "/p/fzv6enresearch/SynthER/train_diffuser.py", line 199, in <module>
-    trainer.load(milestone=trainer.train_num_steps)
-  File "/p/fzv6enresearch/SynthER/synther/diffusion/elucidated_diffusion.py", line 415, in load
-    model.load_state_dict(data['model'])
-  File "/u/fzv6en/anaconda3/envs/dpsynrl/lib/python3.9/site-packages/torch/nn/modules/module.py", line 2153, in load_state_dict
-    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
-RuntimeError: Error(s) in loading state_dict for ElucidatedDiffusion:
-	Missing key(s) in state_dict: "net.residual_mlp.network.0.weight", "net.residual_mlp.network.0.bias", "net.residual_mlp.network.1.linear.weight", "net.residual_mlp.network.1.linear.bias", "net.residual_mlp.network.2.linear.weight", "net.residual_mlp.network.2.linear.bias", "net.residual_mlp.network.3.linear.weight", "net.residual_mlp.network.3.linear.bias", "net.residual_mlp.network.4.linear.weight", "net.residual_mlp.network.4.linear.bias", "net.residual_mlp.network.5.linear.weight", "net.residual_mlp.network.5.linear.bias", "net.residual_mlp.network.6.linear.weight", "net.residual_mlp.network.6.linear.bias", "net.residual_mlp.final_linear.weight", "net.residual_mlp.final_linear.bias", "net.proj.weight", "net.proj.bias", "net.time_mlp.0.weights", "net.time_mlp.1.weight", "net.time_mlp.1.bias", "net.time_mlp.3.weight", "net.time_mlp.3.bias", "normalizer.mean", "normalizer.std". 
-	Unexpected key(s) in state_dict: "_module.net.residual_mlp.network.0.weight", "_module.net.residual_mlp.network.0.bias", "_module.net.residual_mlp.network.1.linear.weight", "_module.net.residual_mlp.network.1.linear.bias", "_module.net.residual_mlp.network.2.linear.weight", "_module.net.residual_mlp.network.2.linear.bias", "_module.net.residual_mlp.network.3.linear.weight", "_module.net.residual_mlp.network.3.linear.bias", "_module.net.residual_mlp.network.4.linear.weight", "_module.net.residual_mlp.network.4.linear.bias", "_module.net.residual_mlp.network.5.linear.weight", "_module.net.residual_mlp.network.5.linear.bias", "_module.net.residual_mlp.network.6.linear.weight", "_module.net.residual_mlp.network.6.linear.bias", "_module.net.residual_mlp.final_linear.weight", "_module.net.residual_mlp.final_linear.bias", "_module.net.proj.weight", "_module.net.proj.bias", "_module.net.time_mlp.0.weights", "_module.net.time_mlp.1.weight", "_module.net.time_mlp.1.bias", "_module.net.time_mlp.3.weight", "_module.net.time_mlp.3.bias", "_module.normalizer.mean", "_module.normalizer.std". 

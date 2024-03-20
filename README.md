@@ -43,7 +43,7 @@ python3 synther/diffusion/train_diffuser.py --dataset halfcheetah-medium-replay-
 Baseline without SynthER (e.g. on TD3+BC):
 
 ```bash
-python3 synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/
+python synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/walker2d/medium_replay_v2.yaml --checkpoints_path corl_logs/
 ```
 
 Offline RL training with SynthER:
@@ -52,8 +52,10 @@ Offline RL training with SynthER:
 # Generating diffusion samples on the fly.
 python3 synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/ --name SynthER --diffusion.path path/to/model-100000.pt
 
-# Using saved diffusion samples.
-python3 synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/ --name SynthER --diffusion.path path/to/samples.npz
+
+# Using saved dp_diffusion samples.
+python td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/ --name DPsynthER --dp_epsilon 5 --diffusion.path path/to/samples.npz
+
 ```
 
 ### Online RL
@@ -104,3 +106,26 @@ would like to particularly thank the authors of:
 Please contact [Cong Lu](mailto:cong.lu@stats.ox.ac.uk) or [Philip Ball](mailto:ball@robots.ox.ac.uk) for any queries.
 We welcome any suggestions or contributions! 
 
+
+
+
+#### dpsynrl
+
+## pretrain(completed)
+
+## fine-tuning
+
+```bash
+# run lines 45 to 63, while commenting on lines 65 to 81
+# dataset = halfcheetah, epsilon = 5 (uncompleted)
+python bash-train-diffusion.py
+# saved in f"/p/fzv6enresearch/SynthER/results_{dataset}-medium-replay-v2"
+```
+
+## offlineRL
+
+```bash
+# run lines 65 to 81, while commenting on lines 45 to 63
+python bash-train-diffusion.py
+# results will be saved in "./corl_logs/f"DPsynthER-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(uuid.uuid4())[:8]}"
+```
