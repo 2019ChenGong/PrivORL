@@ -39,20 +39,21 @@ class TrainConfig:
     critic_learning_rate: float = 3e-4
     alpha_learning_rate: float = 3e-4
     max_action: float = 1.0
+    dp_epsilon: int = 0
     # training params
     buffer_size: int = 1_000_000
     env_name: str = "halfcheetah-medium-v2"
     batch_size: int = 256
     num_epochs: int = 3000
-    num_updates_on_epoch: int = 1000
+    num_updates_on_epoch: int = 5000
     normalize_reward: bool = False
     # evaluation params
     eval_episodes: int = 10
     eval_every: int = 5
     # general params
     checkpoints_path: Optional[str] = None
-    save_checkpoints: bool = False  # Save model checkpoints
-    log_every: int = 1000
+    save_checkpoints: bool = True  # Save model checkpoints
+    log_every: int = 50000
     deterministic_torch: bool = False
     seed: int = 10
     eval_seed: int = 42

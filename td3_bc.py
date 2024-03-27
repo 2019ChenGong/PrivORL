@@ -30,12 +30,12 @@ class TrainConfig:
     device: str = "cuda"
     env: str = "halfcheetah-medium-expert-v2"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5e3)  # How often (time steps) we evaluate
+    eval_freq: int = int(5e4)  # How often (time steps) we evaluate
     n_episodes: int = 10  # How many episodes run during evaluation
     max_timesteps: int = int(1e6)  # Max time steps to run environment
     checkpoints_path: Optional[str] = None  # Save path
-    save_checkpoints: bool = False  # Save model checkpoints
-    log_every: int = 1000
+    save_checkpoints: bool = True  # Save model checkpoints
+    log_every: int = 50000
     load_model: str = ""  # Model load file name, "" doesn't load
     dp_epsilon: int = 0
     # TD3

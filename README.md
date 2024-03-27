@@ -32,6 +32,10 @@ If you don't have MuJoCo installed, follow the instructions here: https://github
 
 ## Running Instructions
 
+### marginal
+
+python 
+
 ### Offline RL
 
 Diffusion model training (this automatically generates samples and saves them):

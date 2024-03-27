@@ -46,7 +46,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             for dataset in datasets:
                 for num_sample in num_samples:
                     for dp_epsilon in dp_epsilons:
-                        # # dp diffusion
+                        # dp diffusion
                         dataset_name = datasets_name[dataset]
                         dataset = dataset + "-medium-replay-v2"
                         results_folder = f"./results_{dataset}"
@@ -65,7 +65,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--save_file_name', store_path,
                         ]
                         script_path = 'train_diffuser.py'
-                
+                        
                         command = ['python', script_path] + [str(arg) for arg in arguments]
 
                         futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))

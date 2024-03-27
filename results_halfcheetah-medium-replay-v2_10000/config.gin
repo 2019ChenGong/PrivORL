@@ -1,0 +1,53 @@
+# Macros:
+# ==============================================================================
+modelled_terminals = True
+
+# Parameters for construct_diffusion_model:
+# ==============================================================================
+construct_diffusion_model.denoising_network = @ResidualMLPDenoiser
+construct_diffusion_model.disable_terminal_norm = True
+construct_diffusion_model.normalizer_type = 'standard'
+
+# Parameters for ElucidatedDiffusion:
+# ==============================================================================
+ElucidatedDiffusion.S_churn = 80
+ElucidatedDiffusion.S_noise = 1.003
+ElucidatedDiffusion.S_tmax = 50
+ElucidatedDiffusion.S_tmin = 0.05
+ElucidatedDiffusion.num_sample_steps = 128
+ElucidatedDiffusion.sigma_data = 1.0
+
+# Parameters for make_inputs:
+# ==============================================================================
+make_inputs.modelled_terminals = %modelled_terminals
+
+# Parameters for ResidualMLPDenoiser:
+# ==============================================================================
+ResidualMLPDenoiser.activation = 'relu'
+ResidualMLPDenoiser.dim_t = 128
+ResidualMLPDenoiser.layer_norm = False
+ResidualMLPDenoiser.learned_sinusoidal_cond = False
+ResidualMLPDenoiser.learned_sinusoidal_dim = 16
+ResidualMLPDenoiser.mlp_width = 2048
+ResidualMLPDenoiser.num_layers = 6
+ResidualMLPDenoiser.random_fourier_features = True
+
+# Parameters for SimpleDiffusionGenerator:
+# ==============================================================================
+SimpleDiffusionGenerator.num_sample_steps = 128
+SimpleDiffusionGenerator.sample_batch_size = 100000
+
+# Parameters for split_diffusion_samples:
+# ==============================================================================
+split_diffusion_samples.modelled_terminals = %modelled_terminals
+split_diffusion_samples.terminal_threshold = 0.5
+
+# Parameters for Trainer:
+# ==============================================================================
+Trainer.lr_scheduler = 'cosine'
+Trainer.save_and_sample_every = 10000
+Trainer.small_batch_size = 256
+Trainer.train_batch_size = 1024
+Trainer.train_lr = 0.0003
+Trainer.train_num_steps = 100000
+Trainer.weight_decay = 0

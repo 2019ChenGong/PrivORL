@@ -12,13 +12,13 @@ datasets_name = {"hopper":      ['hopper-expert-v2', 'hopper-full-replay-v2', 'h
                  "halfcheetah": ['halfcheetah-expert-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
                  "walker2d":    ['walker2d-expert-v2', 'walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
 
-dp_epsilons = [5]
+dp_epsilons = [8]
 num_samples = [5e6]
 seeds = [0]
-gpus = ['1', '2']
+gpus = ['0', '1', '2']
 max_workers = 8
 # algos = ['td3_bc', 'iql', 'cql', 'edac']
-algos = ['td3_bc']
+algos = ['cql']
 
 # offline RL
 checkpoints_path = "corl_logs/"  
@@ -61,7 +61,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
                             '--diffusion.path', offlineRL_load_path,
-                            '--name', name
+                            # '--name', name
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'

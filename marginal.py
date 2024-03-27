@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import pandas as pd
 import gym
@@ -5,35 +6,103 @@ import d4rl
 
 from synther.diffusion.utils import make_inputs
 
+from sdv.metadata import SingleTableMetadata
 from sdv.evaluation.single_table import evaluate_quality
 
-# process data
 
-env = gym.make('hopper-medium-replay-v2')
-# input = make_inputs(env)
-# input = torch.from_numpy(input).float()
-dataset = d4rl.qlearning_dataset(env)
-obs = dataset['observations']
-actions = dataset['actions']
-next_obs = dataset['next_observations']
-rewards = dataset['rewards']
-inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
+def flatten_multidimensional_columns(df, prefix_dict):
+    """
+    :param df: DataFrame to be processed
+    :param prefix_dict: dict of column names and corresponding dimensions
+    :return: flatten DataFrame
+    """
+    for column, dimension in prefix_dict.items():
+        expanded_cols = pd.DataFrame(df[column].tolist(), columns=[f'{column}_{i+1}' for i in range(dimension)])
+        df = pd.concat([df, expanded_cols], axis=1).drop(columns=[column])
+    return df
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='halfcheetah')
+    args = parser.parse_args()
+
+    # process data
+
+    original_env = gym.make(f'{args.dataset}-medium-replay-v2')
     
-terminals = dataset['terminals'].astype(np.float32)
-inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
+    if args.dataset == 'hopper':
+        column_dimension = {
+            'observations': 11,
+            'actions': 3,
+            'next_observations': 11
+        }
+    elif args.dataset == 'halfcheetah':
+        column_dimension = {
+            'observations': 17,
+            'actions': 6,
+            'next_observations': 17
+        }
+    # elif args.dataset == 'walker2d':
+        # column_dimension = {
+        #     'observations': 11,
+        #     'actions': 3,
+        #     'next_observations': 11
+        # }
 
-dpsynther_trajectory = np.load("./results_full_new/hopper_5m_samples_5ep.npz")
+    original_dataset = d4rl.qlearning_dataset(original_env)
+    original_obs = original_dataset['observations']
+    original_actions = original_dataset['actions']
+    original_next_obs = original_dataset['next_observations']
+    original_rewards = original_dataset['rewards']
+    original_terminals = original_dataset['terminals'].astype(np.float32)
 
-observations = dpsynther_trajectory['observations']
-actions = dpsynther_trajectory['actions']
-rewards = dpsynther_trajectory['rewards']
-next_observations = dpsynther_trajectory['next_observations']
-terminals = dpsynther_trajectory['terminals']
+    original_data = {
+        'actions': original_actions.tolist(),
+        'observations': original_obs.tolist(),
+        'rewards': original_rewards.tolist(),
+        'next_observations': original_next_obs.tolist(),
+        'terminals': original_terminals.tolist()
+    }
+    original_experience = pd.DataFrame(original_data)
 
-dpsynther_trajectory = pd.DataFrame({
-    'observations': observations.flatten(),
-    'actions': actions.flatten(),
-    'rewards': rewards.flatten(),
-    'next_observations': next_observations.flatten(),
-    'terminals': terminals.flatten()
-})
+    original_experience = flatten_multidimensional_columns(original_experience, column_dimension)
+
+    # trajectories = []
+    # trajectory = []
+    # for i, input in enumerate(inputs):
+    #     trajectory.append(input)
+    #     if terminals[i] == 1.0 or i == len(inputs) - 1:
+    #         trajectory = np.array(trajectory)
+    #         trajectories.append(trajectory)
+            
+    #         trajectory = []
+
+    dpsynther_trajectory = np.load(f"results_{args.dataset}-medium-replay-v2/{args.dataset}-medium-replay-v2_samples_5000000.0_8dp.npz")
+
+    dpsynther_obs = dpsynther_trajectory['observations']
+    dpsynther_actions = dpsynther_trajectory['actions']
+    dpsynther_rewards = dpsynther_trajectory['rewards']
+    dpsynther_next_obs = dpsynther_trajectory['next_observations']
+    dpsynther_terminals = dpsynther_trajectory['terminals']
+
+    dpsynther_data = {
+        'actions': dpsynther_actions.tolist(),
+        'observations': dpsynther_obs.tolist(),
+        'rewards': dpsynther_rewards.tolist(),
+        'next_observations': dpsynther_next_obs.tolist(),
+        'terminals': dpsynther_terminals.tolist()
+    }
+    dpsynther_experience = pd.DataFrame(dpsynther_data)
+
+    dpsynther_experience = flatten_multidimensional_columns(dpsynther_experience, column_dimension)
+
+    # generate metadata
+    metadata = SingleTableMetadata()
+    metadata.detect_from_dataframe(dpsynther_experience)
+
+    quality_report = evaluate_quality(
+        real_data=original_experience,
+        synthetic_data=dpsynther_experience,
+        metadata=metadata)
+

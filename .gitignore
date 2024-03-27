@@ -10,6 +10,7 @@ results_hopper-medium-replay-v2
 results_walker2d-medium-replay-v2
 results_part(pretrain half)
 results_part
+corl_logs
 
 fuse.cfg
 
