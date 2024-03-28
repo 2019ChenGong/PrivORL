@@ -29,6 +29,8 @@ from opacus import PrivacyEngine
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
 
+import csv
+
 # helpers
 def exists(val):
     return val is not None
@@ -267,6 +269,43 @@ class ElucidatedDiffusion(nn.Module):
         return losses.mean()
 
 
+# rnd
+class TargetNetwork(nn.Module):
+    def __init__(self, input_dim):
+        super(TargetNetwork, self).__init__()
+        self.input_dim = input_dim
+        self.network = nn.Sequential(
+            nn.Linear(self.input_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32)
+        )
+        self._initialize_weights()
+        
+    def _initialize_weights(self):
+        for m in self.network:
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0., std=0.1)
+                nn.init.constant_(m.bias, 0.)
+    
+    def forward(self, x):
+        return self.network(x)
+
+class PredictionNetwork(nn.Module):
+    def __init__(self, input_dim):
+        super(PredictionNetwork, self).__init__()
+        self.input_dim = input_dim
+        self.network = nn.Sequential(
+            nn.Linear(self.input_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32)
+        )
+    
+    def forward(self, x):
+        return self.network(x)
+
+
 @gin.configurable
 class Trainer(object):
     def __init__(
@@ -287,7 +326,7 @@ class Trainer(object):
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
 
-            train_epochs: int = 10,
+            train_epochs: int = 100,
             finetune_epochs: int = 10,
 
             ema_update_every: int = 10,
@@ -478,37 +517,17 @@ class Trainer(object):
     def train(self):
         accelerator = self.accelerator
         device = accelerator.device
-        # privacy_engine = PrivacyEngine()
-        # self.model = DPDDP(self.model)
-        # self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
-        #     module=self.model,
-        #     optimizer=self.opt,
-        #     data_loader=self.dl,
-        #     target_epsilon=self.dp_epsilon,
-        #     target_delta=self.dp_delta,
-        #     epochs=self.train_num_steps,
-        #     max_grad_norm=self.dp_max_grad_norm
-        # )
-    
-        # self.model, self.opt, self.dl = privacy_engine.make_private(
-        #     module=self.model,
-        #     optimizer=self.opt,
-        #     data_loader=self.dl,
-        #     # target_epsilon=self.dp_epsilon,   
-        #     # target_delta=self.dp_delta,
-        #     # epochs=self.train_num_steps,
-        #     noise_multiplier=1.1,
-        #     max_grad_norm=self.dp_max_grad_norm
-        # )
+
+        # sample for rnd
+        diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True)
+        
+        # prepare rnd
+        target_net = TargetNetwork(input_dim=diffusion_samples.shape[1])
+        prediction_net = PredictionNetwork(input_dim=diffusion_samples.shape[1])
+        optimizer = torch.optim.Adam(prediction_net.parameters(), lr=0.001)
 
         with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
             for self.epoch in range(self.train_epochs):
-            # while self.step < self.train_num_steps:
-                # with BatchMemoryManager(
-                #         data_loader=self.dl,
-                #         max_physical_batch_size=self.dp_max_physical_batch_size,
-                #         optimizer=self.opt) as memory_safe_data_loader:
-                        
                 total_loss = 0.
 
                 for batch_idx, data in enumerate(self.dl):
@@ -551,92 +570,13 @@ class Trainer(object):
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
+            with open('epoch-step.csv', mode='a', newline='') as file:
+                writer = csv.writer(file)
+
+                writer.writerow(["epoch-step", self.epoch, self.step])
+
         accelerator.print('training complete')
 
-
-    # Train for the full number of steps.
-    # def finetune(self):
-    #     accelerator = self.accelerator
-    #     device = accelerator.device
-    #     privacy_engine = PrivacyEngine()
-    #     # self.model = DPDDP(self.model)
-
-    #     ckpt = torch.load('results/model-420000.pt')
-    #     self.model.load_state_dict(ckpt['model'])
-    #     self.opt.load_state_dict(ckpt['opt'])
-        
-    #     self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
-    #         module=self.model,
-    #         optimizer=self.opt,
-    #         data_loader=self.dl,
-    #         target_epsilon=self.dp_epsilon,
-    #         target_delta=self.dp_delta,
-    #         epochs=self.train_num_steps,
-    #         max_grad_norm=self.dp_max_grad_norm
-    #     )
-    
-    #     # self.model, self.opt, self.dl = privacy_engine.make_private(
-    #     #     module=self.model,
-    #     #     optimizer=self.opt,
-    #     #     data_loader=self.dl,
-    #     #     # target_epsilon=self.dp_epsilon,   
-    #     #     # target_delta=self.dp_delta,
-    #     #     # epochs=self.train_num_steps,
-    #     #     noise_multiplier=1.1,
-    #     #     max_grad_norm=self.dp_max_grad_norm
-    #     # )
-
-    #     with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
-    #         for epoch in range(self.train_epochs):
-    #         # while self.step < self.train_num_steps:
-    #             with BatchMemoryManager(
-    #                     data_loader=self.dl,
-    #                     max_physical_batch_size=self.dp_max_physical_batch_size,
-    #                     optimizer=self.opt) as memory_safe_data_loader:
-                        
-    #                 total_loss = 0.
-
-    #                 for batch_idx, data in enumerate(memory_safe_data_loader):
-    #                     data = data[0].to(device)
-
-    #                     with self.accelerator.autocast():
-    #                         loss = self.model(data)
-    #                         # loss = loss / self.gradient_accumulate_every
-    #                         total_loss += loss.item()
-
-    #                     self.accelerator.backward(loss)
-
-    #                     accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-    #                     pbar.set_description(f'Epoch {epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
-    #                     wandb.log({
-    #                         'epoch': epoch + 1,
-    #                         'batch': batch_idx + 1,
-    #                         'step': self.step,
-    #                         'loss': loss,
-    #                         'lr': self.opt.param_groups[0]['lr']
-    #                     })
-
-    #                     # accelerator.wait_for_everyone()
-
-    #                     self.opt.step()
-    #                     self.opt.zero_grad()
-
-    #                     # accelerator.wait_for_everyone()
-
-    #                     self.step += 1
-    #                     if accelerator.is_main_process:
-    #                         self.ema.to(device)
-    #                         self.ema.update()
-
-    #                         if self.step != 0 and self.step % self.save_and_sample_every == 0:
-    #                             self.save(self.step)
-
-    #                 pbar.update(1)
-
-    #                 if self.lr_scheduler is not None:
-    #                     self.lr_scheduler.step()
-
-    #     accelerator.print('training complete')
 
 
     def train_dp(self):
@@ -695,6 +635,7 @@ class Trainer(object):
                             'loss': loss,
                             'lr': self.opt.param_groups[0]['lr']
                         })
+
 
                         # accelerator.wait_for_everyone()
 

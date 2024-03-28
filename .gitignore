@@ -8,6 +8,9 @@ results_full_new
 results_halfcheetah-medium-replay-v2
 results_hopper-medium-replay-v2
 results_walker2d-medium-replay-v2
+results_halfcheetah-expert-v2
+results_hopper-expert-v2
+results_walker2d-expert-v2
 results_part(pretrain half)
 results_part
 corl_logs

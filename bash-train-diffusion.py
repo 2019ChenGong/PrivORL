@@ -8,14 +8,14 @@ import subprocess
 # datasets = ["halfcheetah"]
 datasets = ["hopper", "halfcheetah", "walker2d"]
 # datasets = ["halfcheetah", "walker2d"]
-datasets_name = {"hopper":      ['hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
-                 "halfcheetah": ['halfcheetah-expert-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
-                 "walker2d":    ['walker2d-expert-v2', 'walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
+datasets_name = {"hopper":      ['hopper-medium-replay-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
+                 "halfcheetah": ['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
+                 "walker2d":    ['walker2d-medium-replay-v2', 'walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
 
 dp_epsilons = [5]
 num_samples = [5e6]
 seeds = [0]
-gpus = ['1', '2']
+gpus = ['0', '1', '2']
 max_workers = 8
 # algos = ['td3_bc', 'iql', 'cql', 'edac']
 algos = ['td3_bc']
@@ -32,9 +32,6 @@ def run_command_on_gpu(command, gpu_id):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
     subprocess.run(command)
     time.sleep(1)
-    # with open(output_file, "a", newline='') as csvfile:
-    #     csv_writer = csv.writer(csvfile)
-    #     csv_writer.writerow([env, unlearning_rate, unlearning_step, algo, start_time, result.stdout.strip()])
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -48,16 +45,16 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     for dp_epsilon in dp_epsilons:
                         # dp diffusion
                         dataset_name = datasets_name[dataset]
-                        dataset = dataset + "-medium-replay-v2"
+                        dataset = dataset + "-expert-v2"
                         results_folder = f"./results_{dataset}"
                         finetune_load_path = os.path.join(results_folder, "model-390000.pt")
                         store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz"
                         
                         arguments = [
                             '--dataset', dataset,
-                            # '--datasets_name', dataset_name,
+                            '--datasets_name', dataset_name,
                             '--seed', seed,
-                            '--load_checkpoint',
+                            # '--load_checkpoint',
                             '--full_pretrain', # make sure finetune one dataset using other complete datasets
                             '--dp_epsilon', dp_epsilon,
                             '--results_folder', results_folder,
