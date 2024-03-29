@@ -17,6 +17,7 @@ from einops import reduce
 from ema_pytorch import EMA
 from redq.algos.core import ReplayBuffer
 from torch import nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchdiffeq import odeint
 from tqdm import tqdm
@@ -517,14 +518,13 @@ class Trainer(object):
     def train(self):
         accelerator = self.accelerator
         device = accelerator.device
-
-        # sample for rnd
-        diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True)
         
         # prepare rnd
-        target_net = TargetNetwork(input_dim=diffusion_samples.shape[1])
-        prediction_net = PredictionNetwork(input_dim=diffusion_samples.shape[1])
-        optimizer = torch.optim.Adam(prediction_net.parameters(), lr=0.001)
+        diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True).to(device)
+        print(diffusion_samples.device)
+        target_net = TargetNetwork(input_dim=diffusion_samples.shape[1]).to(device)
+        prediction_net = PredictionNetwork(input_dim=diffusion_samples.shape[1]).to(device)
+        rnd_optimizer = torch.optim.Adam(prediction_net.parameters(), lr=0.001)
 
         with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
             for self.epoch in range(self.train_epochs):
@@ -566,6 +566,16 @@ class Trainer(object):
                             self.save(self.step)
 
                 pbar.update(1)
+
+                diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True)
+                target_out = target_net(diffusion_samples)
+                prediction_out = prediction_net(diffusion_samples)
+                rnd_loss = F.mse_loss(prediction_out, target_out)
+                if self.epoch % 2 == 0:
+                    rnd_optimizer.zero_grad()
+                    rnd_loss.backward()
+                    rnd_optimizer.step()
+                    print(f"Epoch {self.epoch}, RndLoss: {rnd_loss.item()}")
 
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()

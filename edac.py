@@ -44,7 +44,7 @@ class TrainConfig:
     buffer_size: int = 1_000_000
     env_name: str = "halfcheetah-medium-v2"
     batch_size: int = 256
-    num_epochs: int = 3000
+    num_epochs: int = 200
     num_updates_on_epoch: int = 5000
     normalize_reward: bool = False
     # evaluation params
@@ -556,7 +556,7 @@ def train(config: TrainConfig):
             if config.checkpoints_path is not None and config.save_checkpoints:
                 torch.save(
                     trainer.state_dict(),
-                    os.path.join(config.checkpoints_path, f"{epoch}.pt"),
+                    os.path.join(config.checkpoints_path, f"checkpoint_{epoch * config.num_updates_on_epoch}.pt"),
                 )
 
     wandb.finish()
