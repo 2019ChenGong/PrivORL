@@ -14,7 +14,7 @@ datasets_name = {"hopper":      ['hopper-full-replay-v2', 'hopper-medium-v2', 'h
 
 dp_epsilons = [8]
 num_samples = [5e6]
-seeds = [0]
+seeds = [0, 1]
 gpus = ['0', '1', '2']
 max_workers = 8
 # algos = ['td3_bc', 'iql', 'cql', 'edac']
