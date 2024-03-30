@@ -582,7 +582,8 @@ class Trainer(object):
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
-                if self.epoch != 0 and self.epoch % self.save_and_sample_epoch_every == 0:
+                print(f"Hello, epoch: {self.epoch}")
+                if self.epoch != 0 and (self.epoch + 1) % self.save_and_sample_epoch_every == 0:
                     self.save(self.epoch)
 
             # with open('epoch-step.csv', mode='a', newline='') as file:
@@ -674,85 +675,6 @@ class Trainer(object):
 
         accelerator.print('training complete')
 
-
-    def train_dp_1(self):
-        accelerator = self.accelerator
-        device = accelerator.device
-        privacy_engine = PrivacyEngine()
-        # self.model = DPDDP(self.model)
-        # self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(
-        #     module=self.model,
-        #     optimizer=self.opt,
-        #     data_loader=self.dl,
-        #     target_epsilon=self.dp_epsilon,
-        #     target_delta=self.dp_delta,
-        #     epochs=self.train_num_steps,
-        #     max_grad_norm=self.dp_max_grad_norm
-        # )
-    
-        self.model, self.opt, self.dl = privacy_engine.make_private(
-            module=self.model,
-            optimizer=self.opt,
-            data_loader=self.dl,
-            # target_epsilon=self.dp_epsilon,   
-            # target_delta=self.dp_delta,
-            # epochs=self.train_num_steps,
-            noise_multiplier=1.1,
-            max_grad_norm=self.dp_max_grad_norm
-        )
-
-        with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
-            for epoch in range(self.train_epochs):
-            # while self.step < self.train_num_steps:
-                # with BatchMemoryManager(
-                #         data_loader=self.dl,
-                #         max_physical_batch_size=self.dp_max_physical_batch_size,
-                #         optimizer=self.opt) as memory_safe_data_loader:
-                        
-                total_loss = 0.
-
-                for batch_idx, data in enumerate(self.dl):
-                    data = data[0].to(device)
-
-                    with self.accelerator.autocast():
-                        loss = self.model(data)
-                        loss = loss / self.gradient_accumulate_every
-                        total_loss += loss.item()
-
-                    self.accelerator.backward(loss)
-
-                if (batch_idx + 1) % self.gradient_accumulate_every == 0:
-                    accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                    pbar.set_description(f'Epoch {epoch + 1}/{self.train_n_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {total_loss:.4f}')
-                    wandb.log({
-                        'epoch': epoch + 1,
-                        'batch': batch_idx + 1,
-                        'step': self.step,
-                        'loss': loss,
-                        'lr': self.opt.param_groups[0]['lr']
-                    })
-
-                    accelerator.wait_for_everyone()
-
-                    self.opt.step()
-                    self.opt.zero_grad()
-
-                    accelerator.wait_for_everyone()
-
-                    self.step += 1
-                    if accelerator.is_main_process:
-                        self.ema.to(device)
-                        self.ema.update()
-
-                        if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                            self.save(self.step)
-
-                pbar.update(1)
-
-                if self.lr_scheduler is not None:
-                    self.lr_scheduler.step()
-
-        accelerator.print('training complete')
 
     # Allow user to pass in external data.
     def train_on_batch(
