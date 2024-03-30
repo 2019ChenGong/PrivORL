@@ -334,6 +334,7 @@ class Trainer(object):
             ema_decay: float = 0.995,
             adam_betas: Tuple[float, float] = (0.9, 0.99),
             save_and_sample_every: int = 10000,
+            save_and_sample_epoch_every: int = 5,
             weight_decay: float = 0.,
             results_folder: str = './results',
             amp: bool = False,
@@ -352,6 +353,7 @@ class Trainer(object):
         print(f'Number of trainable parameters: {num_params}.')
 
         self.save_and_sample_every = save_and_sample_every
+        self.save_and_sample_epoch_every = save_and_sample_epoch_every
         self.train_num_steps = train_num_steps
 
         self.train_epochs = train_epochs
@@ -562,8 +564,8 @@ class Trainer(object):
                         self.ema.to(device)
                         self.ema.update()
 
-                        if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                            self.save(self.step)
+                        # if self.step != 0 and self.epoch % self.save_and_sample_every == 0:
+                        #     self.save(self.step)
 
                 pbar.update(1)
 
@@ -580,10 +582,13 @@ class Trainer(object):
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
-            with open('epoch-step.csv', mode='a', newline='') as file:
-                writer = csv.writer(file)
+                if self.epoch != 0 and self.epoch % self.save_and_sample_epoch_every == 0:
+                    self.save(self.epoch)
 
-                writer.writerow(["epoch-step", self.epoch, self.step])
+            # with open('epoch-step.csv', mode='a', newline='') as file:
+            #     writer = csv.writer(file)
+
+            #     writer.writerow(["epoch-step", self.epoch, self.step])
 
         accelerator.print('training complete')
 
@@ -760,7 +765,6 @@ class Trainer(object):
         accelerator = self.accelerator
         device = accelerator.device
         data = data.to(device)
-
         total_loss = 0.
         if splits == 1:
             with self.accelerator.autocast():
