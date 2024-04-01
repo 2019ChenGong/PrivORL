@@ -33,7 +33,7 @@ def make_inputs(
     return inputs
 
 
-def make_half_inputs(
+def make_part_inputs(
         env: gym.Env,
         modelled_terminals: bool = False,
 ) -> np.ndarray:
@@ -43,7 +43,7 @@ def make_half_inputs(
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
-    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=0.5, random_state=10, shuffle=True)
+    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=0.7, random_state=10, shuffle=True)
     return inputs_pretrain, inputs_finetune
 
 

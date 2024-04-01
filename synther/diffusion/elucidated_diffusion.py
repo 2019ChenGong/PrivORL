@@ -6,11 +6,11 @@ import math
 import pathlib
 from multiprocessing import cpu_count
 from typing import Optional, Sequence, Tuple
+import random
 
 import gin
 import numpy as np
 import torch
-import torch.nn.functional as F
 import wandb
 from accelerate import Accelerator
 from einops import reduce
@@ -24,6 +24,7 @@ from tqdm import tqdm
 
 from synther.diffusion.norm import BaseNormalizer
 from synther.online.utils import make_inputs_from_replay_buffer
+from synther.diffusion.rnd import Rnd
 
 
 from opacus import PrivacyEngine
@@ -270,43 +271,6 @@ class ElucidatedDiffusion(nn.Module):
         return losses.mean()
 
 
-# rnd
-class TargetNetwork(nn.Module):
-    def __init__(self, input_dim):
-        super(TargetNetwork, self).__init__()
-        self.input_dim = input_dim
-        self.network = nn.Sequential(
-            nn.Linear(self.input_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32)
-        )
-        self._initialize_weights()
-        
-    def _initialize_weights(self):
-        for m in self.network:
-            if isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0., std=0.1)
-                nn.init.constant_(m.bias, 0.)
-    
-    def forward(self, x):
-        return self.network(x)
-
-class PredictionNetwork(nn.Module):
-    def __init__(self, input_dim):
-        super(PredictionNetwork, self).__init__()
-        self.input_dim = input_dim
-        self.network = nn.Sequential(
-            nn.Linear(self.input_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32)
-        )
-    
-    def forward(self, x):
-        return self.network(x)
-
-
 @gin.configurable
 class Trainer(object):
     def __init__(
@@ -522,19 +486,32 @@ class Trainer(object):
         device = accelerator.device
         
         # prepare rnd
-        diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True).to(device)
+        diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
         print(diffusion_samples.device)
-        target_net = TargetNetwork(input_dim=diffusion_samples.shape[1]).to(device)
-        prediction_net = PredictionNetwork(input_dim=diffusion_samples.shape[1]).to(device)
-        rnd_optimizer = torch.optim.Adam(prediction_net.parameters(), lr=0.001)
+        rnd = Rnd(input_dim=diffusion_samples.shape[1], device=device)
 
         with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
             for self.epoch in range(self.train_epochs):
                 total_loss = 0.
-
+                
                 for batch_idx, data in enumerate(self.dl):
                     data = data[0].to(device)
 
+                    # concat batch of data with syn diffusion samples
+                    sample_loss_list = []
+                    diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
+                    for sample in diffusion_samples:
+                        sample_loss = rnd(sample)
+                        sample_loss_list.append(sample_loss.item())
+                    diffusion_samples_loss = torch.tensor(sample_loss_list)
+                    _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * 0.3))
+                    selected_samples = diffusion_samples[selected_idx, :]
+                    idx = [i for i in range(selected_samples.shape[0])]
+                    random.shuffle(idx)
+                    random_idx = torch.tensor(idx).long().to(device)
+                    random_samples = selected_samples[random_idx, :]
+                    data = torch.cat((data, random_samples), dim=0)
+                
                     with self.accelerator.autocast():
                         loss = self.model(data)
                         # loss = loss / self.gradient_accumulate_every
@@ -569,14 +546,9 @@ class Trainer(object):
 
                 pbar.update(1)
 
-                diffusion_samples = self.model.sample(batch_size=256, num_sample_steps=1000, clamp=True)
-                target_out = target_net(diffusion_samples)
-                prediction_out = prediction_net(diffusion_samples)
-                rnd_loss = F.mse_loss(prediction_out, target_out)
+                # rnd training
                 if self.epoch % 2 == 0:
-                    rnd_optimizer.zero_grad()
-                    rnd_loss.backward()
-                    rnd_optimizer.step()
+                    rnd_loss = rnd(diffusion_samples)
                     print(f"Epoch {self.epoch}, RndLoss: {rnd_loss.item()}")
 
                 if self.lr_scheduler is not None:

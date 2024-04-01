@@ -12,7 +12,7 @@ import ast
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
-from synther.diffusion.utils import make_inputs, make_half_inputs, split_diffusion_samples, construct_diffusion_model
+from synther.diffusion.utils import make_inputs, make_part_inputs, split_diffusion_samples, construct_diffusion_model
 
 
 
@@ -78,14 +78,15 @@ class SimpleDiffusionGenerator:
 # full dataset
 def load_data(dataset_name):
     env = gym.make(dataset_name)
-    input = make_inputs(env)
+    # input = make_inputs(env)
+    input, _ = make_part_inputs(env)
     input = torch.from_numpy(input).float()
     return input
 
 # half dataset
 def load_half_data(dataset_name):
     env = gym.make(dataset_name)
-    input_train, input_tune = make_half_inputs(env)
+    input_train, input_tune = make_part_inputs(env)
     input_train = torch.from_numpy(input_train).float()
     input_tune = torch.from_numpy(input_tune).float()
     return input_train, input_tune
