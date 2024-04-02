@@ -282,6 +282,7 @@ class Trainer(object):
             dp_n_splits,
             load_checkpoint,
             load_path,
+            curiosity_driven,
             diffusion_model,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
@@ -376,6 +377,9 @@ class Trainer(object):
 
         # ckpt
         self.load_checkpoint = load_checkpoint
+
+        # curiosity driven
+        self.curiosity_driven = curiosity_driven
 
         # prepare model, dataloader, optimizer with accelerator
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
@@ -486,31 +490,35 @@ class Trainer(object):
         device = accelerator.device
         
         # prepare rnd
-        diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
-        print(diffusion_samples.device)
-        rnd = Rnd(input_dim=diffusion_samples.shape[1], device=device)
+        if self.curiosity_driven:
+            diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
+            print(diffusion_samples.device)
+            self.rnd = Rnd(input_dim=diffusion_samples.shape[1], device=device)
 
         with tqdm(initial=self.step, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
             for self.epoch in range(self.train_epochs):
                 total_loss = 0.
-                
-                for batch_idx, data in enumerate(self.dl):
-                    data = data[0].to(device)
 
-                    # concat batch of data with syn diffusion samples
-                    sample_loss_list = []
+                # prepare syn diffusion samples
+                if self.curiosity_driven:
                     diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
+                    sample_loss_list = []                        
                     for sample in diffusion_samples:
-                        sample_loss = rnd(sample)
+                        sample_loss = self.rnd(sample)
                         sample_loss_list.append(sample_loss.item())
                     diffusion_samples_loss = torch.tensor(sample_loss_list)
                     _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * 0.3))
-                    selected_samples = diffusion_samples[selected_idx, :]
-                    idx = [i for i in range(selected_samples.shape[0])]
-                    random.shuffle(idx)
-                    random_idx = torch.tensor(idx).long().to(device)
-                    random_samples = selected_samples[random_idx, :]
-                    data = torch.cat((data, random_samples), dim=0)
+                    self.selected_samples = diffusion_samples[selected_idx, :]
+                    self.idx = [i for i in range(self.selected_samples.shape[0])]
+
+                for batch_idx, data in enumerate(self.dl):
+                    data = data[0].to(device)
+
+                    # concat batch of data with selected random syn diffusion samples
+                    if self.curiosity_driven:
+                        random_idx = random.sample(self.idx, 16)                        
+                        random_samples = self.selected_samples[random_idx, :]
+                        data = torch.cat((data, random_samples), dim=0)
                 
                     with self.accelerator.autocast():
                         loss = self.model(data)
@@ -547,9 +555,10 @@ class Trainer(object):
                 pbar.update(1)
 
                 # rnd training
-                if self.epoch % 2 == 0:
-                    rnd_loss = rnd(diffusion_samples)
-                    print(f"Epoch {self.epoch}, RndLoss: {rnd_loss.item()}")
+                if self.curiosity_driven:
+                    if self.epoch % 2 == 0:
+                        rnd_loss = self.rnd(diffusion_samples)
+                        print(f"Epoch {self.epoch}, RndLoss: {rnd_loss.item()}")
 
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()

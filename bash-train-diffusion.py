@@ -5,8 +5,8 @@ import csv
 import time
 import subprocess
 
-datasets = ["halfcheetah"]
-# datasets = ["hopper", "halfcheetah", "walker2d"]
+# datasets = ["halfcheetah"]
+datasets = ["hopper", "halfcheetah", "walker2d"]
 # datasets = ["halfcheetah", "walker2d"]
 datasets_name = {"hopper":      ['hopper-medium-replay-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
                  "halfcheetah": ['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
@@ -44,7 +44,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     dataset_name = datasets_name[dataset]
                     dataset = dataset + "-expert-v2"
                     results_folder = f"./results_{dataset}"
-                    finetune_load_path = os.path.join(results_folder, "model-390000.pt")
+                    # results_folder = f"./results_{dataset}_curiosity_driven"
+                    finetune_load_path = os.path.join(results_folder, "model-99.pt")
                     store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz"
                     
                     arguments = [
@@ -53,6 +54,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--seed', seed,
                         # '--load_checkpoint',
                         '--full_pretrain', # make sure finetune one dataset using other complete datasets
+                        # '--curiosity_driven',
                         '--dp_epsilon', dp_epsilon,
                         '--results_folder', results_folder,
                         '--load_path', finetune_load_path,

@@ -76,10 +76,12 @@ class SimpleDiffusionGenerator:
 
 
 # full dataset
-def load_data(dataset_name):
+def load_data(dataset_name, is_finetuning):
     env = gym.make(dataset_name)
-    # input = make_inputs(env)
-    input, _ = make_part_inputs(env)
+    if is_finetuning:
+        input = make_inputs(env)
+    else:
+        input, _ = make_part_inputs(env)
     input = torch.from_numpy(input).float()
     return input
 
@@ -118,6 +120,8 @@ if __name__ == '__main__':
     parser.add_argument('--dp_max_grad_norm', type=float, default=1.)
     parser.add_argument('--dp_max_physical_batch_size', type=int, default=8192)
     parser.add_argument('--dp_n_splits', type=int, default=4)
+    # curiosity driven
+    parser.add_argument('--curiosity_driven', action='store_true')
 
     args = parser.parse_args()
 
@@ -147,7 +151,7 @@ if __name__ == '__main__':
             datasets_name = ast.literal_eval(datasets_name)
             inputs = []
             for dataset_name in datasets_name:
-                input = load_data(dataset_name)
+                input = load_data(dataset_name, args.full_pretrain)
                 inputs.append(input)
             inputs = torch.cat(inputs, dim=0)
         else:
@@ -160,7 +164,7 @@ if __name__ == '__main__':
             inputs = torch.cat(inputs, dim=0)
     else:
         if args.full_pretrain:
-            inputs = load_data(args.dataset)
+            inputs = load_data(args.dataset, args.full_pretrain)
         else:
             _ ,inputs = load_half_data(args.dataset)
 
@@ -181,6 +185,7 @@ if __name__ == '__main__':
         args.dp_n_splits,
         args.load_checkpoint,
         args.load_path,
+        args.curiosity_driven,
         diffusion,
         dataset,
         results_folder=args.results_folder,
