@@ -4,9 +4,9 @@ buffer_size: 10000000
 checkpoints_path: null
 device: cuda
 discount: 0.99
-env: antmaze-medium-play-v2
+env: antmaze-umaze-v1
 eval_freq: 5000
-group: iql-antmaze-medium-play-v2-multiseed-v2
+group: iql-antmaze-umaze-v1-multiseed-v1
 iql_deterministic: false
 iql_tau: 0.9
 load_model: ''

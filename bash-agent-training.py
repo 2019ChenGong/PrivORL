@@ -5,23 +5,37 @@ import csv
 import time
 import subprocess
 
+"""
+    dataset:
+        maze2d-open-dense-v0
+        maze2d-umaze-dense-v1
+        maze2d-medium-dense-v1
+        maze2d-large-dense-v1
+
+        antmaze-umaze-v1
+        antmaze-medium-play-v1
+        antmaze-large-play-v1
+
+        kitchen-complete-v0
+        kitchen-partial-v0
+        kitchen-mixed-v0
+"""
+
 # datasets = ["halfcheetah"]
-datasets = ["hopper", "halfcheetah", "walker2d"]
-# datasets = ["halfcheetah", "walker2d"]
-datasets_name = {"hopper":      ['hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
-                 "halfcheetah": ['halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
-                 "walker2d":    ['walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
+# datasets = ["hopper", "halfcheetah", "walker2d"]
+
+datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
+
 
 dp_epsilons = [8]
 num_samples = [5e6]
 seeds = [0, 1]
 gpus = ['0', '1', '2']
 max_workers = 8
-# algos = ['td3_bc', 'iql', 'cql', 'edac']
-algos = ['edac']
+algos = ['td3_bc', 'iql', 'cql', 'edac']
+# algos = ['edac']
 
 # offline RL
-checkpoints_path = "corl_logs_expert/"  
 name = "DPsynthER"
 
 def get_directories(path):
@@ -32,9 +46,6 @@ def run_command_on_gpu(command, gpu_id):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
     subprocess.run(command)
     time.sleep(1)
-    # with open(output_file, "a", newline='') as csvfile:
-    #     csv_writer = csv.writer(csvfile)
-    #     csv_writer.writerow([env, unlearning_rate, unlearning_step, algo, start_time, result.stdout.strip()])
 
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -46,10 +57,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             for dataset in datasets:
                 for num_sample in num_samples:
                     for dp_epsilon in dp_epsilons:
-                        
                         # offline RL 
-                        config = f"synther/corl/yaml/{algo}/{dataset}/expert_v2.yaml"
-                        dataset = dataset + "-expert-v2"
+                        env, version = dataset.split('-', 1)
+                        checkpoints_path = f"corl_logs_{env}/"  
+                        config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
+                        # dataset = dataset + "-expert-v2"
                         results_folder = f"./results_{dataset}"
                         offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz")
                         

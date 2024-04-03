@@ -322,6 +322,7 @@ class Trainer(object):
         self.train_num_steps = train_num_steps
 
         self.train_epochs = train_epochs
+        self.finetune_epochs = finetune_epochs
 
         self.gradient_accumulate_every = gradient_accumulate_every
 
@@ -588,7 +589,7 @@ class Trainer(object):
             data_loader=self.dl,
             target_epsilon=self.dp_epsilon,
             target_delta=self.dp_delta,
-            epochs=self.train_epochs,
+            epochs=self.finetune_epochs,
             max_grad_norm=self.dp_max_grad_norm
         )
     
@@ -603,8 +604,8 @@ class Trainer(object):
         #     max_grad_norm=self.dp_max_grad_norm
         # )
 
-        with tqdm(initial=self.epoch, total=self.train_epochs, disable=not accelerator.is_main_process) as pbar:
-            for epoch in range(self.train_epochs):
+        with tqdm(initial=self.epoch, total=self.finetune_epochs, disable=not accelerator.is_main_process) as pbar:
+            for epoch in range(self.finetune_epochs):
             # while self.step < self.train_num_steps:
                 with BatchMemoryManager(
                         data_loader=self.dl,
@@ -624,7 +625,7 @@ class Trainer(object):
                         self.accelerator.backward(loss)
 
                         accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
-                        pbar.set_description(f'Epoch {self.epoch + epoch + 1}/{self.train_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
+                        pbar.set_description(f'Epoch {self.epoch + epoch + 1}/{self.finetune_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
                         wandb.log({
                             'epoch': self.epoch + epoch + 1,
                             'batch': batch_idx + 1,
