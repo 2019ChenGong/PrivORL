@@ -76,28 +76,20 @@ class SimpleDiffusionGenerator:
 
 
 # full dataset
-def load_data(dataset_name, is_finetuning):
+def load_data(dataset_name, sample_ratio):
     env = gym.make(dataset_name)
-    if is_finetuning:
-        input = make_inputs(env)
-    else:
-        input, _ = make_part_inputs(env)
+    # if is_finetuning:
+    #     input, _ = make_part_inputs(env, sample_ratio)
+    # else:
+    #     input, _ = make_part_inputs(env, sample_ratio)
+    input, _ = make_part_inputs(env, sample_ratio)
     input = torch.from_numpy(input).float()
     return input
 
-# half dataset
-def load_half_data(dataset_name):
-    env = gym.make(dataset_name)
-    input_train, input_tune = make_part_inputs(env)
-    input_train = torch.from_numpy(input_train).float()
-    input_tune = torch.from_numpy(input_tune).float()
-    return input_train, input_tune
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
-    parser.add_argument('--datasets_name', type=str, default=['hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'])
+    parser.add_argument('--dataset', type=str, default='halfcheetah-expert-v2')
+    parser.add_argument('--datasets_name', type=str, default=['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'])
     parser.add_argument('--gin_config_files', nargs='*', type=str, default=['config/resmlp_denoiser.gin'])
     parser.add_argument('--gin_params', nargs='*', type=str, default=[])
     # wandb config
@@ -113,7 +105,6 @@ if __name__ == '__main__':
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
     parser.add_argument('--load_path', type=str, default='./results')
-    parser.add_argument('--full_pretrain', action='store_true') # finetune one dataset using other complete datasets
     # dp
     parser.add_argument('--dp_delta', type=float, default=1e-6)
     parser.add_argument('--dp_epsilon', type=float, default=1.)
@@ -146,27 +137,15 @@ if __name__ == '__main__':
     print(args.load_checkpoint)
     # Create the environment and dataset.
     if not args.load_checkpoint:
-        if args.full_pretrain:
-            datasets_name = args.datasets_name
-            datasets_name = ast.literal_eval(datasets_name)
-            inputs = []
-            for dataset_name in datasets_name:
-                input = load_data(dataset_name, args.full_pretrain)
-                inputs.append(input)
-            inputs = torch.cat(inputs, dim=0)
-        else:
-            datasets_name = ['hopper-medium-replay-v2', 'hopper-expert-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2']
-
-            inputs = []
-            for dataset_name in datasets_name:
-                input, _ = load_half_data(dataset_name)
-                inputs.append(input)
-            inputs = torch.cat(inputs, dim=0)
+        datasets_name = args.datasets_name
+        datasets_name = ast.literal_eval(datasets_name)
+        inputs = []
+        for dataset_name in datasets_name:
+            input = load_data(dataset_name, sample_ratio=0.3)
+            inputs.append(input)
+        inputs = torch.cat(inputs, dim=0)
     else:
-        if args.full_pretrain:
-            inputs = load_data(args.dataset, args.full_pretrain)
-        else:
-            _ ,inputs = load_half_data(args.dataset)
+        inputs = load_data(args.dataset, sample_ratio=0.5)
 
     dataset = torch.utils.data.TensorDataset(inputs)
 

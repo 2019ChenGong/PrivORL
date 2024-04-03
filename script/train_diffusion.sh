@@ -16,9 +16,9 @@ CUDA_VISIBLE_DEVICES=1 python train_diffuser.py --dataset halfcheetah-medium-rep
 # pretrain
 CUDA_VISIBLE_DEVICES=1 python train_diffuser.py --full_pretrain --results_folder './results_full_new'
 # finetune
-CUDA_VISIBLE_DEVICES=1 python train_diffuser.py --full_pretrain --load_checkpoint --dataset hopper-medium-replay-v2 --save_file_name hopper_5m_samples_5ep.npz --dp_epsilon=5.0 --results_folder './results_full_new'
+CUDA_VISIBLE_DEVICES=1 python train_diffuser.py --full_pretrain --load_checkpoint --save_file_name hopper_5m_samples_5ep.npz --dp_epsilon=5.0 --results_folder './results_full_new'
 
-
+python train_diffuser.py --full_pretrain --load_checkpoint --dp_epsilon=5.0 --results_folder results_halfcheetah-expert-v2  --load_path results_halfcheetah-expert-v2/model-99.pt --save_file_name 11.npz
 
 # ## paitial
 

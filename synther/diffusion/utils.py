@@ -35,6 +35,7 @@ def make_inputs(
 
 def make_part_inputs(
         env: gym.Env,
+        sample_ratio: float,
         modelled_terminals: bool = False,
 ) -> np.ndarray:
     dataset = d4rl.qlearning_dataset(env)
@@ -43,7 +44,7 @@ def make_part_inputs(
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
-    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=0.7, random_state=10, shuffle=True)
+    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=True)
     return inputs_pretrain, inputs_finetune
 
 

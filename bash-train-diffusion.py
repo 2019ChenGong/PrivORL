@@ -5,19 +5,57 @@ import csv
 import time
 import subprocess
 
+
 # datasets = ["halfcheetah"]
-datasets = ["hopper", "halfcheetah", "walker2d"]
+"""
+    dataset:
+        maze2d-open-dense-v0
+        maze2d-umaze-dense-v1
+        maze2d-medium-dense-v1
+        maze2d-large-dense-v1
+
+        antmaze-umaze-v1
+        antmaze-medium-play-v1
+        antmaze-large-play-v1
+
+        kitchen-complete-v0
+        kitchen-partial-v0
+        kitchen-mixed-v0
+"""
+# datasets = ["hopper", "halfcheetah", "walker2d"]
+
+# datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+# datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+
+datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
 # datasets = ["halfcheetah", "walker2d"]
-datasets_name = {"hopper":      ['hopper-medium-replay-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
-                 "halfcheetah": ['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
-                 "walker2d":    ['walker2d-medium-replay-v2', 'walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
+# datasets_name = {"hopper":      ['hopper-medium-replay-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
+#                  "halfcheetah": ['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 
+#                  "walker2d":    ['walker2d-medium-replay-v2', 'walker2d-full-replay-v2', 'walker2d-medium-v2', 'walker2d-random-v2']}   
+
+# datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+#                  "maze2d-umaze-dense-v1": ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+#                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
+#                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
+                # }   
+
+datasets_name = {"antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
+                 "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
+                 "antmaze-large-play-v1":    ['antmaze-medium-play-v1', 'antmaze-umaze-v1']                
+                 }   
+
+# datasets_name = {"kitchen-complete-v0":      ["kitchen-partial-v0", "kitchen-mixed-v0"], 
+#                  "kitchen-partial-v0": ['kitchen-complete-v0', 'kitchen-mixed-v0'], 
+#                  "kitchen-mixed-v0":    ["kitchen-complete-v0", "kitchen-partial-v0"]                }  
+
 
 dp_epsilons = [5]
 num_samples = [5e6]
 seeds = [0]
 gpus = ['0', '1', '2']
-max_workers = 8
+max_workers = 10
 
 # offline RL
 checkpoints_path = "corl_logs/"  
@@ -43,8 +81,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for dp_epsilon in dp_epsilons:
                     # dp diffusion
                     dataset_name = datasets_name[dataset]
-                    dataset = dataset + "-expert-v2"
-                    results_folder = f"./results_{dataset}"
+                    # dataset = dataset + "-expert-v2"
+                    results_folder = f"./results_{dataset}_new"                    
                     # results_folder = f"./results_{dataset}_curiosity_driven"
                     finetune_load_path = os.path.join(results_folder, "model-99.pt")
                     store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz"
@@ -53,8 +91,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--dataset', dataset,
                         '--datasets_name', dataset_name,
                         '--seed', seed,
-                        # '--load_checkpoint',
-                        '--full_pretrain', # make sure finetune one dataset using other complete datasets
+                        '--load_checkpoint',
                         # '--curiosity_driven',
                         '--dp_epsilon', dp_epsilon,
                         '--results_folder', results_folder,

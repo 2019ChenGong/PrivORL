@@ -14,8 +14,8 @@ results_walker2d-expert-v2
 results_halfcheetah-expert-v2_curiosity_driven
 results_hopper-expert-v2_curiosity_driven
 results_walker2d-expert-v2_curiosity_driven
-results_part(pretrain half)
-results_part
+results_*
+
 corl_logs
 corl_logs_expert
 
