@@ -7,6 +7,7 @@ import subprocess
 
 # datasets = ["halfcheetah"]
 datasets = ["hopper", "halfcheetah", "walker2d"]
+
 # datasets = ["halfcheetah", "walker2d"]
 datasets_name = {"hopper":      ['hopper-medium-replay-v2', 'hopper-full-replay-v2', 'hopper-medium-v2', 'hopper-random-v2'], 
                  "halfcheetah": ['halfcheetah-medium-replay-v2', 'halfcheetah-full-replay-v2', 'halfcheetah-medium-v2', 'halfcheetah-random-v2'], 

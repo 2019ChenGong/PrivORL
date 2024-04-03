@@ -632,7 +632,7 @@ class Trainer(object):
                             'loss': loss,
                             'lr': self.opt.param_groups[0]['lr']
                         })
-
+  
 
                         # accelerator.wait_for_everyone()
 

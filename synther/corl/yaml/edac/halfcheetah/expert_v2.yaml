@@ -9,7 +9,7 @@ device: cuda
 env_name: "halfcheetah-expert-v2"
 eta: 1.0
 eval_episodes: 10
-eval_every: 20
+eval_every: 10
 eval_seed: 42
 gamma: 0.99
 group: "edac-halfcheetah-expert-v2-multiseed-v2"
