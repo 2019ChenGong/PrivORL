@@ -9,7 +9,7 @@ device: cuda
 env_name: "antmaze-large-play-v1"
 eta: 1.0
 eval_episodes: 10
-eval_every: 5
+eval_every: 10
 eval_seed: 42
 gamma: 0.99
 group: "edac-antmaze-large-play-v1-multiseed-v1"
