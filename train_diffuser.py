@@ -78,10 +78,6 @@ class SimpleDiffusionGenerator:
 # full dataset
 def load_data(dataset_name, sample_ratio):
     env = gym.make(dataset_name)
-    # if is_finetuning:
-    #     input, _ = make_part_inputs(env, sample_ratio)
-    # else:
-    #     input, _ = make_part_inputs(env, sample_ratio)
     input, _ = make_part_inputs(env, sample_ratio)
     input = torch.from_numpy(input).float()
     return input
@@ -105,6 +101,8 @@ if __name__ == '__main__':
     parser.add_argument('--save_file_name', type=str, default='5m_samples.npz')
     parser.add_argument('--load_checkpoint', action='store_true')
     parser.add_argument('--load_path', type=str, default='./results')
+    parser.add_argument('--pretraining_rate', type=float, default=0.3)
+    parser.add_argument('--finetuning_rate', type=float, default=0.5)
     # dp
     parser.add_argument('--dp_delta', type=float, default=1e-6)
     parser.add_argument('--dp_epsilon', type=float, default=1.)
@@ -141,11 +139,11 @@ if __name__ == '__main__':
         datasets_name = ast.literal_eval(datasets_name)
         inputs = []
         for dataset_name in datasets_name:
-            input = load_data(dataset_name, sample_ratio=0.3)
+            input = load_data(dataset_name, args.pretraining_rate)
             inputs.append(input)
         inputs = torch.cat(inputs, dim=0)
     else:
-        inputs = load_data(args.dataset, sample_ratio=0.5)
+        inputs = load_data(args.dataset, args.finetuning_rate)
 
     dataset = torch.utils.data.TensorDataset(inputs)
 
