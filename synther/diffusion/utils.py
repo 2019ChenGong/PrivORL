@@ -44,6 +44,9 @@ def make_part_inputs(
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
     inputs = np.concatenate([obs, actions, rewards[:, None], next_obs], axis=1)
+    if modelled_terminals:
+        terminals = dataset['terminals'].astype(np.float32)
+        inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
     inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=True)
     return inputs_pretrain, inputs_finetune
 
