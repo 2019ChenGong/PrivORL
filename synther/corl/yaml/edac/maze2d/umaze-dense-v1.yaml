@@ -6,13 +6,13 @@ checkpoints_path: null
 critic_learning_rate: 0.0003
 deterministic_torch: false
 device: cuda
-env_name: "maze2d-large-v1"
+env_name: "maze2d-umaze-dense-v1"
 eta: 0.1
 eval_episodes: 10
-eval_every: 5
+eval_every: 10
 eval_seed: 42
 gamma: 0.99
-group: "edac-maze2d-large-v1-multiseed-v1"
+group: "edac-maze2d-umaze-dense-v1-multiseed-v1"
 hidden_dim: 256
 log_every: 1000
 max_action: 1.0

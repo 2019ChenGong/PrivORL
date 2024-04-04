@@ -15,9 +15,9 @@ cql_target_action_gap: -1.0
 cql_temp: 1.0
 device: cuda
 discount: 0.99
-env: antmaze-large-play-v1
+env: kitchen-mixed-v0
 eval_freq: 25000
-group: cql-antmaze-large-play-v1-multiseed-v1
+group: cql-kitchen-mixed-v0-multiseed-v1
 load_model: ''
 max_timesteps: 1000000
 n_episodes: 100
