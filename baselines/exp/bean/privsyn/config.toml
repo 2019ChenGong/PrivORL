@@ -1,0 +1,24 @@
+[path_params]
+meta_data = "/p/fzv6enresearch/SynthER/SynMeter/datasets/bean/bean.json"
+raw_data = "/p/fzv6enresearch/SynthER/SynMeter/datasets/bean/bean.csv"
+train_data = "/p/fzv6enresearch/SynthER/SynMeter/datasets/bean/train.csv"
+val_data = "/p/fzv6enresearch/SynthER/SynMeter/datasets/bean/val.csv"
+test_data = "/p/fzv6enresearch/SynthER/SynMeter/datasets/bean/test.csv"
+loss_record = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/loss.csv"
+out_model = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/privsyn.pt"
+out_data = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/bean.csv"
+fidelity_result = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/fidelity_result.json"
+fidelity_train_result = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/fidelity_train_result.json"
+privacy_result = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/privacy_result.json"
+utility_result = "/p/fzv6enresearch/SynthER/SynMeter/exp/bean/privsyn/utility_result.json"
+
+[model_params]
+epsilon = 100000000.0
+delta = 3.4498908254380166e-11
+max_bins = 10
+update_iterations = 85
+
+[sample_params]
+num_samples = 13611
+num_train_samples = 8710
+num_val_samples = 2178

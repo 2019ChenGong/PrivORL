@@ -1,0 +1,212 @@
+{
+    "columns": [
+        {
+            "min": 17,
+            "max": 90,
+            "name": "age",
+            "type": "continuous"
+        },
+        {
+            "i2s": [
+                "?",
+                "Federal-gov",
+                "Local-gov",
+                "Never-worked",
+                "Private",
+                "Self-emp-inc",
+                "Self-emp-not-inc",
+                "State-gov",
+                "Without-pay"
+            ],
+            "name": "workclass",
+            "size": 9,
+            "type": "categorical"
+        },
+        {
+            "min": 12285,
+            "max": 1484705,
+            "name": "fnlwgt",
+            "type": "continuous"
+        },
+        {
+            "i2s": [
+                "10th",
+                "11th",
+                "12th",
+                "1st-4th",
+                "5th-6th",
+                "7th-8th",
+                "9th",
+                "Assoc-acdm",
+                "Assoc-voc",
+                "Bachelors",
+                "Doctorate",
+                "HS-grad",
+                "Masters",
+                "Preschool",
+                "Prof-school",
+                "Some-college"
+            ],
+            "name": "education",
+            "size": 16,
+            "type": "categorical"
+        },
+        {
+            "min": 1,
+            "max": 16,
+            "name": "education-num",
+            "type": "continuous"
+        },
+        {
+            "i2s": [
+                "Divorced",
+                "Married-AF-spouse",
+                "Married-civ-spouse",
+                "Married-spouse-absent",
+                "Never-married",
+                "Separated",
+                "Widowed"
+            ],
+            "name": "marital-status",
+            "size": 7,
+            "type": "categorical"
+        },
+        {
+            "i2s": [
+                "?",
+                "Adm-clerical",
+                "Armed-Forces",
+                "Craft-repair",
+                "Exec-managerial",
+                "Farming-fishing",
+                "Handlers-cleaners",
+                "Machine-op-inspct",
+                "Other-service",
+                "Priv-house-serv",
+                "Prof-specialty",
+                "Protective-serv",
+                "Sales",
+                "Tech-support",
+                "Transport-moving"
+            ],
+            "name": "occupation",
+            "size": 15,
+            "type": "categorical"
+        },
+        {
+            "i2s": [
+                "Husband",
+                "Not-in-family",
+                "Other-relative",
+                "Own-child",
+                "Unmarried",
+                "Wife"
+            ],
+            "name": "relationship",
+            "size": 6,
+            "type": "categorical"
+        },
+        {
+            "i2s": [
+                "Amer-Indian-Eskimo",
+                "Asian-Pac-Islander",
+                "Black",
+                "Other",
+                "White"
+            ],
+            "name": "race",
+            "size": 5,
+            "type": "categorical"
+        },
+        {
+            "i2s": [
+                "Female",
+                "Male"
+            ],
+            "name": "sex",
+            "size": 2,
+            "type": "categorical"
+        },
+        {
+            "min": 0,
+            "max": 99999,
+            "name": "capital-gain",
+            "type": "continuous"
+        },
+        {
+            "min": 0,
+            "max": 4356,
+            "name": "capital-loss",
+            "type": "continuous"
+        },
+        {
+            "min": 1,
+            "max": 99,
+            "name": "hours-per-week",
+            "type": "continuous"
+        },
+        {
+            "i2s": [
+                "?",
+                "Cambodia",
+                "Canada",
+                "China",
+                "Columbia",
+                "Cuba",
+                "Dominican-Republic",
+                "Ecuador",
+                "El-Salvador",
+                "England",
+                "France",
+                "Germany",
+                "Greece",
+                "Guatemala",
+                "Haiti",
+                "Holand-Netherlands",
+                "Honduras",
+                "Hong",
+                "Hungary",
+                "India",
+                "Iran",
+                "Ireland",
+                "Italy",
+                "Jamaica",
+                "Japan",
+                "Laos",
+                "Mexico",
+                "Nicaragua",
+                "Outlying-US(Guam-USVI-etc)",
+                "Peru",
+                "Philippines",
+                "Poland",
+                "Portugal",
+                "Puerto-Rico",
+                "Scotland",
+                "South",
+                "Taiwan",
+                "Thailand",
+                "Trinadad&Tobago",
+                "United-States",
+                "Vietnam",
+                "Yugoslavia"
+            ],
+            "name": "native-country",
+            "size": 42,
+            "type": "categorical"
+        },
+        {
+            "i2s": [
+                "<=50K",
+                ">50K"
+            ],
+            "name": "label",
+            "size": 2,
+            "type": "categorical"
+        }
+    ],
+    "task": "binary_classification",
+    "train_size": 20838,
+    "val_size": 5210,
+    "test_size": 6513,
+    "label": "income"
+}

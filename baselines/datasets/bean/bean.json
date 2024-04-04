@@ -1,0 +1,119 @@
+{
+    "columns": [
+        {
+            "min": 20420,
+            "max": 254616,
+            "name": "Area",
+            "type": "continuous"
+        },
+        {
+            "min": 524.736,
+            "max": 1985.37,
+            "name": "Perimeter",
+            "type": "continuous"
+        },
+        {
+            "min": 183.601165,
+            "max": 738.8601535,
+            "name": "MajorAxisLength",
+            "type": "continuous"
+        },
+        {
+            "min": 122.5126535,
+            "max": 460.1984968,
+            "name": "MinorAxisLength",
+            "type": "continuous"
+        },
+        {
+            "min": 1.024867596,
+            "max": 2.430306447,
+            "name": "AspectRation",
+            "type": "continuous"
+        },
+        {
+            "min": 0.218951263,
+            "max": 0.911422968,
+            "name": "Eccentricity",
+            "type": "continuous"
+        },
+        {
+            "min": 20684,
+            "max": 263261,
+            "name": "ConvexArea",
+            "type": "continuous"
+        },
+        {
+            "min": 161.2437642,
+            "max": 569.3743583,
+            "name": "EquivDiameter",
+            "type": "continuous"
+        },
+        {
+            "min": 0.555314717,
+            "max": 0.866194641,
+            "name": "Extent",
+            "type": "continuous"
+        },
+        {
+            "min": 0.919246157,
+            "max": 0.9946775,
+            "name": "Solidity",
+            "type": "continuous"
+        },
+        {
+            "min": 0.489618256,
+            "max": 0.9906854,
+            "name": "roundness",
+            "type": "continuous"
+        },
+        {
+            "min": 0.640576759,
+            "max": 0.987302969,
+            "name": "Compactness",
+            "type": "continuous"
+        },
+        {
+            "min": 0.002778013,
+            "max": 0.010451169,
+            "name": "ShapeFactor1",
+            "type": "continuous"
+        },
+        {
+            "min": 0.000564169,
+            "max": 0.003664972,
+            "name": "ShapeFactor2",
+            "type": "continuous"
+        },
+        {
+            "min": 0.410338584,
+            "max": 0.974767153,
+            "name": "ShapeFactor3",
+            "type": "continuous"
+        },
+        {
+            "min": 0.947687403,
+            "max": 0.99973253,
+            "name": "ShapeFactor4",
+            "type": "continuous"
+        },
+        {
+            "i2s": [
+                "BARBUNYA",
+                "BOMBAY",
+                "CALI",
+                "DERMASON",
+                "HOROZ",
+                "SEKER",
+                "SIRA"
+            ],
+            "name": "label",
+            "size": 7,
+            "type": "categorical"
+        }
+    ],
+    "task": "multiclass_classification",
+    "train_size": 8710,
+    "val_size": 2178,
+    "test_size": 2723,
+    "label": "Class"
+}
