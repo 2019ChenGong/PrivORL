@@ -54,36 +54,36 @@ ROOT_DIR = root_to_synmeter
 * Machine learning affinity requires machine learning models with tuned hyperparameters, SynMeter provides 8 commonly-used machine learning models and their configurations in `./exp/evaluators`.
 * You can tune these evaluators on your customized dataset:
 ```sh
-python scripts/tune_evaluator.py -d [dataset] -c [cuda]
+python baselines/scripts/tune_evaluator.py -d [dataset] -c [cuda]
 ```
 
 ### Tune synthesizer
 We provide a unified tuning objective for model tuning, thus, all kinds of synthesizers can be tuned by just a single command:
 ```sh
-python scripts/tune_synthesizer.py -d [dataset] -m [synthesizer] -s [seed] -c [cuda]
+python baselines/scripts/tune_synthesizer.py -d [dataset] -m [synthesizer] -s [seed] -c [cuda]
 ```
 
 ### Train synthesizer
 After tuning, a configuration should be recorded to `/exp/dataset/synthesizer`, SynMeter can use it to train and store the synthesizer:
 ```sh
-python scripts/train_synthesizer.py -d [dataset] -m [synthesizer] -s [seed] -c [cuda]
+python baselines/scripts/train_synthesizer.py -d [dataset] -m [synthesizer] -s [seed] -c [cuda]
 ```
 
 
 ### Evaluate synthesizer
 Assessing the fidelity of the synthetic data:
 ```sh
-python scripts/eval_fidelity.py -d [dataset] -m [synthesizer] -s [seed] -t [target] 
+python baselines/scripts/eval_fidelity.py -d [dataset] -m [synthesizer] -s [seed] -t [target] 
 ```
 
 Assessing the privacy of the synthetic data:
 ```sh
-python scripts/eval_privacy.py -d [dataset] -m [synthesizer] -s [seed]
+python baselines/scripts/eval_privacy.py -d [dataset] -m [synthesizer] -s [seed]
 ```
 
 Assessing the utility of the synthetic data:
 ```sh
-python scripts/eval_utilitypy -d [dataset] -m [synthesizer] -s [seed]
+python baselines/scripts/eval_utilitypy -d [dataset] -m [synthesizer] -s [seed]
 ```
 
 The results of the evaluations should be saved under the corresponding dictionary `/exp/dataset/synthesizer`.

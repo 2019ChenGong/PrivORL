@@ -19,8 +19,8 @@ from lib.info import *
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str, default="mst")
-    parser.add_argument("--dataset", "-d", type=str, default="news")
+    parser.add_argument("--model", "-m", type=str, default="privsyn")
+    parser.add_argument("--dataset", "-d", type=str, default="bean")
     parser.add_argument("--type", "-t", type=str, default="test")
     parser.add_argument("--seed", "-s", type=int, default=0)
 

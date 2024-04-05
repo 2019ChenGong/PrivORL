@@ -16,6 +16,7 @@ results_hopper-expert-v2_curiosity_driven
 results_walker2d-expert-v2_curiosity_driven
 results_*
 corl_*
+baselines/datasets
 
 corl_logs
 corl_logs_expert
