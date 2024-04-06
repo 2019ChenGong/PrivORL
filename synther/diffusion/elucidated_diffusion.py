@@ -592,17 +592,6 @@ class Trainer(object):
             epochs=self.finetune_epochs,
             max_grad_norm=self.dp_max_grad_norm
         )
-    
-        # self.model, self.opt, self.dl = privacy_engine.make_private(
-        #     module=self.model,
-        #     optimizer=self.opt,
-        #     data_loader=self.dl,
-        #     # target_epsilon=self.dp_epsilon,   
-        #     # target_delta=self.dp_delta,
-        #     # epochs=self.train_num_steps,
-        #     noise_multiplier=1.1,
-        #     max_grad_norm=self.dp_max_grad_norm
-        # )
 
         with tqdm(initial=self.epoch, total=self.finetune_epochs, disable=not accelerator.is_main_process) as pbar:
             for epoch in range(self.finetune_epochs):
