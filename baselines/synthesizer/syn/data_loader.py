@@ -78,8 +78,8 @@ class DataLoader:
             values="n",
             index=index_attribute,
             columns=column_attribute,
-            aggfunc=np.sum,
-            fill_value=0,
+            aggfunc="sum",
+            fill_value=0,   
         )
         # create a new ordered indices for row and column, just serving for a new display order
         indices = sorted([i for i in self.encode_mapping[index_attribute].values()])

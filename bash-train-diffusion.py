@@ -54,7 +54,7 @@ datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"],
 
 
 
-dp_epsilons = [10]
+dp_epsilons = [5]
 num_samples = [1e6]
 seeds = [0]
 gpus = ['0', '3']

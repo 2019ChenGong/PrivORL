@@ -82,7 +82,9 @@ def main():
     meta_data["val_size"] = len(val)
     meta_data["test_size"] = len(test)
     # the last column is the label by default, we only need the name for label for LLM models
-    meta_data["label"] = get_label_name(args.dataset)
+
+    # meta_data["label"] = get_label_name(args.dataset)
+    
     # rewrite the meta_data
     json.dump(meta_data, open(meta_filename, "w"))
     # save the train, val, test data

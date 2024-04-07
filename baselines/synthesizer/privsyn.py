@@ -61,7 +61,7 @@ def tune(config, cuda, dataset, seed=0):
     def privsyn_objective(trial):
         # configure the model for this trial
         model_params = {}
-        model_params["epsilon"] = 100000000.0
+        model_params["epsilon"] = 10.0
         model_params["delta"] = 3.4498908254380166e-11
         model_params["max_bins"] = trial.suggest_int("max_bins", 10, 50)
         model_params["update_iterations"] = trial.suggest_int("update_iterations", 10, 100)

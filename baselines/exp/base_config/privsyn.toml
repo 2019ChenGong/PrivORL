@@ -15,7 +15,7 @@ privacy_result = "exp/abalone/privsyn/privacy_result.csv"
 utility_result = "exp/abalone/privsyn/utility_result.csv"
 
 [model_params]
-epsilon = 100000000.0 # infinite privacy budget
+epsilon = 10.0 # infinite privacy budget
 delta = 3.4498908254380166e-11
 max_bins = 100
 update_iterations = 50

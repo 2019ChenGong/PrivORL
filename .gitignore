@@ -17,6 +17,7 @@ results_walker2d-expert-v2_curiosity_driven
 results_*
 corl_*
 baselines/datasets
+baselines/exp
 
 corl_logs
 corl_logs_expert

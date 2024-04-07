@@ -28,13 +28,15 @@ import subprocess
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+
+datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 
 dp_epsilons = [8]
 num_samples = [5e6]
 seeds = [0, 1]
-gpus = ['1', '2']
+gpus = ['0', '1', '2', '3', '4', '5', '6', '7']
 max_workers = 24
 algos = ['td3_bc', 'iql', 'cql', 'edac']
 # algos = ['edac']
