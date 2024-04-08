@@ -114,7 +114,7 @@ def tune(config, cuda, dataset, seed=0):
         study_name=study_name,
     )
 
-    study.optimize(privsyn_objective, n_trials=10, show_progress_bar=True)
+    study.optimize(privsyn_objective, n_trials=1, show_progress_bar=True)
 
     # update the best params
     config["model_params"] = study.best_trial.user_attrs["config"]

@@ -28,17 +28,19 @@ import subprocess
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
-datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
+pretraining_rate = 0.3
+finetuning_rate = 0.5
 
-dp_epsilons = [8]
-num_samples = [5e6]
-seeds = [0, 1]
-gpus = ['0', '1', '2', '3', '4', '5', '6', '7']
+dp_epsilons = [5, 10]
+num_samples = [1e6]
+seeds = [0]
+gpus = ['0', '1', '2', '3']
 max_workers = 24
-algos = ['td3_bc', 'iql', 'cql', 'edac']
+algos = ['td3_bc', 'iql']
 # algos = ['edac']
 
 # offline RL
@@ -68,8 +70,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         checkpoints_path = f"corl_logs_{env}/"  
                         config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
                         # dataset = dataset + "-expert-v2"
-                        results_folder = f"./results_{dataset}"
-                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp.npz")
+                        results_folder = f"./results_{dataset}_{pretraining_rate}"
+                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
                         
                         arguments = [
                             '--env', dataset,
@@ -77,8 +79,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            # '--diffusion.path', offlineRL_load_path,
-                            # '--name', name
+                            '--diffusion.path', offlineRL_load_path,
+                            '--name', name
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'

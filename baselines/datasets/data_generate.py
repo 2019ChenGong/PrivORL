@@ -3,6 +3,7 @@ import gym
 import d4rl
 import pandas as pd
 import json
+import os
 
 def make_inputs(
         env: gym.Env
@@ -32,7 +33,10 @@ if __name__ == '__main__':
     # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df, label_df], axis=1)
     df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
 
-    df.to_csv('antmaze-umaze-v1.csv', index=False)
+    directory = 'antmaze-large-play-v1'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    df.to_csv(os.path.join(directory, 'antmaze-large-play-v1.csv'), index=False)
 
     # generate json
     json_columns = []
@@ -53,7 +57,7 @@ if __name__ == '__main__':
     "label": "Class"
     }
 
-    with open('antmaze-umaze-v1.json', 'w') as json_file:
+    with open(os.path.join(directory, 'antmaze-large-play-v1.json'), 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(1)
