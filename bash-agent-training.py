@@ -72,6 +72,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         # dataset = dataset + "-expert-v2"
                         results_folder = f"./results_{dataset}_{pretraining_rate}"
                         offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+
                         
                         arguments = [
                             '--env', dataset,
@@ -80,7 +81,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
                             '--diffusion.path', offlineRL_load_path,
-                            '--name', name
+                            '--name', name,
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'

@@ -22,25 +22,26 @@ import subprocess
         kitchen-partial-v0
         kitchen-mixed-v0
 """
-datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-medium-dense-v1", "maze2d-open-dense-v0"]
 # datasets = ["maze2d-open-dense-v0"]
+datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
 # datasets = ['antmaze-large-play-v1']
 
 # datasets = ["halfcheetah", "walker2d"]
-datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"], 
-                 "walker2d-medium-v2":    ["halfcheetah-medium-v2"]}   
+# datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"], 
+#                  "walker2d-medium-v2":    ["halfcheetah-medium-v2"]}   
 
-# datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-#                  "maze2d-umaze-dense-v1": ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-#                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
-#                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
-#                 }   
+datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+                 "maze2d-umaze-dense-v1": ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+                 "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
+                 "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
+                }   
 
 # datasets_name = {"antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
 #                  "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
@@ -54,10 +55,10 @@ datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"],
 
 
 
-dp_epsilons = [5]
+dp_epsilons = [5, 10]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['0', '3']
+gpus = ['1', '2', '4', '5', '6', '7']
 max_workers = 10
 
 pretraining_rate = 0.3
@@ -88,6 +89,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     # results_folder = f"./results_{dataset}_curiosity_driven"
                     finetune_load_path = os.path.join(results_folder, "model-99.pt")
                     store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+
+                    env, version = dataset.split('-', 1)
                     
                     arguments = [
                         '--dataset', dataset,
