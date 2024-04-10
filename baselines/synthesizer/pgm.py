@@ -98,7 +98,7 @@ def tune(config, cuda, dataset, seed=0):
             if marginal_nums[1] == 0:
                 marginal_nums[0] = max(0, marginal_nums[0] - 5)
 
-        return error
+        # return error
 
     path_params = config["path_params"]
     # load real data

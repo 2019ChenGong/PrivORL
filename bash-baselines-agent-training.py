@@ -34,6 +34,8 @@ import subprocess
 
 datasets = ["halfcheetah-medium-v2"]
 
+# datasets = ["maze2d-umaze-dense-v1"]
+
 pretraining_rate = 0.3
 finetuning_rate = 0.99
 
@@ -44,9 +46,11 @@ gpus = ['2']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
 algos = ['awac']
+# algos = ['cql']
 
 # offline RL
-name = "DPsynthER"
+# name = "DPsynthER"
+name = "pategan_eps_1"
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -74,7 +78,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         # dataset = dataset + "-expert-v2"
                         results_folder = f"./results_{dataset}_{pretraining_rate}"
 
-                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        if name == 'DPsynthER':
+                            offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        elif name == 'pategan_eps_1':
+                            offlineRL_load_path = 'baselines/samples/maze2d-umaze-dense-v1/pategan_eps_1/maze2d-umaze-dense-v1.npz'
                         
                         arguments = [
                             '--env', dataset,

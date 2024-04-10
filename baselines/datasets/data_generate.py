@@ -19,7 +19,7 @@ if __name__ == '__main__':
     actions = dataset['actions']
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
-    terminals = dataset['terminals'].astype(np.float32)
+    # terminals = dataset['terminals'].astype(np.float32)
     # row_num = len(terminals)
     # label = np.ones(row_num)
     
@@ -27,16 +27,17 @@ if __name__ == '__main__':
     actions_df = pd.DataFrame(actions, columns=[f'action_{i}' for i in range(actions.shape[1])])
     rewards_df = pd.DataFrame(rewards, columns=['reward'])
     next_obs_df = pd.DataFrame(next_obs, columns=[f'next_state_{i}' for i in range(next_obs.shape[1])])
-    terminals_df = pd.DataFrame(terminals, columns=['terminal'])
+    # terminals_df = pd.DataFrame(terminals, columns=['terminal'])
     # label_df = pd.DataFrame(label, columns=['label'])
 
     # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df, label_df], axis=1)
-    df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
+    # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
+    df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df], axis=1)
 
-    directory = 'maze2d-umaze-dense-v1'
+    directory = 'privsyn_maze2d-umaze-dense-v1'
     if not os.path.exists(directory):
         os.makedirs(directory)
-    df.to_csv(os.path.join(directory, 'maze2d-umaze-dense-v1.csv'), index=False)
+    df.to_csv(os.path.join(directory, 'privsyn_maze2d-umaze-dense-v1.csv'), index=False)
 
     # generate json
     json_columns = []
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     "label": "Class"
     }
 
-    with open(os.path.join(directory, 'maze2d-umaze-dense-v1.json'), 'w') as json_file:
+    with open(os.path.join(directory, 'privsyn_maze2d-umaze-dense-v1.json'), 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(1)
