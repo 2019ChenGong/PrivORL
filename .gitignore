@@ -20,6 +20,8 @@ baselines/datasets
 baselines/exp
 baselines/sample
 
+maze2d-umaze-dense-v1
+
 corl_logs
 corl_logs_expert
 

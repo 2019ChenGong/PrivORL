@@ -25,17 +25,18 @@ import subprocess
 # datasets = ["hopper", "halfcheetah", "walker2d"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
+# datasets = ['antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 # datasets = ["halfcheetah-medium-v2"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1', "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
-datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2", "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2", "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -43,10 +44,11 @@ finetuning_rate = 0.99
 dp_epsilons = [100000]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['0', '2']
+gpus = ['0', '1']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
-algos = ['awac']
+# algos = ['awac']
+algos = ['cql']
 
 # offline RL
 name = "DPsynthER"
@@ -85,17 +87,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            # '--diffusion.path', offlineRL_load_path,
+                            # '--diffusion_path', offlineRL_load_path,
                             # '--name', name,
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'
-                        # elif algo == "iql":
-                        #     script_path = './synther/corl/algorithms/iql.py'
-                        # elif algo == "cql":
-                        #     script_path = './synther/corl/algorithms/cql.py'
-                        # elif algo == "edac":
-                        #     script_path = './synther/corl/algorithms/edac.py'
                         elif algo == "iql":
                             script_path = 'iql.py'
                         elif algo == "cql":

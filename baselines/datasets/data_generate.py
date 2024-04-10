@@ -4,6 +4,7 @@ import d4rl
 import pandas as pd
 import json
 import os
+import argparse
 
 def make_inputs(
         env: gym.Env
@@ -13,13 +14,21 @@ def make_inputs(
     return dataset
 
 if __name__ == '__main__':
-    env = gym.make('maze2d-umaze-dense-v1')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
+
+    args = parser.parse_args()
+
+    env = gym.make(args.dataset)
     dataset = make_inputs(env)
     obs = dataset['observations']
     actions = dataset['actions']
     next_obs = dataset['next_observations']
     rewards = dataset['rewards']
-    # terminals = dataset['terminals'].astype(np.float32)
+    terminals = dataset['terminals'].astype(np.float32) 
+    min_terminal = np.min(terminals)
+    max_terminal = np.max(terminals)
     # row_num = len(terminals)
     # label = np.ones(row_num)
     
@@ -27,17 +36,17 @@ if __name__ == '__main__':
     actions_df = pd.DataFrame(actions, columns=[f'action_{i}' for i in range(actions.shape[1])])
     rewards_df = pd.DataFrame(rewards, columns=['reward'])
     next_obs_df = pd.DataFrame(next_obs, columns=[f'next_state_{i}' for i in range(next_obs.shape[1])])
-    # terminals_df = pd.DataFrame(terminals, columns=['terminal'])
-    # label_df = pd.DataFrame(label, columns=['label'])
+    if min_terminal == 0 and max_terminal == 0:
+        df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df], axis=1)
+    else:
+        terminals_df = pd.DataFrame(terminals, columns=['terminal'])
+        df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
 
-    # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df, label_df], axis=1)
-    # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
-    df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df], axis=1)
 
-    directory = 'maze2d-umaze-dense-v1-noterminal'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    df.to_csv(os.path.join(directory, 'maze2d-umaze-dense-v1-noterminal.csv'), index=False)
+    generate_root = args.dataset
+    if not os.path.exists(generate_root):
+        os.makedirs(generate_root)
+    df.to_csv(os.path.join(generate_root, f'{args.dataset}.csv'), index=False)
 
     # generate json
     json_columns = []
@@ -58,7 +67,7 @@ if __name__ == '__main__':
     "label": "Class"
     }
 
-    with open(os.path.join(directory, 'maze2d-umaze-dense-v1-noterminal.json'), 'w') as json_file:
+    with open(os.path.join(generate_root, f'{args.dataset}.json'), 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(1)

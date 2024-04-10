@@ -42,15 +42,14 @@ finetuning_rate = 0.99
 dp_epsilons = [100000]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['2']
+gpus = ['0', '1', '2']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
-# algos = ['awac']
-algos = ['cql']
+algos = ['awac', 'cql']
+# algos = ['cql']
 
 # offline RL
-# name = "DPsynthER"
-name = "pategan_eps_1"
+names = ['pategan_eps_1', 'pgm', 'privsyn']
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -66,48 +65,46 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
     futures = []
     gpu_index = 0
     
-    for seed in seeds:
-        for algo in algos:
-            for dataset in datasets:
-                for num_sample in num_samples:
-                    for dp_epsilon in dp_epsilons:
-                        # offline RL 
-                        env, version = dataset.split('-', 1)
-                        checkpoints_path = f"corl_logs_{env}/"  
-                        config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
-                        # dataset = dataset + "-expert-v2"
-                        results_folder = f"./results_{dataset}_{pretraining_rate}"
+    for name in names:
+        for seed in seeds:
+            for algo in algos:
+                for dataset in datasets:
+                    for num_sample in num_samples:
+                        for dp_epsilon in dp_epsilons:
+                            # offline RL 
+                            env, version = dataset.split('-', 1)
+                            checkpoints_path = f"corl_logs_{env}/"
+                            config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
+                            # dataset = dataset + "-expert-v2"
+                            results_folder = f"./results_{dataset}_{pretraining_rate}"
 
-                        if name == 'DPsynthER':
-                            offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
-                        elif name == 'pategan_eps_1':
-                            offlineRL_load_path = 'baselines/samples/maze2d-umaze-dense-v1/pategan_eps_1/maze2d-umaze-dense-v1.npz'
-                        
-                        arguments = [
-                            '--env', dataset,
-                            '--seed', seed,
-                            '--checkpoints_path',checkpoints_path,
-                            '--config', config,
-                            '--dp_epsilon', dp_epsilon,
-                            '--diffusion.path', offlineRL_load_path,
-                            # '--name', name,
-                        ]
-                        if algo == "td3_bc":
-                            script_path = 'td3_bc.py'
-                        elif algo == "iql":
-                            script_path = 'iql.py'
-                        elif algo == "cql":
-                            script_path = 'cql.py'
-                        elif algo == "edac":
-                            script_path = 'edac.py'
-                        elif algo == "awac":
-                            script_path = 'awac.py'
-                        
-                        command = ['python', script_path] + [str(arg) for arg in arguments]
+                            offlineRL_load_path = f'baselines/samples/{dataset}/{name}/{dataset}.npz'
+                            
+                            arguments = [
+                                '--env', dataset,
+                                '--seed', seed,
+                                '--checkpoints_path',checkpoints_path,
+                                '--config', config,
+                                '--dp_epsilon', dp_epsilon,
+                                '--diffusion_path', offlineRL_load_path,
+                                '--name', name,
+                            ]
+                            if algo == "td3_bc":
+                                script_path = 'td3_bc.py'
+                            elif algo == "iql":
+                                script_path = 'iql.py'
+                            elif algo == "cql":
+                                script_path = 'cql.py'
+                            elif algo == "edac":
+                                script_path = 'edac.py'
+                            elif algo == "awac":
+                                script_path = 'awac.py'
+                            
+                            command = ['python', script_path] + [str(arg) for arg in arguments]
 
-                        futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
+                            futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
-                        gpu_index = (gpu_index + 1) % len(gpus)
-                        time.sleep(10) # especially for fine-tuning
+                            gpu_index = (gpu_index + 1) % len(gpus)
+                            time.sleep(10) # especially for fine-tuning
 
     concurrent.futures.wait(futures)

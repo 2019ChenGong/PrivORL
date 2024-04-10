@@ -52,6 +52,8 @@ class TrainConfig:
 
     dp_epsilon: int = 0
 
+    diffusion_path: str = ""
+
     
 
     def __post_init__(self):
@@ -117,10 +119,31 @@ class ReplayBuffer:
         dones = self._dones[indices]
         return [states, actions, rewards, next_states, dones]
 
-    def add_transition(self):
+    def add_transition(self, syndata_path):
         # Use this method to add new data into the replay buffer during fine-tuning.
         # I left it unimplemented since now we do not do fine-tuning.
-        raise NotImplementedError
+        data = np.load(syndata_path)
+        states = self._to_tensor(data["observations"])
+        actions = self._to_tensor(data["actions"])
+        rewards = self._to_tensor(data["rewards"][..., None])
+        next_states = self._to_tensor(data["next_observations"])
+        dones = self._to_tensor(data["terminals"][..., None])
+        
+        if self._size != 0:
+            raise ValueError("Trying to load data into non-empty replay buffer")
+        n_transitions = data["observations"].shape[0]
+
+        # Add transitions to the buffer
+        self._states[:n_transitions] = states
+        self._actions[:n_transitions] = actions
+        self._rewards[:n_transitions] = rewards
+        self._next_states[:n_transitions] = next_states
+        self._dones[:n_transitions] = dones
+
+        self._size += n_transitions
+        self._pointer = min(self._size, n_transitions)
+
+        print(f"Dataset size: {n_transitions}")
 
 
 class Actor(nn.Module):
@@ -429,8 +452,9 @@ def train(config: TrainConfig):
         config.buffer_size,
         config.device,
     )
-    replay_buffer.load_d4rl_dataset(dataset)
-
+    syndata_path = config.diffusion_path
+    # replay_buffer.load_d4rl_dataset(dataset)
+    replay_buffer.add_transition(syndata_path)
     actor_critic_kwargs = {
         "state_dim": state_dim,
         "action_dim": action_dim,

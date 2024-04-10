@@ -4,7 +4,7 @@ import os
 import random
 import uuid
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -76,11 +76,12 @@ class TrainConfig:
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = "CQL"
-
+    diffusion_path: str = "default"
+    
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
-        self.name = f"{self.name}-awac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
+        self.name = f"{self.name}-cql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
@@ -178,10 +179,31 @@ class ReplayBuffer:
         dones = self._dones[indices]
         return [states, actions, rewards, next_states, dones]
 
-    def add_transition(self):
+    def add_transition(self, syndata_path):
         # Use this method to add new data into the replay buffer during fine-tuning.
         # I left it unimplemented since now we do not do fine-tuning.
-        raise NotImplementedError
+        data = np.load(syndata_path)
+        states = self._to_tensor(data["observations"])
+        actions = self._to_tensor(data["actions"])
+        rewards = self._to_tensor(data["rewards"][..., None])
+        next_states = self._to_tensor(data["next_observations"])
+        dones = self._to_tensor(data["terminals"][..., None])
+        
+        if self._size != 0:
+            raise ValueError("Trying to load data into non-empty replay buffer")
+        n_transitions = data["observations"].shape[0]
+
+        # Add transitions to the buffer
+        self._states[:n_transitions] = states
+        self._actions[:n_transitions] = actions
+        self._rewards[:n_transitions] = rewards
+        self._next_states[:n_transitions] = next_states
+        self._dones[:n_transitions] = dones
+
+        self._size += n_transitions
+        self._pointer = min(self._size, n_transitions)
+
+        print(f"Dataset size: {n_transitions}")
 
 
 def set_seed(
@@ -876,7 +898,12 @@ def train(config: TrainConfig):
         config.buffer_size,
         config.device,
     )
-    replay_buffer.load_d4rl_dataset(dataset)
+
+    if config.diffusion_path == "default":
+        replay_buffer.load_d4rl_dataset(dataset)
+    else:
+        syndata_path = config.diffusion_path
+        replay_buffer.add_transition(syndata_path)
 
     max_action = float(env.action_space.high[0])
 
