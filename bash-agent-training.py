@@ -28,11 +28,11 @@ import subprocess
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-# datasets = ["halfcheetah-medium-v2"]
+datasets = ["halfcheetah-medium-v2"]
 
 # datasets = ["maze2d-umaze-dense-v1"]
 
@@ -45,7 +45,7 @@ seeds = [0]
 gpus = ['2']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
-algos = ['cql']
+algos = ['awac']
 
 # offline RL
 name = "DPsynthER"
@@ -105,8 +105,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             script_path = 'cql.py'
                         elif algo == "edac":
                             script_path = 'edac.py'
-                        elif algo == "rebrac":
-                            script_path = 'rebrac.py'
+                        elif algo == "awac":
+                            script_path = 'awac.py'
                         
                         command = ['python', script_path] + [str(arg) for arg in arguments]
 

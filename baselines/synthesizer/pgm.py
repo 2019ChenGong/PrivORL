@@ -57,7 +57,7 @@ def tune(config, cuda, dataset, seed=0):
     def mst_objective():
         # configure the model for this trail
         model_params = {}
-        model_params["num_iters"] = 5000
+        model_params["num_iters"] = 30000
         model_params["max_bins"] = 10  # more bins will slow down the training
         model_params["epsilon"] = 30000000.0  # infinite privacy budget
         model_params["delta"] = 1e-9

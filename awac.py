@@ -19,6 +19,9 @@ TensorBatch = List[torch.Tensor]
 
 from synther.corl.shared.logger import Logger
 
+import os
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
 @dataclass
 class TrainConfig:
     project: str = "CORL"
@@ -45,8 +48,10 @@ class TrainConfig:
     tau: float = 5e-3
     awac_lambda: float = 1.0
 
+    dp_epsilon: int = 0
+
     def __post_init__(self):
-        self.name = f"{self.name}-awac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(uuid.uuid4())[:8]}"
+        self.name = f"{self.name}-awac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(uuid.uuid4())[:8]}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
@@ -447,30 +452,41 @@ def train(config: TrainConfig):
         tau=config.tau,
         awac_lambda=config.awac_lambda,
     )
-    wandb_init(asdict(config))
+    # wandb_init(asdict(config))
 
     if config.checkpoints_path is not None:
         print(f"Checkpoints path: {config.checkpoints_path}")
         os.makedirs(config.checkpoints_path, exist_ok=True)
         with open(os.path.join(config.checkpoints_path, "config.yaml"), "w") as f:
             pyrallis.dump(config, f)
+        logger = Logger(config.checkpoints_path, seed=config.seed)
+    else:
+        logger = Logger('/tmp', seed=config.seed)
 
     for t in trange(config.num_train_ops, ncols=80):
         batch = replay_buffer.sample(config.batch_size)
         batch = [b.to(config.device) for b in batch]
         update_result = awac.update(batch)
-        wandb.log(update_result, step=t)
+
+
+        # wandb.log(update_result, step=t)
+
         if (t + 1) % config.eval_frequency == 0:
             eval_scores = eval_actor(
                 env, actor, config.device, config.n_test_episodes, config.test_seed
             )
 
-            wandb.log({"eval_score": eval_scores.mean()}, step=t)
+            eval_log = {
+                "reward_mean": np.mean(eval_scores),
+                "reward_std": np.std(eval_scores),
+                "step": t,
+            }
+
+            # wandb.log({"eval_score": eval_scores.mean()}, step=t)
             if hasattr(env, "get_normalized_score"):
-                normalized_eval_scores = env.get_normalized_score(eval_scores) * 100.0
-                wandb.log(
-                    {"d4rl_normalized_score": normalized_eval_scores.mean()}, step=t
-                )
+                normalized_score = env.get_normalized_score(eval_scores) * 100.0
+                eval_log["d4rl_normalized_score"] = np.mean(normalized_score)
+                eval_log["d4rl_normalized_score_std"] = np.std(normalized_score)
 
             if config.checkpoints_path is not None:
                 torch.save(
@@ -478,7 +494,7 @@ def train(config: TrainConfig):
                     os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
                 )
 
-    wandb.finish()
+    # wandb.finish()
 
 
 if __name__ == "__main__":
