@@ -18,7 +18,7 @@ results_*
 corl_*
 baselines/datasets
 baselines/exp
-baselines/sample
+baselines/sample/
 
 maze2d-umaze-dense-v1
 

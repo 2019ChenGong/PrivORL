@@ -52,7 +52,7 @@ class TrainConfig:
 
     dp_epsilon: int = 0
 
-    diffusion_path: str = ""
+    diffusion_path: str = "default"
 
     
 
@@ -452,9 +452,13 @@ def train(config: TrainConfig):
         config.buffer_size,
         config.device,
     )
-    syndata_path = config.diffusion_path
-    # replay_buffer.load_d4rl_dataset(dataset)
-    replay_buffer.add_transition(syndata_path)
+
+    if config.diffusion_path == "default":
+        replay_buffer.load_d4rl_dataset(dataset)
+    else:
+        syndata_path = config.diffusion_path
+        replay_buffer.add_transition(syndata_path)
+
     actor_critic_kwargs = {
         "state_dim": state_dim,
         "action_dim": action_dim,
