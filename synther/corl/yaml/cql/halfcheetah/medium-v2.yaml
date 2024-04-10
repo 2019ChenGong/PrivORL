@@ -4,8 +4,8 @@ batch_size: 256
 bc_steps: 0
 buffer_size: 10000000
 checkpoints_path: null
-cql_clip_diff_max: .inf
-cql_clip_diff_min: -.inf
+cql_clip_diff_max: 200
+cql_clip_diff_min: -200
 cql_importance_sample: true
 cql_lagrange: false
 cql_max_target_backup: false
@@ -16,7 +16,7 @@ cql_temp: 1.0
 device: cuda
 discount: 0.99
 env: halfcheetah-medium-v2
-eval_freq: 50000
+eval_freq: 25000
 group: cql-halfcheetah-medium-v2-multiseed-v0
 load_model: ''
 max_timesteps: 1000000

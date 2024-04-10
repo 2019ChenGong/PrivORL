@@ -22,26 +22,27 @@ import subprocess
         kitchen-partial-v0
         kitchen-mixed-v0
 """
-# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+
+datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-medium-dense-v1", "maze2d-open-dense-v0"]
 # datasets = ["maze2d-open-dense-v0"]
-datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+# datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
 # datasets = ['antmaze-large-play-v1']
 
 # datasets = ["halfcheetah", "walker2d"]
-# datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"], 
-#                  "walker2d-medium-v2":    ["halfcheetah-medium-v2"]}   
+datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"], 
+                 "walker2d-medium-v2":    ["halfcheetah-medium-v2"]}   
 
-datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-                 "maze2d-umaze-dense-v1": ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-                 "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
-                 "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
-                }   
+# datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+#                  "maze2d-umaze-dense-v1": ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+#                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
+#                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
+#                 }   
 
 # datasets_name = {"antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
 #                  "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
@@ -55,14 +56,14 @@ datasets_name = {"maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-
 
 
 
-dp_epsilons = [5, 10]
+dp_epsilons = [100000]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['1', '2', '4', '5', '6', '7']
+gpus = ['0', '2']
 max_workers = 10
 
 pretraining_rate = 0.3
-finetuning_rate = 0.5
+finetuning_rate = 0.99
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -103,7 +104,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--load_path', finetune_load_path,
                         '--save_file_name', store_path,
                         '--pretraining_rate', 0.3,
-                        '--finetuning_rate', 0.5,
+                        '--finetuning_rate', finetuning_rate,
                     ]
                     script_path = 'train_diffuser.py'
                     

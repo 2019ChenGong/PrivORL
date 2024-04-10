@@ -293,7 +293,7 @@ class Trainer(object):
             train_num_steps: int = 100000,
 
             train_epochs: int = 100,
-            finetune_epochs: int = 10,
+            finetune_epochs: int = 5,
 
             ema_update_every: int = 10,
             ema_decay: float = 0.995,

@@ -36,6 +36,7 @@ def train_wrapper_privsyn(args, tune = False):
     transformed_data = data_transformer.fit_transform(data_pd, discrete_columns)
     encode_mapping = data_transformer.get_mapping()
 
+
     # dataloader initialization
     data_loader = DataLoader()
     data_loader.load_data(private_data=transformed_data, encode_mapping=encode_mapping)

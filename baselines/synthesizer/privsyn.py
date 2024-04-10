@@ -6,6 +6,7 @@ import pickle
 import optuna
 from lib.tune_helper import fidelity_tuner, utility_tuner
 from lib.info import *
+import torch
 
 def train(args, cuda, seed=0):
     improve_reproducibility(seed)
@@ -58,70 +59,94 @@ def tune(config, cuda, dataset, seed=0):
     """
     tune privsyn
     """
-    def privsyn_objective(trial):
+    def privsyn_objective(device):
         # configure the model for this trial
-        model_params = {}
-        model_params["epsilon"] = 10.0
-        model_params["delta"] = 3.4498908254380166e-11
-        model_params["max_bins"] = trial.suggest_int("max_bins", 10, 50)
-        model_params["update_iterations"] = trial.suggest_int("update_iterations", 10, 100)
         
-        # store configures
-        trial.set_user_attr("config", model_params)
-        config["model_params"] = model_params
+        # train the model
+        model = train_wrapper_privsyn(config, tune=True)
+        learned_privsyn = model["learned_privsyn"]
+        data_transformer = model["data_transformer"]
         
-        try:
-            # train the model
-            model = train_wrapper_privsyn(config, tune=True)
-            learned_privsyn = model["learned_privsyn"]
-            data_transformer = model["data_transformer"]
-            
-            # sample synthetic data
-            n_samples = meta_data["train_size"] + meta_data["val_size"]
-            syn_data = learned_privsyn.synthesize(num_records=n_samples)
-            sampled = data_transformer.inverse_transform(syn_data)
-            os.makedirs(os.path.dirname(path_params["out_data"]), exist_ok=True)
-            sampled.to_csv(path_params["out_data"], index=False)
+        # sample synthetic data
+        n_samples = meta_data["train_size"] + meta_data["val_size"]
+        syn_data = learned_privsyn.synthesize(num_records=n_samples)
+        sampled = data_transformer.inverse_transform(syn_data)
+        os.makedirs(os.path.dirname(path_params["out_data"]), exist_ok=True)
+        sampled.to_csv(path_params["out_data"], index=False)
 
-            # evaluate the temporary synthetic data
-            fidelity = fidelity_tuner(config, seed)
-            affinity, query_error = utility_tuner(config, dataset, cuda, seed)
-            print("fidelity: {0}, affinity: {1}, query error: {2}".format(fidelity, affinity, query_error))
-            error = fidelity + affinity + query_error
-        except Exception as e:
-            print("*" * 20 + "Error when tuning" + "*" * 20)
-            print(e)
-            error = 1e10
-        
-        return error
-    
+        # evaluate the temporary synthetic data
+        # fidelity = fidelity_tuner(config, seed)
+        # affinity, query_error = utility_tuner(config, dataset, cuda, seed)
+        # print("fidelity: {0}, affinity: {1}, query error: {2}".format(fidelity, affinity, query_error))
+        # error = fidelity + affinity + query_error
+
+
+
     path_params = config["path_params"]
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # load real data
     real_train_data_pd, meta_data, discrete_columns = read_csv(
         path_params["train_data"], path_params["meta_data"]
     )
-
-    study_name = "tune_privsyn_{0}".format(dataset)
-    try:
-        optuna.delete_study(study_name=study_name, storage=STORAGE)
-    except:
-        pass
-    study = optuna.create_study(
-        direction="minimize" ,
-        sampler=optuna.samplers.TPESampler(seed=0),
-        # storage=STORAGE,
-        study_name=study_name,
-    )
-
-    study.optimize(privsyn_objective, n_trials=1, show_progress_bar=True)
-
-    # update the best params
-    config["model_params"] = study.best_trial.user_attrs["config"]
-    config["sample_params"]["num_samples"] = meta_data["train_size"] + meta_data["val_size"] + meta_data["test_size"]
-    config["sample_params"]["num_train_samples"] = meta_data["train_size"]
-    config["sample_params"]["num_val_samples"] = meta_data["val_size"]
     
-    print("best score for privsyn {0}: {1}".format(dataset, study.best_value))
+    privsyn_objective(device)
+    # study_name = "tune_privsyn_{0}".format(dataset)
+    # try:
+    #     optuna.delete_study(study_name=study_name, storage=STORAGE)
+    # except:
+    #     pass
+    # study = optuna.create_study(
+    #     direction="minimize" ,
+    #     sampler=optuna.samplers.TPESampler(seed=0),
+    #     # storage=STORAGE,
+    #     study_name=study_name,
+    # )
+    # study.optimize(privsyn_objective, n_trials=1, show_progress_bar=True)
+
+    # # update the best params
+    # config["model_params"] = study.best_trial.user_attrs["config"]
+    # config["sample_params"]["num_samples"] = meta_data["train_size"] + meta_data["val_size"] + meta_data["test_size"]
+    # config["sample_params"]["num_train_samples"] = meta_data["train_size"]
+    # config["sample_params"]["num_val_samples"] = meta_data["val_size"]
+    
+    # print("best score for privsyn {0}: {1}".format(dataset, study.best_value))
+
+    return config
+
+
+
+def syn(config, cuda, dataset, seed=0):
+    """
+    syn data
+    """
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    path_params = config["path_params"]
+
+    # configure the model for this trial
+    model_params = {}
+    model_params["epsilon"] = 10.0
+    model_params["delta"] = 3.4498908254380166e-11
+    model_params["max_bins"] = 32
+    model_params["update_iterations"] = 75
+    
+    # store configures
+    # trial.set_user_attr("config", model_params)
+    config["model_params"] = model_params
+    
+
+    # train the model
+    model, meta_data = train_wrapper_privsyn(config, device)
+    learned_privsyn = model["learned_privsyn"]
+    data_transformer = model["data_transformer"]
+    
+    # sample synthetic data
+    n_samples = meta_data["train_size"] + meta_data["val_size"]
+    syn_data = learned_privsyn.synthesize(num_records=n_samples)
+    sampled = data_transformer.inverse_transform(syn_data)
+    os.makedirs(os.path.dirname(path_params["out_data"]), exist_ok=True)
+    sampled.to_csv(path_params["out_data"], index=False)
+
+    print("num of synthetic data {0} : {1}".format(dataset, 1))
 
     return config

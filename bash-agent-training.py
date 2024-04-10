@@ -32,19 +32,24 @@ datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-pretraining_rate = 0.3
-finetuning_rate = 0.5
+# datasets = ["halfcheetah-medium-v2"]
 
-dp_epsilons = [5, 10]
+# datasets = ["maze2d-umaze-dense-v1"]
+
+pretraining_rate = 0.3
+finetuning_rate = 0.99
+
+dp_epsilons = [100000]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['0', '1', '2', '3']
+gpus = ['2']
 max_workers = 24
-algos = ['td3_bc', 'iql']
-# algos = ['edac']
+# algos = ['td3_bc', 'iql']
+algos = ['cql']
 
 # offline RL
 name = "DPsynthER"
+# name = "pategan_eps_1"
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -71,8 +76,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
                         # dataset = dataset + "-expert-v2"
                         results_folder = f"./results_{dataset}_{pretraining_rate}"
-                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
 
+                        if name == 'DPsynthER':
+                            offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        elif name == 'pategan_eps_1':
+                            offlineRL_load_path = 'baselines/samples/maze2d-umaze-dense-v1/pategan_eps_1/maze2d-umaze-dense-v1.npz'
                         
                         arguments = [
                             '--env', dataset,
@@ -80,8 +88,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            '--diffusion.path', offlineRL_load_path,
-                            '--name', name,
+                            # '--diffusion.path', offlineRL_load_path,
+                            # '--name', name,
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'
@@ -97,6 +105,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             script_path = 'cql.py'
                         elif algo == "edac":
                             script_path = 'edac.py'
+                        elif algo == "rebrac":
+                            script_path = 'rebrac.py'
                         
                         command = ['python', script_path] + [str(arg) for arg in arguments]
 

@@ -33,8 +33,8 @@ def update_config(config, model, dataset):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str, default="privsyn")
-    parser.add_argument("--dataset", "-d", type=str, default="antmaze-umaze-v1")
+    parser.add_argument("--model", "-m", type=str, default="pgm")
+    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
     parser.add_argument("--cuda", "-c", type=str, default="0")
     parser.add_argument("--seed", type=int, default=0)
 
@@ -59,6 +59,7 @@ def main():
     dump_path = os.path.join(TUNED_PARAMS_PATH, "{0}/{1}/config.toml".format(args.dataset, args.model))
     os.makedirs(os.path.dirname(dump_path), exist_ok=True)
     dump_config(tuned_config, dump_path)
+
 
 
 if __name__ == "__main__":

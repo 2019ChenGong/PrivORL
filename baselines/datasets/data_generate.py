@@ -13,7 +13,7 @@ def make_inputs(
     return dataset
 
 if __name__ == '__main__':
-    env = gym.make('antmaze-umaze-v1')
+    env = gym.make('maze2d-umaze-dense-v1')
     dataset = make_inputs(env)
     obs = dataset['observations']
     actions = dataset['actions']
@@ -33,10 +33,10 @@ if __name__ == '__main__':
     # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df, label_df], axis=1)
     df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
 
-    directory = 'antmaze-large-play-v1'
+    directory = 'maze2d-umaze-dense-v1'
     if not os.path.exists(directory):
         os.makedirs(directory)
-    df.to_csv(os.path.join(directory, 'antmaze-large-play-v1.csv'), index=False)
+    df.to_csv(os.path.join(directory, 'maze2d-umaze-dense-v1.csv'), index=False)
 
     # generate json
     json_columns = []
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     "label": "Class"
     }
 
-    with open(os.path.join(directory, 'antmaze-large-play-v1.json'), 'w') as json_file:
+    with open(os.path.join(directory, 'maze2d-umaze-dense-v1.json'), 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(1)

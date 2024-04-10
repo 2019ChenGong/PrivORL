@@ -38,7 +38,8 @@ class DataTransformer(object):
             col_data = data[col].values.reshape(-1, 1)
             # count the number of unique values
             n_values = len(np.unique(col_data))
-            n_bins = min(n_values, self.max_bins)
+            # n_bins = min(n_values, self.max_bins)
+            n_bins = 4
             self.num_transformers[col] = KBinsDiscretizer(
                 n_bins=n_bins, encode="ordinal", strategy="quantile"
             )

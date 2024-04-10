@@ -38,8 +38,8 @@ class DataTransformer(object):
             n_values = len(np.unique(col_data))
             # get the distribution of the values
             value_counts = np.unique(col_data, return_counts=True)[1]
-            n_bins = min(n_values, self.max_bins)
-            # n_bins = 32
+            # n_bins = min(n_values, self.max_bins)
+            n_bins = 32
             self.num_transformers[col] = KBinsDiscretizer(n_bins=n_bins, encode="ordinal", strategy="uniform",subsample = 500000)
             self.num_transformers[col].fit(col_data)
             self.domain[col] = self.num_transformers[col].n_bins_[0]

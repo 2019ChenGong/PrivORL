@@ -79,6 +79,7 @@ class SimpleDiffusionGenerator:
 def load_data(dataset_name, sample_ratio):
     env = gym.make(dataset_name)
     input, _ = make_part_inputs(env, sample_ratio)
+    # input = make_inputs(env)
     input = torch.from_numpy(input).float()
     return input
 
