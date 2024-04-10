@@ -18,6 +18,7 @@ results_*
 corl_*
 baselines/datasets
 baselines/exp
+baselines/sample
 
 corl_logs
 corl_logs_expert
