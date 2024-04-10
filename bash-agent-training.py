@@ -32,7 +32,10 @@ import subprocess
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-datasets = ["halfcheetah-medium-v2"]
+# datasets = ["halfcheetah-medium-v2"]
+
+# datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1', "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2", "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -40,7 +43,7 @@ finetuning_rate = 0.99
 dp_epsilons = [100000]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['2']
+gpus = ['0', '2']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
 algos = ['awac']
