@@ -17,6 +17,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 
+from datetime import datetime
+
 from synther.corl.shared.buffer import prepare_replay_buffer, RewardNormalizer, StateNormalizer, DiffusionConfig
 from synther.corl.shared.logger import Logger
 

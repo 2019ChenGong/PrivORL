@@ -22,6 +22,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from synther.corl.shared.buffer import prepare_replay_buffer, RewardNormalizer, StateNormalizer, DiffusionConfig
 from synther.corl.shared.logger import Logger
 
+from datetime import datetime
+
 TensorBatch = List[torch.Tensor]
 os.environ["WANDB_MODE"] = "offline"
 

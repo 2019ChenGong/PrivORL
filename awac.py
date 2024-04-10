@@ -469,6 +469,8 @@ def train(config: TrainConfig):
     else:
         logger = Logger('/tmp', seed=config.seed)
 
+    evaluations = []
+
     for t in trange(config.num_train_ops, ncols=80):
         batch = replay_buffer.sample(config.batch_size)
         batch = [b.to(config.device) for b in batch]
@@ -478,27 +480,37 @@ def train(config: TrainConfig):
         # wandb.log(update_result, step=t)
 
         if (t + 1) % config.eval_frequency == 0:
+            print(f"Time steps: {t + 1}")
             eval_scores = eval_actor(
-                env, actor, config.device, config.n_test_episodes, config.test_seed
+                env,
+                actor,
+                device=config.device,
+                n_episodes=config.n_test_episodes,
+                seed=config.seed,
             )
 
-            eval_log = {
-                "reward_mean": np.mean(eval_scores),
-                "reward_std": np.std(eval_scores),
-                "step": t,
-            }
-
-            # wandb.log({"eval_score": eval_scores.mean()}, step=t)
-            if hasattr(env, "get_normalized_score"):
-                normalized_score = env.get_normalized_score(eval_scores) * 100.0
-                eval_log["d4rl_normalized_score"] = np.mean(normalized_score)
-                eval_log["d4rl_normalized_score_std"] = np.std(normalized_score)
-
-            if config.checkpoints_path is not None:
+            eval_score = eval_scores.mean()
+            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
+            evaluations.append(normalized_eval_score)
+            print("---------------------------------------")
+            print(
+                f"Evaluation over {config.n_test_episodes} episodes: "
+                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f}"
+            )
+            print("---------------------------------------")
+            if config.checkpoints_path:
                 torch.save(
                     awac.state_dict(),
                     os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
                 )
+            # wandb.log(
+            #     {"d4rl_normalized_score": normalized_eval_score},
+            #     step=trainer.total_it,
+            # )
+
+            log_dict = {"d4rl_normalized_score": normalized_eval_score}
+            logger.log({'step': t, **log_dict}, mode='eval')
+
 
     # wandb.finish()
 

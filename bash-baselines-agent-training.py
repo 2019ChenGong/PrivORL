@@ -32,9 +32,9 @@ import subprocess
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-datasets = ["halfcheetah-medium-v2"]
+# datasets = ["halfcheetah-medium-v2"]
 
-# datasets = ["maze2d-umaze-dense-v1"]
+datasets = ["maze2d-umaze-dense-v1"]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -45,8 +45,8 @@ seeds = [0]
 gpus = ['2']
 max_workers = 24
 # algos = ['td3_bc', 'iql']
-algos = ['awac']
-# algos = ['cql']
+# algos = ['awac']
+algos = ['cql']
 
 # offline RL
 # name = "DPsynthER"
@@ -89,17 +89,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            # '--diffusion.path', offlineRL_load_path,
+                            '--diffusion.path', offlineRL_load_path,
                             # '--name', name,
                         ]
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'
-                        # elif algo == "iql":
-                        #     script_path = './synther/corl/algorithms/iql.py'
-                        # elif algo == "cql":
-                        #     script_path = './synther/corl/algorithms/cql.py'
-                        # elif algo == "edac":
-                        #     script_path = './synther/corl/algorithms/edac.py'
                         elif algo == "iql":
                             script_path = 'iql.py'
                         elif algo == "cql":

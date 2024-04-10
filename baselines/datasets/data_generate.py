@@ -34,10 +34,10 @@ if __name__ == '__main__':
     # df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df, terminals_df], axis=1)
     df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df], axis=1)
 
-    directory = 'privsyn_maze2d-umaze-dense-v1'
+    directory = 'maze2d-umaze-dense-v1-noterminal'
     if not os.path.exists(directory):
         os.makedirs(directory)
-    df.to_csv(os.path.join(directory, 'privsyn_maze2d-umaze-dense-v1.csv'), index=False)
+    df.to_csv(os.path.join(directory, 'maze2d-umaze-dense-v1-noterminal.csv'), index=False)
 
     # generate json
     json_columns = []
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     "label": "Class"
     }
 
-    with open(os.path.join(directory, 'privsyn_maze2d-umaze-dense-v1.json'), 'w') as json_file:
+    with open(os.path.join(directory, 'maze2d-umaze-dense-v1-noterminal.json'), 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(1)

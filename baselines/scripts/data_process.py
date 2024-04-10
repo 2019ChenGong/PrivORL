@@ -61,7 +61,7 @@ def main():
     process real datasets, split into train, val, and test
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
+    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1-noterminal")
 
     args = parser.parse_args()
 

@@ -34,7 +34,7 @@ def update_config(config, model, dataset):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", "-m", type=str, default="pgm")
-    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
+    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1-noterminal")
     parser.add_argument("--cuda", "-c", type=str, default="0")
     parser.add_argument("--seed", type=int, default=0)
 
