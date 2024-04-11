@@ -64,8 +64,8 @@ def tune(config, cuda, dataset, seed=0):
         model_params = {}
         model_params["epsilon"] = 100000000.0
         model_params["delta"] = 3.4498908254380166e-11
-        model_params["max_bins"] = trial.suggest_int("max_bins", 10, 50)
-        model_params["update_iterations"] = trial.suggest_int("update_iterations", 10, 100)
+        model_params["max_bins"] = 32
+        model_params["update_iterations"] = 78
         
         # store configures
         trial.set_user_attr("config", model_params)
@@ -129,15 +129,17 @@ def tune(config, cuda, dataset, seed=0):
 
 
 
-def syn(config, cuda, dataset, seed=0):
+def syn(config, epsilon, cuda, dataset, seed=0):
     """
     tune privsyn
     """
     def privsyn_objective(device):
         # configure the model for this trial
         model_params = {}
-        model_params["epsilon"] = 10.0
+        model_params["epsilon"] = epsilon
         model_params["delta"] = 3.4498908254380166e-11
+        model_params["max_bins"] = 32
+        model_params["update_iterations"] = 78
         
         # store configures
         config["model_params"] = model_params

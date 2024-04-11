@@ -137,7 +137,7 @@ def tune(config, cuda, dataset, seed=0):
     return config
 
 
-def syn(config, cuda, dataset, seed=0):
+def syn(config, epsilon, cuda, dataset, seed=0):
     def ctgan_objective():
         # configure the model for this trail
         model_params = {}
@@ -149,7 +149,7 @@ def syn(config, cuda, dataset, seed=0):
         model_params["n_teachers"] = 15
         model_params["lr"] = 7.50195444362012e-05
 
-        model_params["epsilon"] = 10.0
+        model_params["epsilon"] = epsilon
 
         # store configures
         config["model_params"] = model_params

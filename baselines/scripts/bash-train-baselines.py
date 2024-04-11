@@ -34,7 +34,7 @@ datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1
 # models = ['privsyn']
 
 models = ['privsyn', 'pgm', 'pategan_eps_1']
-
+epsilons = [10.0]
 gpus = ['0', '1', '2']
 max_workers = 24
 
@@ -53,20 +53,22 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
     futures = []
     gpu_index = 0
     
-    for model in models:
-        for dataset in datasets:
+    for epsilon in epsilons:
+        for model in models:
+            for dataset in datasets:
 
-            arguments = [
-                '--d', dataset,
-                '--m', model,
-            ]
-            script_path = 'baselines/scripts/syn_synthesizer.py'
-            
-            command = ['python', script_path] + [str(arg) for arg in arguments]
+                arguments = [
+                    '--d', dataset,
+                    '--m', model,
+                    '--epsilon', epsilon,
+                ]
+                script_path = 'baselines/scripts/syn_synthesizer.py'
+                
+                command = ['python', script_path] + [str(arg) for arg in arguments]
 
-            futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
+                futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
-            gpu_index = (gpu_index + 1) % len(gpus)
-            time.sleep(10) # especially for fine-tuning
+                gpu_index = (gpu_index + 1) % len(gpus)
+                time.sleep(10) # especially for fine-tuning
 
     concurrent.futures.wait(futures)

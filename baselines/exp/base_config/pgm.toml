@@ -15,7 +15,7 @@ privacy_result = "exp/abalone/pgm/privacy_result.csv"
 utility_result = "exp/abalone/pgm/utility_result.csv"
 
 [model_params]
-epsilon = 30000000.0 # infinite privacy budget
+epsilon = 10.0 # infinite privacy budget
 delta = 1e-9
 max_bins = 100
 num_iters = 20000

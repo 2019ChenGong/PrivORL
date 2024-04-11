@@ -9,7 +9,7 @@ from lib.commons import load_config, dump_config
 from lib.info import ROOT_DIR, TUNED_PARAMS_PATH
 
 
-def update_config(config, model, dataset):
+def update_config(config, epsilon, model, dataset):
     """add model configure and dataset configure to args"""
     config["path_params"]["meta_data"] = "datasets/{0}/{0}.json".format(dataset)
     config["path_params"]["train_data"] = "datasets/{0}/train.csv".format(dataset)
@@ -19,7 +19,7 @@ def update_config(config, model, dataset):
 
     config["path_params"]["loss_record"] = "exp/{0}/{1}/loss.csv".format(dataset, model)
     config["path_params"]["out_model"] = "exp/{0}/{1}/{1}.pt".format(dataset, model)
-    config["path_params"]["out_data"] = "exp/{0}/{1}/{0}.csv".format(dataset, model)
+    config["path_params"]["out_data"] = "exp/{0}/{1}_{2}/{0}.csv".format(dataset, model, epsilon)
 
     config["path_params"]["fidelity_result"] = "exp/{0}/{1}/fidelity_result.json".format(dataset, model)
     config["path_params"]["privacy_result"] = "exp/{0}/{1}/privacy_result.json".format(dataset, model)
@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
     parser.add_argument("--cuda", "-c", type=str, default="0")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--epsilon", type=float, default=10.0)
 
     args = parser.parse_args()
 
@@ -45,7 +46,7 @@ def main():
     config = load_config(os.path.join(TUNED_PARAMS_PATH, model_config))
 
     # modify config according to dataset and model
-    update_config(config, args.model, args.dataset)
+    update_config(config, args.epsilon, args.model, args.dataset)
 
     seed = args.seed
 
@@ -53,7 +54,7 @@ def main():
     synthesizer = __import__("synthesizer." + args.model, fromlist=[args.model])
 
     print("Tuning {0} on {1} with seed {2}".format(args.model, args.dataset, seed))
-    synthesizer.syn(config, args.cuda, args.dataset, seed=seed)
+    synthesizer.syn(config, args.epsilon, args.cuda, args.dataset, seed=seed)
 
 
 if __name__ == "__main__":

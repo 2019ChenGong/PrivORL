@@ -129,7 +129,7 @@ def tune(config, cuda, dataset, seed=0):
     return config
 
 
-def syn(config, cuda, dataset, seed=0):
+def syn(config, epsilon, cuda, dataset, seed=0):
     """
     tune MST
     """
@@ -140,7 +140,7 @@ def syn(config, cuda, dataset, seed=0):
         model_params = {}
         model_params["num_iters"] = 30000
         model_params["max_bins"] = 10  # more bins will slow down the training
-        model_params["epsilon"] = 10.0  # infinite privacy budget
+        model_params["epsilon"] = epsilon  # infinite privacy budget
         model_params["delta"] = 1e-9
         model_params["2_cliques"] = select_two_clique(real_train_data_pd.columns, n=marginal_nums[0])
         model_params["3_cliques"] = select_three_clique(real_train_data_pd.columns, n=marginal_nums[1])
