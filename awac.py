@@ -31,7 +31,7 @@ class TrainConfig:
     name: str = "AWAC"
     checkpoints_path: Optional[str] = None
 
-    env_name: str = "halfcheetah-medium-expert-v2"
+    env: str = "halfcheetah-medium-expert-v2"
     seed: int = 42
     test_seed: int = 69
     deterministic_torch: bool = False
@@ -59,7 +59,7 @@ class TrainConfig:
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
-        self.name = f"{self.name}-awac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
+        self.name = f"{self.name}-awac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
@@ -429,14 +429,14 @@ def wandb_init(config: dict) -> None:
 
 @pyrallis.wrap()
 def train(config: TrainConfig):
-    env = gym.make(config.env_name)
+    env = gym.make(config.env)
     set_seed(config.seed, env, deterministic_torch=config.deterministic_torch)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     dataset = d4rl.qlearning_dataset(env)
 
     if config.normalize_reward:
-        modify_reward(dataset, config.env_name)
+        modify_reward(dataset, config.env)
 
     state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
     dataset["observations"] = normalize_states(

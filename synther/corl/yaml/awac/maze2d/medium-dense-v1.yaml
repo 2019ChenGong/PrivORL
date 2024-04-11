@@ -4,7 +4,7 @@ buffer_size: 10000000
 checkpoints_path: null
 deterministic_torch: true
 device: cuda
-env_name: maze2d-medium-dense-v1
+env: maze2d-medium-dense-v1
 eval_frequency: 25000
 gamma: 0.99
 group: awac-maze2d-medium-dense-v1-multiseed-v0

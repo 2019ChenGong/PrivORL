@@ -135,3 +135,44 @@ def tune(config, cuda, dataset, seed=0):
     print("best score for PATEGAN {0}: {1}".format(dataset, study.best_value))
 
     return config
+
+
+def syn(config, cuda, dataset, seed=0):
+    def ctgan_objective():
+        # configure the model for this trail
+        model_params = {}
+        model_params["n_iter"] = 3195
+        model_params["generator_n_layers_hidden"] = 3
+        model_params["generator_n_units_hidden"] = 141
+        model_params["discriminator_n_layers_hidden"] = 2
+        model_params["discriminator_n_units_hidden"] = 113
+        model_params["n_teachers"] = 15
+        model_params["lr"] = 7.50195444362012e-05
+
+        model_params["epsilon"] = 10.0
+
+        # store configures
+        config["model_params"] = model_params
+
+        # train model
+        loader = GenericDataLoader(real_train_data_pd)
+        model = Plugins().get("pategan", **model_params, device=device)
+        model.fit(loader)
+
+        # sample and save the temporary synthetic data
+        n_samples = meta_data["train_size"] + meta_data["val_size"]
+        sampled = model.generate(n_samples).dataframe()
+        os.makedirs(os.path.dirname(path_params["out_data"]), exist_ok=True)
+        sampled.to_csv(path_params["out_data"], index=False)
+
+    device = torch.device("cuda:" + cuda)
+    path_params = config["path_params"]
+
+    # load real data
+    real_train_data_pd, meta_data, discrete_columns = read_csv(path_params["train_data"], path_params["meta_data"])
+
+    ctgan_objective()
+
+    print("finished {0}".format(dataset))
+
+    return config
