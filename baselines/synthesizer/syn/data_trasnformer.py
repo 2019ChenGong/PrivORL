@@ -108,6 +108,8 @@ class DataTransformer(object):
                 # get the bin range mapping of the encoder 
                 bin_edges = self.num_transformers[col].bin_edges_[0][1:-1]
                 # each range is (left, right)
+                
+                print(col)
                 bin_intervals= [(-np.inf, bin_edges[0])]
                 for i in range(len(bin_edges)-1):
                     bin_intervals.append((bin_edges[i], bin_edges[i+1]))

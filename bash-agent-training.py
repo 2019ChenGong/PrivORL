@@ -81,7 +81,18 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
 
                         offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
                         
-                        arguments = [
+                        if algo == "td3_bc" or algo == "iql":
+                            arguments = [
+                            '--env', dataset,
+                            '--seed', seed,
+                            '--checkpoints_path',checkpoints_path,
+                            '--config', config,
+                            '--dp_epsilon', dp_epsilon,
+                            # '--diffusion.path', offlineRL_load_path,
+                            # '--name', name,
+                            ]
+                        else:
+                            arguments = [
                             '--env', dataset,
                             '--seed', seed,
                             '--checkpoints_path',checkpoints_path,
@@ -89,7 +100,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--dp_epsilon', dp_epsilon,
                             # '--diffusion_path', offlineRL_load_path,
                             # '--name', name,
-                        ]
+                            ]
+
                         if algo == "td3_bc":
                             script_path = 'td3_bc.py'
                         elif algo == "iql":

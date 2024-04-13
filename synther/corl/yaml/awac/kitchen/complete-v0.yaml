@@ -4,7 +4,7 @@ buffer_size: 10000000
 checkpoints_path: null
 deterministic_torch: false
 device: cuda
-env_name: kitchen-complete-v0
+env: kitchen-complete-v0
 eval_frequency: 25000
 gamma: 0.99
 group: awac-kitchen-complete-v0-multiseed-v0

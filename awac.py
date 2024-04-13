@@ -28,7 +28,7 @@ os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 class TrainConfig:
     project: str = "CORL"
     group: str = "AWAC-D4RL"
-    name: str = "AWAC"
+    name: str = "DPsynthER"
     checkpoints_path: Optional[str] = None
 
     env: str = "halfcheetah-medium-expert-v2"

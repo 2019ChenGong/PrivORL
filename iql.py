@@ -59,7 +59,7 @@ class TrainConfig:
     # Wandb logging
     project: str = "CORL"
     group: str = "IQL-D4RL"
-    name: str = "IQL"
+    name: str = "DPsynthER"
     # Diffusion config
     diffusion: DiffusionConfig = field(default_factory=DiffusionConfig)
     # Network size
@@ -69,7 +69,7 @@ class TrainConfig:
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
-        self.name = f"{self.name}-awac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
+        self.name = f"{self.name}-iql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 

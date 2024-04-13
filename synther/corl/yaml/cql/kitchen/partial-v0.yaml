@@ -19,8 +19,8 @@ env: kitchen-partial-v0
 eval_freq: 25000
 group: cql-kitchen-partial-v0-multiseed-v1
 load_model: ''
-max_timesteps: 500000
-n_episodes: 100
+max_timesteps: 250000
+n_episodes: 10
 name: CQL
 normalize: true
 normalize_reward: true

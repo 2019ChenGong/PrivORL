@@ -75,7 +75,7 @@ class TrainConfig:
     # Wandb logging
     project: str = "CORL"
     group: str = "CQL-D4RL"
-    name: str = "CQL"
+    name: str = "DPsynthER"
     diffusion_path: str = "default"
     
     def __post_init__(self):

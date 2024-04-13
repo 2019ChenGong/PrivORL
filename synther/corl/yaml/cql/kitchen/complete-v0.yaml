@@ -19,7 +19,7 @@ env: kitchen-complete-v0
 eval_freq: 25000
 group: cql-kitchen-complete-v0-multiseed-v1
 load_model: ''
-max_timesteps: 500000
+max_timesteps: 250000
 n_episodes: 10
 name: CQL
 normalize: true

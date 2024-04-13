@@ -16,7 +16,7 @@ def make_inputs(
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
+    parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
 
     args = parser.parse_args()
 
@@ -33,9 +33,16 @@ if __name__ == '__main__':
     # label = np.ones(row_num)
     
     obs_df = pd.DataFrame(obs, columns=[f'state_{i}' for i in range(obs.shape[1])])
+    non_equal_cols = obs_df.columns[(obs_df.max() != obs_df.min())]
+    obs_df = obs_df[non_equal_cols]
+
     actions_df = pd.DataFrame(actions, columns=[f'action_{i}' for i in range(actions.shape[1])])
     rewards_df = pd.DataFrame(rewards, columns=['reward'])
+
     next_obs_df = pd.DataFrame(next_obs, columns=[f'next_state_{i}' for i in range(next_obs.shape[1])])
+    non_equal_cols = next_obs_df.columns[(next_obs_df.max() != next_obs_df.min())]
+    next_obs_df = next_obs_df[non_equal_cols]
+
     if min_terminal == 0 and max_terminal == 0:
         df = pd.concat([obs_df, actions_df, rewards_df, next_obs_df], axis=1)
     else:

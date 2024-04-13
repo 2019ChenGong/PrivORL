@@ -33,8 +33,8 @@ def update_config(config, epsilon, model, dataset):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str, default="privsyn")
-    parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
+    parser.add_argument("--model", "-m", type=str, default="pgm")
+    parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
     parser.add_argument("--cuda", "-c", type=str, default="0")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epsilon", type=float, default=10.0)
