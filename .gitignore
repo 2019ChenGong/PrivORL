@@ -19,6 +19,9 @@ corl_*
 baselines/datasets
 baselines/exp
 baselines/samples
+curiosity_driven*
+
+*results*
 
 maze2d-umaze-dense-v1
 

@@ -25,30 +25,32 @@ import subprocess
 # datasets = ["hopper", "halfcheetah", "walker2d"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
+# datasets = ['antmaze-umaze-v1']
 # datasets = ['antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 # datasets = ["halfcheetah-medium-v2"]
 
-# datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1', "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
-# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2", "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+datasets = ["maze2d-umaze-dense-v1"]
 
 pretraining_rate = 0.3
-finetuning_rate = 0.99
+finetuning_rate = 0.5
 
-dp_epsilons = [100000]
+dp_epsilons = [10]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['0', '1']
+gpus = ['2']
 max_workers = 24
-# algos = ['td3_bc', 'iql']
-# algos = ['awac']
-algos = ['cql']
+# algos = ['td3_bc', 'iql', 'awac', 'cql']
+algos = ['td3_bc']
+# algos = ['cql']
 
 # offline RL
 name = "DPsynthER"
@@ -74,12 +76,13 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     for dp_epsilon in dp_epsilons:
                         # offline RL 
                         env, version = dataset.split('-', 1)
-                        checkpoints_path = f"corl_logs_{env}/"  
+                        checkpoints_path = f"corl_logs_{env}/"
                         config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
                         # dataset = dataset + "-expert-v2"
-                        results_folder = f"./results_{dataset}_{pretraining_rate}"
+                        results_folder = f"./curiosity_driven_results_{dataset}_{pretraining_rate}"
 
-                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        # offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        offlineRL_load_path = os.path.join(results_folder, f"cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
                         
                         if algo == "td3_bc" or algo == "iql":
                             arguments = [
@@ -88,8 +91,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            # '--diffusion.path', offlineRL_load_path,
-                            # '--name', name,
+                            '--diffusion.path', offlineRL_load_path,
+                            '--name', name,
                             ]
                         else:
                             arguments = [
@@ -98,8 +101,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             '--checkpoints_path',checkpoints_path,
                             '--config', config,
                             '--dp_epsilon', dp_epsilon,
-                            # '--diffusion_path', offlineRL_load_path,
-                            # '--name', name,
+                            '--diffusion_path', offlineRL_load_path,
+                            '--name', name,
                             ]
 
                         if algo == "td3_bc":
@@ -108,8 +111,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             script_path = 'iql.py'
                         elif algo == "cql":
                             script_path = 'cql.py'
-                        elif algo == "edac":
-                            script_path = 'edac.py'
                         elif algo == "awac":
                             script_path = 'awac.py'
                         

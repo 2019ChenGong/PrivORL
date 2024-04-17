@@ -46,8 +46,8 @@ finetuning_rate = 0.99
 dp_epsilons = [10.0]
 num_samples = [1e6]
 seeds = [0]
-# gpus = ['0', '1', '2']
-gpus = ['2']
+gpus = ['0', '1', '2']
+# gpus = ['0', '1']
 max_workers = 100
 # algos = ['td3_bc', 'iql']
 algos = ['awac', 'cql', 'iql', 'td3_bc']
@@ -56,7 +56,7 @@ algos = ['awac', 'cql', 'iql', 'td3_bc']
 # offline RL
 # names = ['pategan_eps_1', 'pgm', 'privsyn']
 
-names = ['pgm']
+names = ['privsyn']
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]

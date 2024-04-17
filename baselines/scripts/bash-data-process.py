@@ -27,7 +27,8 @@ import subprocess
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
 
 gpus = ['0', '1', '2']
@@ -54,7 +55,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         arguments = [
             '--d', dataset,
         ]
-        script_path = 'data_process.py'
+        script_path = 'baselines/scripts/data_process.py'
         
         command = ['python', script_path] + [str(arg) for arg in arguments]
 

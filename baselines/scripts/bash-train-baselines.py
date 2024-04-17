@@ -25,19 +25,20 @@ import subprocess
 #             "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
 #             "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
+datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 # datasets = ['antmaze-umaze-v1']
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
-# models = ['privsyn']
+# models = ['pretraining_pategan']
 
-models = ['privsyn', 'pgm']
-# models = ['privsyn', 'pgm', 'pategan_eps_1']
+# models = ['privsyn', 'pgm']
+models = ['privsyn', 'pgm', 'pategan']
 epsilons = [10.0]
-gpus = ['0', '1', '2']
-max_workers = 24
+gpus = ['1', '2']
+max_workers = 100
 
 
 def get_directories(path):
@@ -62,7 +63,9 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     '--d', dataset,
                     '--m', model,
                     '--epsilon', epsilon,
+                    # '--finetuning',
                 ]
+                # script_path = 'baselines/scripts/train_synthesizer.py'
                 script_path = 'baselines/scripts/syn_synthesizer.py'
                 
                 command = ['python', script_path] + [str(arg) for arg in arguments]

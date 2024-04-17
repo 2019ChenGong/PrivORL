@@ -568,11 +568,6 @@ class Trainer(object):
                 if self.epoch != 0 and (self.epoch + 1) % self.save_and_sample_epoch_every == 0:
                     self.save(self.epoch)
 
-            # with open('epoch-step.csv', mode='a', newline='') as file:
-            #     writer = csv.writer(file)
-
-            #     writer.writerow(["epoch-step", self.epoch, self.step])
-
         accelerator.print('training complete')
 
 
