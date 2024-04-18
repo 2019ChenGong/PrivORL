@@ -28,7 +28,9 @@ import subprocess
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
-datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+
+datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
 
 
 gpus = ['0', '1', '2']

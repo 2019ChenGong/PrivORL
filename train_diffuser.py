@@ -13,6 +13,9 @@ import ast
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import make_inputs, make_part_inputs, split_diffusion_samples, construct_diffusion_model
+from synther.diffusion.delete_nan import remove_errors
+
+
 
 
 
@@ -214,3 +217,6 @@ if __name__ == '__main__':
             next_observations=next_observations,
             terminals=terminals,
         )
+
+        # check nan data, delete if exist
+        remove_errors(results_folder, args.save_file_name)

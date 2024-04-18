@@ -110,7 +110,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--save_file_name', store_path,
                         '--pretraining_rate', 0.3,
                         '--finetuning_rate', finetuning_rate,
-                        '--save_num_samples', num_sample,
+                        '--save_num_samples', int(num_sample),
                     ]
                     script_path = 'train_diffuser.py'
                     
