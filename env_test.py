@@ -31,6 +31,12 @@ import pandas as pd
 # kitchen-partial-v0 action [136950, 9] [136950, 60]
 # kitchen-mixed-v0 action [136950, 9] [136950, 60]
 
-dataset = np.load('results_antmaze-umaze-v1_0.3/antmaze-umaze-v1_samples_1000000.0_10dp_0.5.npz')
+from synther.diffusion.delete_nan import remove_errors
 
-print(dataset.action)
+dataset = "maze2d-medium-dense-v1"
+    
+
+# original_path = f'curiosity_driven_results_{dataset}_0.3'
+original_path = f'curiosity_driven_results_{dataset}_0.3'
+sample_name = f'{dataset}_samples_1000000.0_10dp_0.5.npz'
+remove_errors(original_path, sample_name)

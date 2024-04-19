@@ -23,14 +23,14 @@ import subprocess
         kitchen-mixed-v0
 """
 
-# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
 
-# datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-large-dense-v1"]
 # datasets = ["maze2d-open-dense-v0"]
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
-datasets = ["maze2d-open-dense-v0"]
+# datasets = ["maze2d-open-dense-v0"]
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
@@ -39,8 +39,8 @@ datasets = ["maze2d-open-dense-v0"]
 # datasets_name = {"halfcheetah-medium-v2": ["walker2d-medium-v2"], 
 #                  "walker2d-medium-v2":    ["halfcheetah-medium-v2"]}   
 
-# datasets_name = {"halfcheetah-medium-v2": ["halfcheetah-expert-v2", ""], 
-#                  "walker2d-medium-v2":    ["walker2d-expert-v2"]}   
+# datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-full-replay-v2', 'walker2d-medium-v2'],
+#                  "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'halfcheetah-full-replay-v2', 'walker2d-medium-v2'] }   
 
 datasets_name = {
                  "maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
@@ -64,7 +64,7 @@ datasets_name = {
 dp_epsilons = [10]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['2']
+gpus = ['0', '1', '2']
 max_workers = 10
 
 pretraining_rate = 0.3
@@ -90,10 +90,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for dp_epsilon in dp_epsilons:
                     # dp diffusion
                     dataset_name = datasets_name[dataset]
-                    # results_folder = f"./results_{dataset}_{pretraining_rate}"     
+                    # results_folder = f"./results_{dataset}_{pretraining_rate}"
                     # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
-                    results_folder = f"./curiosity_driven_results_{dataset}_{pretraining_rate}"
-                    finetune_load_path = os.path.join(results_folder, "model-99.pt")
+                    results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                    finetune_load_path = os.path.join(results_folder, "model-9.pt")
                     store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
 
                     env, version = dataset.split('-', 1)
@@ -103,7 +103,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--datasets_name', dataset_name,
                         '--seed', seed,
                         '--load_checkpoint',
-                        '--curiosity_driven',
+                        # '--curiosity_driven',
                         '--dp_epsilon', dp_epsilon,
                         '--results_folder', results_folder,
                         '--load_path', finetune_load_path,

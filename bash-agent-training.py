@@ -38,7 +38,7 @@ import subprocess
 # datasets = ["halfcheetah-medium-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
-datasets = ["maze2d-umaze-dense-v1"]
+datasets = ["maze2d-medium-dense-v1"]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.5
@@ -46,14 +46,14 @@ finetuning_rate = 0.5
 dp_epsilons = [10]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['2']
+gpus = ['0', '1', '2']
 max_workers = 24
-# algos = ['td3_bc', 'iql', 'awac', 'cql']
-algos = ['td3_bc']
+algos = ['td3_bc', 'iql', 'awac', 'cql']
+# algos = ['td3_bc']
 # algos = ['cql']
 
 # offline RL
-name = "DPsynthER"
+name = "CurDPsynthER"
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
