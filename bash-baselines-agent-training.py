@@ -24,13 +24,16 @@ import subprocess
 # datasets = ["halfcheetah"]
 # datasets = ["hopper", "halfcheetah", "walker2d"]
 
-# datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
-
-datasets = [
-            # "maze2d-open-dense-v0", 
-            "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
-            # "maze2d-large-dense-v1"
+datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 
+            # 'antmaze-large-play-v1'
             ]
+
+# datasets = [
+            # "maze2d-open-dense-v0", 
+            # "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1"
+            # ]
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
@@ -55,7 +58,7 @@ seeds = [0]
 # gpus = ['0', '1', '2']
 gpus = ['0', '1']
 max_workers = 100
-# algos = ['td3_bc', 'iql']
+# algos = ['cql', 'iql']
 algos = [
         'awac', 'cql', 
         'iql', 'td3_bc'

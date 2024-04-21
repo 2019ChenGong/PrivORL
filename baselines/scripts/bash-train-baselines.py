@@ -23,11 +23,11 @@ import subprocess
 
 datasets = [
             # 'antmaze-umaze-v1', 
-            'antmaze-medium-play-v1', 
+            # 'antmaze-medium-play-v1', 
             # 'antmaze-large-play-v1',
-            # "maze2d-open-dense-v0", 
-            # "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
-            # "maze2d-large-dense-v1",
+            "maze2d-open-dense-v0", 
+            "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
+            "maze2d-large-dense-v1",
             # "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
             ]
 

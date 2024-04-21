@@ -21,12 +21,19 @@ def train(args, finetuning, cuda, seed=0):
     device = torch.device("cuda:" + cuda)
     model_params = args["model_params"]    
     path_params = args["path_params"]
+    model_params["generator_n_layers_hidden"] = 3
+    model_params["generator_n_units_hidden"] = 141
+    model_params["discriminator_n_layers_hidden"] = 2
+    model_params["discriminator_n_units_hidden"] = 113
+    model_params["n_teachers"] = 15
+    model_params["lr"] = 7.50195444362012e-05
     train_data_pd, meta_data, discrete_columns = read_csv(path_params["train_data"], path_params["meta_data"])
     val_data_pd, _, _ = read_csv(path_params["val_data"], path_params["meta_data"])
     # combine train and val data
     data_pd = pd.concat([train_data_pd, val_data_pd], ignore_index=True, sort=False)
 
     loader = GenericDataLoader(data_pd)
+    print(path_params["out_model"])
     print(f'finetuning is {finetuning}')
     if not finetuning:
         model_params["n_iter"] = 50
@@ -41,8 +48,8 @@ def train(args, finetuning, cuda, seed=0):
 
     else:
         model = load_from_file(path_params["out_model"])
-        model.model.max_iter = 10
-        # model.model.max_iter = 5 # antmaze
+        # model.model.max_iter = 10
+        model.model.max_iter = 5 # antmaze
         model.model.epsilon = 10.0
         model.fit(loader)
 

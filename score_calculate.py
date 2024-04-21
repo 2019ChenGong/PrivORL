@@ -1,11 +1,12 @@
 import os
 import json
 import statistics
+import argparse
 
-def calculate_and_update_average_scores(directory):
+def calculate_and_update_average_scores(directory, model):
     for root, dirs, files in os.walk(directory):
         for dir in dirs:
-            if dir.startswith('privsyn'):
+            if dir.startswith(model):
                 json_path = os.path.join(root, dir, 'eval_0.json')
                 if os.path.exists(json_path):
                     with open(json_path, 'r') as file:
@@ -26,16 +27,25 @@ def calculate_and_update_average_scores(directory):
                     print(f"File not found: {json_path}")
 
 
-calculate_and_update_average_scores('corl_logs_walker2d')
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset", "-d", type=str, default="kitchen")
+parser.add_argument("--model", "-m", type=str, default="pgm")
+
+args = parser.parse_args()
+
+score_path = f'corl_logs_{args.dataset}'
+
+
+calculate_and_update_average_scores(score_path,  args.model)
 
 
 
-def rename_directories(directory):
-    for root, dirs, files in os.walk(directory):
-        for dir_name in dirs:
-            if 'pategan_eps_1' in dir_name:
-                new_name = dir_name.replace('pategan_eps_1', 'pategan')
-                os.rename(os.path.join(root, dir_name), os.path.join(root, new_name))
-                print(f"Renamed directory: {dir_name} -> {new_name}")
+# def rename_directories(directory):
+#     for root, dirs, files in os.walk(directory):
+#         for dir_name in dirs:
+#             if 'pategan_eps_1' in dir_name:
+#                 new_name = dir_name.replace('pategan_eps_1', 'pategan')
+#                 os.rename(os.path.join(root, dir_name), os.path.join(root, new_name))
+#                 print(f"Renamed directory: {dir_name} -> {new_name}")
 
 # rename_directories('corl_logs_2mazed')

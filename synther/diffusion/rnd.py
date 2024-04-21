@@ -47,7 +47,7 @@ class Rnd(nn.Module):
         super(Rnd, self).__init__()
         self.target_net = TargetNetwork(input_dim=input_dim).to(device)
         self.prediction_net = PredictionNetwork(input_dim=input_dim).to(device)
-        self.rnd_optimizer = torch.optim.Adam(self.prediction_net.parameters(), lr=0.001)
+        self.rnd_optimizer = torch.optim.Adam(self.prediction_net.parameters(), lr=0.0003)
 
     def forward(self, x):
         target_out = self.target_net(x)

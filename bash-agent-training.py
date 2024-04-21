@@ -29,24 +29,26 @@ import subprocess
 # datasets = ['antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+# datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
-# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+
+datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 # datasets = ["kitchen-partial-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-datasets = ["halfcheetah-medium-replay-v2"]
+# datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-umaze-dense-v1"]
 
-pretraining_rate = 0.3
-finetuning_rate = 0.99
+pretraining_rate = 1.0
+finetuning_rate = 0.8
 
 dp_epsilons = [10]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['1', '0']
+gpus = ['1', '2', '3']
 max_workers = 24
 algos = ['td3_bc', 'iql', 'awac', 'cql']
 # algos = ['td3_bc']

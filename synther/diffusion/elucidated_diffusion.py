@@ -403,7 +403,7 @@ class Trainer(object):
         self.model.normalizer.to(self.accelerator.device)
         self.ema.ema_model.normalizer.to(self.accelerator.device)
 
-    def save(self, milestone):
+    def save(self, milestone, training_type):
         if not self.accelerator.is_local_main_process:
             return
 
@@ -416,7 +416,7 @@ class Trainer(object):
             'scaler': self.accelerator.scaler.state_dict() if exists(self.accelerator.scaler) else None,
         }
 
-        torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
+        torch.save(data, str(self.results_folder / f'{training_type}-model-{milestone}.pt'))
 
     def load(self, milestone: int):
         accelerator = self.accelerator
@@ -564,9 +564,9 @@ class Trainer(object):
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
-                print(f"Hello, epoch: {self.epoch}")
+                print(f"Hello, pretraning epoch: {self.epoch}")
                 if self.epoch != 0 and (self.epoch + 1) % self.save_and_sample_epoch_every == 0:
-                    self.save(self.epoch)
+                    self.save(self.epoch, 'pretraining')
 
         accelerator.print('training complete')
 
@@ -638,6 +638,10 @@ class Trainer(object):
 
                     if self.lr_scheduler is not None:
                         self.lr_scheduler.step()
+
+                    print(f"Hello, finetuning epoch: {epoch}")
+                    if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
+                        self.save(epoch, 'finetuning')
 
         accelerator.print('training complete')
 
