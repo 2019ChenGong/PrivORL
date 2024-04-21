@@ -4,7 +4,7 @@ buffer_size: 10000000
 checkpoints_path: null
 deterministic_torch: true
 device: cuda
-env_name: halfcheetah-medium-replay-v2
+env: halfcheetah-medium-replay-v2
 eval_frequency: 25000
 gamma: 0.99
 group: awac-halfcheetah-medium-replay-v2-multiseed-v0

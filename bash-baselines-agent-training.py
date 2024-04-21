@@ -15,7 +15,7 @@ import subprocess
         antmaze-umaze-v1
         antmaze-medium-play-v1
         antmaze-large-play-v1
-
+    
         kitchen-complete-v0
         kitchen-partial-v0
         kitchen-mixed-v0
@@ -26,19 +26,25 @@ import subprocess
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
-# datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
+datasets = [
+            # "maze2d-open-dense-v0", 
+            "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1"
+            ]
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
-# datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
+# datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
 
 # datasets = ["halfcheetah-medium-v2"]
 
 # datasets = ["kitchen-complete-v0"]
 
-datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
-            "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
-            "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+# datasets = [
+#             'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
+#             "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
+#             "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
+#             ]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -46,17 +52,20 @@ finetuning_rate = 0.99
 dp_epsilons = [10.0]
 num_samples = [1e6]
 seeds = [0]
-gpus = ['0', '1', '2']
-# gpus = ['0', '1']
+# gpus = ['0', '1', '2']
+gpus = ['0', '1']
 max_workers = 100
 # algos = ['td3_bc', 'iql']
-algos = ['awac', 'cql', 'iql', 'td3_bc']
+algos = [
+        'awac', 'cql', 
+        'iql', 'td3_bc'
+        ]
 # algos = ['td3_bc']
 
 # offline RL
-# names = ['pategan_eps_1', 'pgm', 'privsyn']
+# names = ['pategan', 'pgm', 'privsyn']
 
-names = ['privsyn']
+names = ['pretraining_pategan']
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]

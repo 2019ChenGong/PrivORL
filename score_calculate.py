@@ -5,7 +5,7 @@ import statistics
 def calculate_and_update_average_scores(directory):
     for root, dirs, files in os.walk(directory):
         for dir in dirs:
-            if dir.startswith('pgm'):
+            if dir.startswith('privsyn'):
                 json_path = os.path.join(root, dir, 'eval_0.json')
                 if os.path.exists(json_path):
                     with open(json_path, 'r') as file:
@@ -26,7 +26,7 @@ def calculate_and_update_average_scores(directory):
                     print(f"File not found: {json_path}")
 
 
-calculate_and_update_average_scores('corl_logs_antmaze')
+calculate_and_update_average_scores('corl_logs_walker2d')
 
 
 

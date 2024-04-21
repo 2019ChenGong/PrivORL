@@ -27,8 +27,10 @@ def train(args, finetuning, cuda, seed=0):
     data_pd = pd.concat([train_data_pd, val_data_pd], ignore_index=True, sort=False)
 
     loader = GenericDataLoader(data_pd)
-    print(finetuning)
+    print(f'finetuning is {finetuning}')
     if not finetuning:
+        model_params["n_iter"] = 50
+        # model_params["n_iter"] = 10 # antmaze
         model_params["epsilon"] = 1000000000.0 # inf
         model = Plugins().get("pategan", **model_params, device=device)
         model.fit(loader)
@@ -38,8 +40,10 @@ def train(args, finetuning, cuda, seed=0):
         save_to_file(path_params["out_model"], model)
 
     else:
-        model_params["epsilon"] = 10.0
         model = load_from_file(path_params["out_model"])
+        model.model.max_iter = 10
+        # model.model.max_iter = 5 # antmaze
+        model.model.epsilon = 10.0
         model.fit(loader)
 
         # sample and save the temporary synthetic data

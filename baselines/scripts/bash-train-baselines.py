@@ -22,14 +22,18 @@ import subprocess
 """
 
 datasets = [
-            # 'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
-            "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
+            # 'antmaze-umaze-v1', 
+            'antmaze-medium-play-v1', 
+            # 'antmaze-large-play-v1',
+            # "maze2d-open-dense-v0", 
+            # "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1",
             # "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
             ]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 # datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
-# datasets = ['maze2d-open-dense-v0']
+# datasets = ["kitchen-complete-v0"]
 
 # datasets = ["maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
@@ -41,8 +45,9 @@ models = ['pretraining_pategan']
 # models = ['privsyn', 'pgm']
 # models = ['privsyn', 'pgm', 'pategan']
 epsilons = [10.0]
-gpus = ['1', '2']
-max_workers = 100
+gpus = ['0', '1']
+# gpus = ['0']
+max_workers = 10
 
 
 def get_directories(path):

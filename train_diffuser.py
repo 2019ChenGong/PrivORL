@@ -17,8 +17,6 @@ from synther.diffusion.delete_nan import remove_errors
 
 
 
-
-
 @gin.configurable
 class SimpleDiffusionGenerator:
     def __init__(
@@ -81,8 +79,10 @@ class SimpleDiffusionGenerator:
 # full dataset
 def load_data(dataset_name, sample_ratio):
     env = gym.make(dataset_name)
-    input, _ = make_part_inputs(env, sample_ratio)
-    # input = make_inputs(env)
+    if sample_ratio == 1.0:
+        input = make_inputs(env)
+    else:
+        input, _ = make_part_inputs(env, sample_ratio)
     input = torch.from_numpy(input).float()
     return input
 
