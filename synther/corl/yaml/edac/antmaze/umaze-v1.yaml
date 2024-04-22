@@ -14,12 +14,12 @@ eval_seed: 42
 gamma: 0.99
 group: "edac-antmaze-umaze-v1-multiseed-v1"
 hidden_dim: 256
-log_every: 1000
+log_every: 25000
 max_action: 1.0
 name: "EDAC"
 normalize_reward: false
 num_critics: 10
-num_epochs: 3000
+num_epochs: 1000
 num_updates_on_epoch: 1000
 project: "CORL"
 tau: 0.005

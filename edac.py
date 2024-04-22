@@ -19,6 +19,8 @@ import wandb
 from torch.distributions import Normal
 from tqdm import trange
 
+from datetime import datetime
+
 from synther.corl.shared.buffer import prepare_replay_buffer, RewardNormalizer, DiffusionConfig
 from synther.corl.shared.logger import Logger
 
@@ -62,9 +64,12 @@ class TrainConfig:
     diffusion: DiffusionConfig = field(default_factory=DiffusionConfig)
 
     def __post_init__(self):
-        self.name = f"{self.name}-edac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(uuid.uuid4())[:8]}"
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
+        self.name = f"{self.name}-edac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
+
 
 
 # general utils

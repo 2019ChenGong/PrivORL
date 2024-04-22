@@ -22,12 +22,13 @@ import subprocess
 """
 
 datasets = [
-            # 'antmaze-umaze-v1', 
-            # 'antmaze-medium-play-v1', 
-            # 'antmaze-large-play-v1',
-            "maze2d-open-dense-v0", 
-            "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", 
-            "maze2d-large-dense-v1",
+            'antmaze-umaze-v1', 
+            'antmaze-medium-play-v1', 
+            'antmaze-large-play-v1',
+            # "maze2d-open-dense-v0", 
+            # "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1",
             # "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
             ]
 
@@ -76,6 +77,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 ]
                 script_path = 'baselines/scripts/train_synthesizer.py'
                 # script_path = 'baselines/scripts/syn_synthesizer.py'
+                # script_path = 'baselines/scripts/sample_synthesizer.py'
                 
                 command = ['python', script_path] + [str(arg) for arg in arguments]
 

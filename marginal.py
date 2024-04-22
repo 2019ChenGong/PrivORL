@@ -10,15 +10,21 @@ from sdv.metadata import SingleTableMetadata
 from sdv.evaluation.single_table import evaluate_quality
 
 
-def flatten_multidimensional_columns(df, prefix_dict):
+def flatten_multidimensional_columns(df):
     """
+    Automatically flatten all multi-dimensional columns in a DataFrame.
     :param df: DataFrame to be processed
-    :param prefix_dict: dict of column names and corresponding dimensions
-    :return: flatten DataFrame
+    :return: flattened DataFrame
     """
-    for column, dimension in prefix_dict.items():
-        expanded_cols = pd.DataFrame(df[column].tolist(), columns=[f'{column}_{i+1}' for i in range(dimension)])
-        df = pd.concat([df, expanded_cols], axis=1).drop(columns=[column])
+    for column in df.columns:
+        # Check if the first element in each column is a list (or similarly iterable)
+        if isinstance(df[column].iloc[0], (list, tuple)):
+            # Determine the length of the list from the first row
+            dimension = len(df[column].iloc[0])
+            # Create new columns for each element in the list
+            expanded_cols = pd.DataFrame(df[column].tolist(), index=df.index, columns=[f'{column}_{i+1}' for i in range(dimension)])
+            # Concatenate the new columns and drop the original column
+            df = pd.concat([df, expanded_cols], axis=1).drop(columns=[column])
     return df
 
 
@@ -66,7 +72,7 @@ if __name__ == '__main__':
     }
     original_experience = pd.DataFrame(original_data)
 
-    original_experience = flatten_multidimensional_columns(original_experience, column_dimension)
+    original_experience = flatten_multidimensional_columns(original_experience)
 
     # trajectories = []
     # trajectory = []

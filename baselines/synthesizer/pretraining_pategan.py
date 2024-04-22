@@ -36,8 +36,7 @@ def train(args, finetuning, cuda, seed=0):
     print(path_params["out_model"])
     print(f'finetuning is {finetuning}')
     if not finetuning:
-        model_params["n_iter"] = 50
-        # model_params["n_iter"] = 10 # antmaze
+        model_params["n_iter"] = 10
         model_params["epsilon"] = 1000000000.0 # inf
         model = Plugins().get("pategan", **model_params, device=device)
         model.fit(loader)
@@ -48,8 +47,7 @@ def train(args, finetuning, cuda, seed=0):
 
     else:
         model = load_from_file(path_params["out_model"])
-        # model.model.max_iter = 10
-        model.model.max_iter = 5 # antmaze
+        model.model.max_iter = 5
         model.model.epsilon = 10.0
         model.fit(loader)
 

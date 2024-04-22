@@ -508,7 +508,7 @@ class Trainer(object):
                         sample_loss = self.rnd(sample)
                         sample_loss_list.append(sample_loss.item())
                     diffusion_samples_loss = torch.tensor(sample_loss_list)
-                    _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * 0.3))
+                    _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * 0.5))
                     self.selected_samples = diffusion_samples[selected_idx, :]
                     self.idx = [i for i in range(self.selected_samples.shape[0])]
 

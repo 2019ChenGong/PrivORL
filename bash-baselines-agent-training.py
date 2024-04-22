@@ -24,9 +24,9 @@ import subprocess
 # datasets = ["halfcheetah"]
 # datasets = ["hopper", "halfcheetah", "walker2d"]
 
-datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 
+# datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1', 
             # 'antmaze-large-play-v1'
-            ]
+            # ]
 
 # datasets = [
             # "maze2d-open-dense-v0", 
@@ -43,11 +43,12 @@ datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1',
 
 # datasets = ["kitchen-complete-v0"]
 
-# datasets = [
+datasets = [
 #             'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
-#             "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
+            "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
 #             "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
-#             ]
+            ]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -69,6 +70,8 @@ algos = [
 # names = ['pategan', 'pgm', 'privsyn']
 
 names = ['pretraining_pategan']
+baseline_test = "default"
+baseline_test = "inf_epsilon"
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -97,7 +100,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # dataset = dataset + "-expert-v2"
                             results_folder = f"./results_{dataset}_{pretraining_rate}"
 
-                            offlineRL_load_path = f'baselines/samples/{dataset}/{name}_{dp_epsilon}/{dataset}.npz'
+                            offlineRL_load_path = f'baselines/samples/{dataset}/{name}_{dp_epsilon}/{baseline_test}_{dataset}.npz'
                             
                             if algo == "td3_bc" or algo == "iql":
                                 arguments = [
@@ -108,6 +111,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion.path', offlineRL_load_path,
                                 '--name', name,
+                                '--baseline_test', baseline_test
                                 ]
                             else:
                                 arguments = [
@@ -118,6 +122,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion_path', offlineRL_load_path,
                                 '--name', name,
+                                '--baseline_test', baseline_test
                                 ]
                             if algo == "td3_bc":
                                 script_path = 'td3_bc.py'

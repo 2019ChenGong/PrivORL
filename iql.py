@@ -35,6 +35,7 @@ LOG_STD_MAX = 2.0
 @dataclass
 class TrainConfig:
     # Experiment
+    baseline_test: str = "default"
     device: str = "cuda"
     env: str = "halfcheetah-medium-expert-v2"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
@@ -69,7 +70,7 @@ class TrainConfig:
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
-        self.name = f"{self.name}-iql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
+        self.name = f"{self.baseline_test}_{self.name}-iql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 

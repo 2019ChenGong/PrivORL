@@ -26,6 +26,7 @@ os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 @dataclass
 class TrainConfig:
+    baseline_test: str = "default"
     project: str = "CORL"
     group: str = "AWAC-D4RL"
     name: str = "DPsynthER"
@@ -59,7 +60,7 @@ class TrainConfig:
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
-        self.name = f"{self.name}-awac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
+        self.name = f"{self.baseline_test}_{self.name}-awac-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
