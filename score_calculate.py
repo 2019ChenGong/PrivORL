@@ -28,8 +28,8 @@ def calculate_and_update_average_scores(directory, model):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", "-d", type=str, default="kitchen")
-parser.add_argument("--model", "-m", type=str, default="pgm")
+parser.add_argument("--dataset", "-d", type=str, default="maze2d")
+parser.add_argument("--model", "-m", type=str, default="10iter")
 
 args = parser.parse_args()
 

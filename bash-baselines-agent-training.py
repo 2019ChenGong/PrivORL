@@ -44,10 +44,11 @@ import subprocess
 # datasets = ["kitchen-complete-v0"]
 
 datasets = [
-#             'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
-            "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", 
+            'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
+            # "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", 
             # "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
-#             "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"
+            "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0",
+            # "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"
             ]
 
 pretraining_rate = 0.3
@@ -57,21 +58,21 @@ dp_epsilons = [10.0]
 num_samples = [1e6]
 seeds = [0]
 # gpus = ['0', '1', '2']
-gpus = ['0', '1']
+gpus = ['1', '2', '3']
 max_workers = 100
 # algos = ['cql', 'iql']
-algos = [
-        'awac', 'cql', 
-        'iql', 'td3_bc'
-        ]
-# algos = ['td3_bc']
+# algos = [
+#         'edac', 'cql', 
+#         'iql', 'td3_bc'
+#         ]
+algos = ['edac']
 
 # offline RL
-# names = ['pategan', 'pgm', 'privsyn']
+names = ['pategan', 'pgm', 'privsyn']
 
-names = ['pretraining_pategan']
-baseline_test = "default"
-baseline_test = "inf_epsilon"
+# names = ['pretraining_pategan']
+
+baseline_test = "10iter"
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -100,7 +101,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # dataset = dataset + "-expert-v2"
                             results_folder = f"./results_{dataset}_{pretraining_rate}"
 
-                            offlineRL_load_path = f'baselines/samples/{dataset}/{name}_{dp_epsilon}/{baseline_test}_{dataset}.npz'
+                            # offlineRL_load_path = f'baselines/samples/{dataset}/{name}_{dp_epsilon}/{baseline_test}_{dataset}.npz'
+                            offlineRL_load_path = f'baselines/samples/{dataset}/{name}_{dp_epsilon}/{dataset}.npz'
                             
                             if algo == "td3_bc" or algo == "iql":
                                 arguments = [
@@ -113,7 +115,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--name', name,
                                 '--baseline_test', baseline_test
                                 ]
-                            else:
+                            elif algo == "awac" or algo == "cql":
                                 arguments = [
                                 '--env', dataset,
                                 '--seed', seed,
@@ -121,6 +123,17 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--config', config,
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion_path', offlineRL_load_path,
+                                '--name', name,
+                                '--baseline_test', baseline_test
+                                ]
+                            else:
+                                arguments = [
+                                '--env', dataset,
+                                '--seed', seed,
+                                '--checkpoints_path',checkpoints_path,
+                                '--config', config,
+                                '--dp_epsilon', dp_epsilon,
+                                '--diffusion.path', offlineRL_load_path,
                                 '--name', name,
                                 '--baseline_test', baseline_test
                                 ]

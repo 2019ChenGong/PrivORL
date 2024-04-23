@@ -23,9 +23,9 @@ import subprocess
         kitchen-mixed-v0
 """
 
-datasets = ["halfcheetah-medium-replay-v2", 
-            "walker2d-medium-replay-v2"
-            ]
+# datasets = ["halfcheetah-medium-replay-v2", 
+#             "walker2d-medium-replay-v2"
+#             ]
 
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-large-dense-v1"]
@@ -33,43 +33,39 @@ datasets = ["halfcheetah-medium-replay-v2",
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 
 # datasets = ["maze2d-open-dense-v0"]
-# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
+datasets = ["kitchen-partial-v0", "kitchen-mixed-v0", 'antmaze-medium-play-v1', "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
 # datasets = ["kitchen-partial-v0"]
+
+# datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0", 'antmaze-medium-play-v1']
 
 # datasets = ['antmaze-umaze-v1', 'antmaze-medium-play-v1']
 # datasets = ["antmaze-large-play-v1"]
 
 
 datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-full-replay-v2', 'walker2d-medium-v2'],
-                 "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'walker2d-medium-v2', 'halfcheetah-full-replay-v2'] }   
-
-# datasets_name = {
-#                  "maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-#                  "maze2d-umaze-dense-v1":     ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
-#                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
-#                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1']
-#                 }   
-
-# datasets_name = {"antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
-#                  "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
-#                  "antmaze-large-play-v1":    ['antmaze-medium-play-v1', 'antmaze-umaze-v1']                
-#                  }   
-
-#
-# datasets_name = {"kitchen-complete-v0":      ["kitchen-partial-v0", "kitchen-mixed-v0"], 
-#                  "kitchen-partial-v0": ['kitchen-complete-v0', 'kitchen-mixed-v0'], 
-#                  "kitchen-mixed-v0":    ["kitchen-complete-v0", "kitchen-partial-v0"]                }  
+                 "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'walker2d-medium-v2', 'halfcheetah-full-replay-v2'],   
+                 "maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+                 "maze2d-umaze-dense-v1":     ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
+                 "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
+                 "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1'],
+                 "antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
+                 "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
+                 "antmaze-large-play-v1":    ['antmaze-medium-play-v1', 'antmaze-umaze-v1'],
+                 "kitchen-complete-v0":      ["kitchen-partial-v0", "kitchen-mixed-v0"], 
+                 "kitchen-partial-v0": ['kitchen-complete-v0', 'kitchen-mixed-v0'], 
+                 "kitchen-mixed-v0":    ["kitchen-complete-v0", "kitchen-partial-v0"]                
+                 }  
 
 
 
 dp_epsilons = [10]
-num_samples = [1e6]
+num_samples = [1e5]
 seeds = [0]
-gpus = ['0', '1']
+gpus = ['0', '1', '2', '3' '4', '5', '6', '7']
 max_workers = 10
 
 pretraining_rate = 1.0
-finetuning_rates = [0.6]
+finetuning_rates = [0.8]
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -95,7 +91,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         # results_folder = f"./results_{dataset}_{pretraining_rate}"
                         # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
                         results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
-                        finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
+                        if dataset == 'maze2d-medium-dense-v1':
+                            finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
+                        else:
+                            finetune_load_path = os.path.join(results_folder, "pretraining-model-9.pt")
+                        
                         store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
 
                         env, version = dataset.split('-', 1)

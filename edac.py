@@ -32,6 +32,7 @@ class TrainConfig:
     group: str = "EDAC-D4RL"
     name: str = "EDAC"
     # model params
+    baseline_test: str = "default"
     hidden_dim: int = 256
     num_critics: int = 10
     gamma: float = 0.99
@@ -66,6 +67,7 @@ class TrainConfig:
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
+        # self.name = f"{self.baseline_test}_{self.name}-edac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         self.name = f"{self.name}-edac-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)

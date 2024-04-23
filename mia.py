@@ -6,38 +6,45 @@ import d4rl
 import os
 from accelerate import Accelerator
 
+from synther.diffusion.utils import construct_diffusion_model
 
 
-def make_inputs(
-        env: gym.Env
-) -> np.ndarray:
-    dataset = d4rl.qlearning_dataset(env)
-    
-    return dataset
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model", "-m", type=str, default="pretraining_pategan")
-parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
-parser.add_argument("--finetuning_rate", type=float, default=0.6)
-args = parser.parse_args()
+def make_inputs(dataset):
+    obs = dataset['observations']
+    actions = dataset['actions']
+    next_obs = dataset['next_observations']
+    rewards = dataset['rewards']
+    terminals = dataset['terminals'].astype(np.float32)
+    inputs = np.concatenate([obs, actions, rewards[:, None], next_obs, terminals[:, None]], axis=1)
+    return inputs
 
-results_folder = f"./alter_curiosity_driven_results_{args.dataset}_0.8"
-ckpt_path = os.path.join(results_folder, "finetuning-model-9.pt")
-syndata_path = os.path.join(results_folder, f"{args.dataset}_samples_{1e6}_10dp_{args.finetuning_rate}.npz")
 
-# load orginal and syn data
-env = gym.make(args.dataset)
-original_data = make_inputs(env)
+def get_data_and_model(config):
+    results_folder = f"./alter_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}"
+    ckpt_path = os.path.join(results_folder, "pretraining-model-9.pt")
+    dp_ckpt_path = os.path.join(results_folder, "finetuning-model-4.pt")
+    syndata_path = os.path.join(results_folder, f"cleaned_{config.dataset}_samples_{1e6}_10dp_{config.finetuning_rate}.npz")
 
-syn_data = np.load(syndata_path)
+    # load orginal and syn data
+    env = gym.make(config.dataset)
+    original_data = d4rl.qlearning_dataset(env)
+    original_data = make_inputs(original_data)
 
-# load finetuning model
-data = torch.load(ckpt_path)
+    syn_data = np.load(syndata_path)
+    syn_data = make_inputs(syn_data)
 
-# accelerator = Accelerator(
-#             split_batches=True,
-#             mixed_precision='fp16' if fp16 else 'no'
-#         )
-# model = self.accelerator.unwrap_model(self.model)
-# model.load_state_dict(data['model'])
-print(1)
+    # load finetuning model
+    diffusion = torch.load(ckpt_path)
+    dpdiffusion = torch.load(dp_ckpt_path)
+
+    return original_data, syn_data, diffusion, dpdiffusion
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
+    parser.add_argument("--pretraining_rate", type=float, default=1.0)
+    parser.add_argument("--finetuning_rate", type=float, default=0.8)
+    args = parser.parse_args()
+
+    original_data, syn_data, diffusion, dpdiffusion = get_data_and_model(config=args)

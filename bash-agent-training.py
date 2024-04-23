@@ -32,29 +32,32 @@ import subprocess
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-umaze-dense-v1"]
 
-datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",  "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0", "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2",'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
+# datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",  "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0", "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2",'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1']
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 # datasets = ["kitchen-partial-v0"]
+datasets = ["kitchen-complete-v0", "kitchen-mixed-v0"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-# datasets = ["halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
+# datasets = ["walker2d-medium-replay-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-umaze-dense-v1"]
-# datasets = ["maze2d-umaze-dense-v1"]
+# datasets = ["maze2d-medium-dense-v1"]
 
 pretraining_rate = 1.0
 finetuning_rate = 0.8
 
 dp_epsilons = [10]
-num_samples = [1e6]
+num_samples = [5e6]
 seeds = [0]
-gpus = ['1', '3', '2']
+gpus = ['0', '1']
 max_workers = 24
-# algos = ['td3_bc', 'iql', 'awac', 'cql']
+algos = ['td3_bc', 'iql', 'edac', 'cql']
 # algos = ['bc']
-algos = ['edac']
+# algos = ['awac', 'cql']
+
+# algos = ['edac']
 
 # offline RL
 name = "CurDPsynthER"
@@ -86,8 +89,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
                         # results_folder = f"./results_{dataset}_{pretraining_rate}"
 
-                        # offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
-                        offlineRL_load_path = os.path.join(results_folder, f"cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
+                        # offlineRL_load_path = os.path.join(results_folder, f"cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
                         
                         if algo == "td3_bc" or algo == "iql" or algo == 'edac':
                             arguments = [
