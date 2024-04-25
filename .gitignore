@@ -20,6 +20,7 @@ baselines/datasets
 baselines/exp
 baselines/samples
 curiosity_driven*
+t-SNE/*.npz
 
 *results*
 

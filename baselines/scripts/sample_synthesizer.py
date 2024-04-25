@@ -14,7 +14,7 @@ def update_config(config, model, dataset):
     config["path_params"]["raw_data"] = "datasets/{0}/{0}.csv".format(dataset)
 
     config["path_params"]["loss_record"] = "exp/{0}/{1}/loss.csv".format(dataset, model)
-    config["path_params"]["out_model"] = "exp/{0}/{1}/new_{1}.pt".format(dataset, model)
+    config["path_params"]["out_model"] = "exp/{0}/{1}/{1}.pt".format(dataset, model)
     config["path_params"]["out_data"] = "exp/{0}/{1}/inf_epsilon_{0}.csv".format(dataset, model)
 
     config["path_params"]["fidelity_result"] = "exp/{0}/{1}/fidelity_result.json".format(dataset, model)

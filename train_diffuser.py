@@ -115,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--dp_n_splits', type=int, default=4)
     # curiosity driven
     parser.add_argument('--curiosity_driven', action='store_true')
+    parser.add_argument('--curiosity_driven_rate', type=float ,default=0.5)
 
     args = parser.parse_args()
 
@@ -167,6 +168,7 @@ if __name__ == '__main__':
         args.load_checkpoint,
         args.load_path,
         args.curiosity_driven,
+        args.curiosity_driven_rate,        
         diffusion,
         dataset,
         results_folder=args.results_folder,
@@ -183,8 +185,8 @@ if __name__ == '__main__':
         )
         # Train model.
         trainer.train()
-        # trainer.train_dp()
     else:
+        # comment for ablation study
         trainer.ema.to(trainer.accelerator.device)
         # Load the last checkpoint.
         trainer.load(milestone=trainer.train_num_steps)
@@ -198,7 +200,7 @@ if __name__ == '__main__':
             name=args.results_folder.split('/')[-1],
         )
         trainer.train_dp()
-        # trainer.finetune()
+        # trainer.finetuning_without_dp()
 
     # Generate samples and save them.
     if args.load_checkpoint:

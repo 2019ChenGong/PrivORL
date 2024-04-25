@@ -269,6 +269,26 @@ class ElucidatedDiffusion(nn.Module):
         losses = reduce(losses, 'b ... -> b', 'mean')
         losses = losses * self.loss_weight(sigmas)
         return losses.mean()
+    
+    def forward_mia(self, inputs, sigma=0.07, cond=None):
+        inputs = self.normalizer.normalize(inputs)
+
+        batch_size, *event_shape = inputs.shape
+        assert event_shape == self.event_shape, f'mismatch of event shape, ' \
+                                                f'expected {self.event_shape}, got {event_shape}'
+
+        sigmas = self.noise_distribution(batch_size)
+        sigmas = torch.ones_like(sigmas) * sigma
+        padded_sigmas = sigmas.view(batch_size, *([1] * len(self.event_shape)))
+
+        noise = torch.randn_like(inputs)
+        noised_inputs = inputs + padded_sigmas * noise  # alphas are 1. in the paper
+
+        denoised = self.preconditioned_network_forward(noised_inputs, sigmas, cond=cond)
+        losses = F.mse_loss(denoised, inputs, reduction='none')
+        losses = reduce(losses, 'b ... -> b', 'mean')
+        losses = losses * self.loss_weight(sigmas)
+        return losses
 
 
 @gin.configurable
@@ -283,6 +303,7 @@ class Trainer(object):
             load_checkpoint,
             load_path,
             curiosity_driven,
+            curiosity_driven_rate,
             diffusion_model,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
@@ -294,6 +315,7 @@ class Trainer(object):
 
             train_epochs: int = 10,
             finetune_epochs: int = 5,
+            # finetune_epochs: int = 10,
 
             ema_update_every: int = 10,
             ema_decay: float = 0.995,
@@ -381,6 +403,7 @@ class Trainer(object):
 
         # curiosity driven
         self.curiosity_driven = curiosity_driven
+        self.curiosity_driven_rate = curiosity_driven_rate
 
         # prepare model, dataloader, optimizer with accelerator
         self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
@@ -492,6 +515,7 @@ class Trainer(object):
         
         # prepare rnd
         if self.curiosity_driven:
+            print(f'now curiosity_driven_rate is {self.curiosity_driven_rate}')
             diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
             print(diffusion_samples.device)
             self.rnd = Rnd(input_dim=diffusion_samples.shape[1], device=device)
@@ -508,7 +532,7 @@ class Trainer(object):
                         sample_loss = self.rnd(sample)
                         sample_loss_list.append(sample_loss.item())
                     diffusion_samples_loss = torch.tensor(sample_loss_list)
-                    _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * 0.5))
+                    _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * self.curiosity_driven_rate))
                     self.selected_samples = diffusion_samples[selected_idx, :]
                     self.idx = [i for i in range(self.selected_samples.shape[0])]
 
@@ -642,6 +666,62 @@ class Trainer(object):
                     print(f"Hello, finetuning epoch: {epoch}")
                     if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
                         self.save(epoch, 'finetuning')
+
+        accelerator.print('training complete')
+
+
+    def finetuning_without_dp(self):
+        accelerator = self.accelerator
+        device = accelerator.device
+
+        with tqdm(initial=self.epoch, total=self.finetune_epochs, disable=not accelerator.is_main_process) as pbar:
+            for epoch in range(self.finetune_epochs):
+                total_loss = 0.
+
+                for batch_idx, data in enumerate(self.dl):
+                    data = data[0].to(device)
+
+                    with self.accelerator.autocast():
+                        loss = self.model(data)
+                        # loss = loss / self.gradient_accumulate_every
+                        total_loss += loss.item()
+
+                    self.accelerator.backward(loss)
+
+                    accelerator.clip_grad_norm_(self.model.parameters(), 1.0)
+                    pbar.set_description(f'Epoch {self.epoch + epoch + 1}/{self.finetune_epochs}, Batch {batch_idx + 1}/{len(self.dl)}, Loss: {loss:.4f}')
+                    wandb.log({
+                        'epoch': self.epoch + epoch + 1,
+                        'batch': batch_idx + 1,
+                        'step': self.step,
+                        'loss': loss,
+                        'lr': self.opt.param_groups[0]['lr']
+                    })
+
+
+                    # accelerator.wait_for_everyone()
+
+                    self.opt.step()
+                    self.opt.zero_grad()
+
+                    # accelerator.wait_for_everyone()
+
+                    self.step += 1
+                    if accelerator.is_main_process:
+                        self.ema.to(device)
+                        self.ema.update()
+
+                        # if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                        #     self.save(self.step)
+
+                pbar.update(1)
+
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
+
+                print(f"Hello, finetuning epoch: {epoch}")
+                if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
+                    self.save(epoch, 'finetuning without dp')
 
         accelerator.print('training complete')
 

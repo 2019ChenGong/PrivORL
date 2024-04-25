@@ -27,8 +27,8 @@ datasets = [
             # 'antmaze-large-play-v1',
             # "maze2d-open-dense-v0", 
             # "maze2d-umaze-dense-v1", 
-            # "maze2d-medium-dense-v1", 
-            "maze2d-large-dense-v1",
+            "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1",
             # "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0",
             # "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"
             ]
@@ -42,13 +42,13 @@ datasets = [
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
 models = ['pretraining_pategan']
-# models = ['pategan']
+# models = ['privsyn']
 
 # models = ['privsyn', 'pgm']
 # models = ['privsyn', 'pgm', 'pategan']
 epsilons = [10.0]
-gpus = ['0', '1']
-# gpus = ['0']
+# gpus = ['0', '1']
+gpus = ['1']
 max_workers = 10
 
 
@@ -74,11 +74,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     '--d', dataset,
                     '--m', model,
                     # '--epsilon', epsilon,
-                    '--finetuning',
+                    # '--finetuning',
                 ]
-                script_path = 'baselines/scripts/train_synthesizer.py'
+                # script_path = 'baselines/scripts/train_synthesizer.py'
                 # script_path = 'baselines/scripts/syn_synthesizer.py'
-                # script_path = 'baselines/scripts/sample_synthesizer.py'
+                script_path = 'baselines/scripts/sample_synthesizer.py'
                 
                 command = ['python', script_path] + [str(arg) for arg in arguments]
 
