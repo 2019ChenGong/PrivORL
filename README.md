@@ -1,22 +1,9 @@
 # DPTrajectorySyn
 
-[![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
-[![arXiv](https://img.shields.io/badge/arXiv-2210.07105-b31b1b.svg)](https://arxiv.org/abs/2303.06614)
+<!-- [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
+[![arXiv](https://img.shields.io/badge/arXiv-2210.07105-b31b1b.svg)](https://arxiv.org/abs/2303.06614) -->
 
-<p align="center">
-  <img src="figs/diffusion.png" />
-</p>
 
-Synthetic Experience Replay (SynthER) is a diffusion-based approach to arbitrarily upsample an RL agent's collected
-experience, leading to large gains in sample efficiency and scaling benefits. We integrate SynthER into a variety of
-offline and online algorithms in this codebase, including SAC, TD3+BC, IQL, EDAC, and CQL. For further details, please
-see the paper:
-
-**_Synthetic Experience Replay_**; Cong Lu*, Philip J. Ball*, Yee Whye Teh, Jack Parker-Holder. Published at [NeurIPS, 2023](https://neurips.cc/virtual/2023/poster/72742).
-
-<p align="center">
-  <a href=https://arxiv.org/abs/2303.06614>View on arXiv</a>
-</p>
 
 ## Setup
 
@@ -104,11 +91,6 @@ would like to particularly thank the authors of:
 - [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch)
 - [REDQ](https://github.com/watchernyu/REDQ)
 - [CORL](https://github.com/tinkoff-ai/CORL)
-
-## Contact
-
-Please contact [Cong Lu](mailto:cong.lu@stats.ox.ac.uk) or [Philip Ball](mailto:ball@robots.ox.ac.uk) for any queries.
-We welcome any suggestions or contributions! 
 
 
 
