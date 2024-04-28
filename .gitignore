@@ -21,6 +21,7 @@ baselines/exp
 baselines/samples
 curiosity_driven*
 t-SNE/*.npz
+t-SNE/*.png
 saved_original_data
 alter*
 
