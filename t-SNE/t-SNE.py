@@ -22,13 +22,20 @@ def make_inputs(dataset):
 if __name__ =='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
-    parser.add_argument("--sample_points", type=int, default=1000)
+    # parser.add_argument("--dataset", "-d", type=str, default="kitchen-partial-v0")
+    parser.add_argument("--sample_points", type=int, default=500)
     args = parser.parse_args()
 
     # Load original and synthetic data
-    env = gym.make(args.dataset)
-    original_data = d4rl.qlearning_dataset(env)
-    original_data = make_inputs(original_data)
+    try:
+        with open(f't-SNE/{args.dataset}_original_data.npy', 'rb') as f:
+            original_data = np.load(f)
+    except FileNotFoundError:
+        env = gym.make(args.dataset)
+        original_data = d4rl.qlearning_dataset(env)
+        original_data = make_inputs(original_data)
+        with open(f't-SNE/{args.dataset}_original_data.npy', 'wb') as f:
+            np.save(f, original_data)
 
     # Dictionary of synthetic datasets with descriptions
     syn_datasets = {
@@ -72,7 +79,7 @@ if __name__ =='__main__':
 
         ax = plt.subplot(1, 5, i+1)
         ax.scatter(original_points[:, 0], original_points[:, 1], c='#88DDF1', label='Original Data', s=50, alpha=0.5)
-        ax.scatter(synthetic_points[:, 0], synthetic_points[:, 1], c='#FD836E', label=f'Synthetic Data: {description}', s=50, alpha=0.5)
+        ax.scatter(synthetic_points[:, 0], synthetic_points[:, 1], c='#FD836E', label=f'Synthetic Data', s=50, alpha=0.5)
         ax.set_title(f'{description}', fontsize=18, fontweight='bold')  # Increased font size for title
         ax.set_xlabel('')  # Explicitly empty x-axis labels
         ax.set_ylabel('')  # Explicitly empty y-axis labels

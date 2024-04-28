@@ -26,12 +26,15 @@ def flatten_multidimensional_columns(df):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='maze2d-medium-dense-v1')
+    parser.add_argument('--dataset', type=str, default='kitchen-partial-v0')
+    # parser.add_argument('--dataset', type=str, default='maze2d-medium-dense-v1')
     # parser.add_argument('--dataset', type=str, default='maze2d-umaze-dense-v1')
     parser.add_argument('--pretraining_rate', type=float, default=1.0)
-    parser.add_argument('--finetuning_rate', type=float, default=0.5)
+    parser.add_argument('--finetuning_rate', type=float, default=0.8)
+    parser.add_argument('--cur_rate', type=float, default=0.1)
     parser.add_argument('--dp_epsilon', type=int, default=10)
     parser.add_argument('--samples', type=float, default=1e6)
+    parser.add_argument('--load_path', type=str, default='')
     args = parser.parse_args()
 
     # Initialize gym environment and extract dataset
@@ -50,7 +53,7 @@ if __name__ == '__main__':
     original_experience_cpu = pd.DataFrame(tensor_data_cpu)
 
     # Load and process synthetic dataset similarly
-    dpsynther_trajectory = np.load(f"alter_curiosity_driven_results_{args.dataset}_{args.pretraining_rate}/cleaned_{args.dataset}_samples_{args.samples}_{args.dp_epsilon}dp_{args.finetuning_rate}.npz")
+    dpsynther_trajectory = np.load(args.load_path)
     # dpsynther_trajectory = np.load(f'baselines/samples/{args.dataset}/pategan_10.0/{args.dataset}.npz')
     dpsynther_experience = pd.DataFrame({
         'actions': dpsynther_trajectory['actions'].tolist(),
@@ -73,7 +76,9 @@ if __name__ == '__main__':
         dataset=args.dataset,
         real_data=original_experience,
         synthetic_data=dpsynther_experience,
-        metadata=metadata)
+        metadata=metadata,
+        cur_rate=args.cur_rate,
+        epsilon=args.dp_epsilon)
     
     # save_path = f'marginal_results/{args.dataset}_quality_report.pkl'
     # os.makedirs(os.path.dirname(save_path), exist_ok=True)

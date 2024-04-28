@@ -73,97 +73,136 @@ def construct_diffusion_model(
 
 
 def get_data_and_model(config):
-    results_folder = f"./alter_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}"
-    ckpt_path = os.path.join(results_folder, "pretraining-model-9.pt")
-    dp_ckpt_path = os.path.join(results_folder, "finetuning-model-4.pt")
-    syndata_path = os.path.join(results_folder, f"cleaned_{config.dataset}_samples_{1e6}_10dp_{config.finetuning_rate}.npz")
+    results_folder = f"./alter_for_mia_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}"
+    ckpt_path = os.path.join(results_folder, config.nondp_weight)
+    # ckpt_path = os.path.join(f"./alter_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}", config.nondp_weight)
+    dp1_ckpt_path = os.path.join(results_folder, config.dp1_weight)
+    dp10_ckpt_path = os.path.join(results_folder, config.dp10_weight)
+    train_data_path = os.path.join(results_folder, "train_data_1000.npy")
+    test_data_path = os.path.join(results_folder, "test_data_1000.npy")
 
     # load orginal and syn data
-    env = gym.make(config.dataset)
-    original_data = d4rl.qlearning_dataset(env)
-    original_data = make_inputs(original_data)
-    original_data = torch.from_numpy(original_data).float().cuda()
+    train_data = np.load(train_data_path)
+    train_data = torch.from_numpy(train_data).float().cuda()
 
-    syn_data = np.load(syndata_path)
-    syn_data = make_inputs(syn_data)
-    syn_data = torch.from_numpy(syn_data).float()
+    test_data = np.load(test_data_path)
+    test_data = torch.from_numpy(test_data).float().cuda()
 
-    syn_data = syn_data[:len(original_data)].cuda()
+    train_data = train_data[:config.sample_num]
+    test_data = test_data[:config.sample_num]
 
-    print(original_data.shape, syn_data.shape)
+    print(train_data.shape, test_data.shape)
 
     # load finetuning model
-    diffusion = construct_diffusion_model(inputs=original_data, 
+    diffusion = construct_diffusion_model(inputs=train_data, 
                                           normalizer_type='standard', 
                                           disable_terminal_norm=True)
-    dp_diffusion = construct_diffusion_model(inputs=original_data, 
+    dp1_diffusion = construct_diffusion_model(inputs=train_data, 
+                                            normalizer_type='standard', 
+                                            disable_terminal_norm=True)
+    dp10_diffusion = construct_diffusion_model(inputs=train_data, 
                                             normalizer_type='standard', 
                                             disable_terminal_norm=True)
 
     ckpt = torch.load(ckpt_path)
-    dp_ckpt = torch.load(dp_ckpt_path)
+    dp1_ckpt = torch.load(dp1_ckpt_path)
+    dp10_ckpt = torch.load(dp10_ckpt_path)
     diffusion.load_state_dict(ckpt['model'])
-    dp_ckpt_model = {}
-    for key, value in dp_ckpt['model'].items():
+    dp1_ckpt_model = {}
+    for key, value in dp1_ckpt['model'].items():
         new_key = key.replace('_module.', '')
-        dp_ckpt_model[new_key] = value
-    dp_diffusion.load_state_dict(dp_ckpt_model)
+        dp1_ckpt_model[new_key] = value
+    dp1_diffusion.load_state_dict(dp1_ckpt_model)
+    dp10_ckpt_model = {}
+    for key, value in dp10_ckpt['model'].items():
+        new_key = key.replace('_module.', '')
+        dp10_ckpt_model[new_key] = value
+    dp10_diffusion.load_state_dict(dp10_ckpt_model)
 
     diffusion = diffusion.cuda()
-    dp_diffusion = dp_diffusion.cuda()
+    dp1_diffusion = dp1_diffusion.cuda()
+    dp10_diffusion = dp10_diffusion.cuda()
     diffusion.eval()
-    dp_diffusion.eval()
+    dp1_diffusion.eval()
+    dp10_diffusion.eval()
+
+    # maze2d 12
+    # config.sigma = [0.13, 0.12, 0.11, 0.1,]
+
+    # kitchen 41
+    config.sigma = [0.13, 0.12, 0.11, 0.1,]
+
+    # 4
+    # config.sigma = [0.003, 0.001, 0.0008]
 
     with torch.no_grad():
         for sigma in config.sigma:
-            syn_loss = 0
-            original_loss = 0
-            dp_syn_loss = 0
-            dp_original_loss = 0
+            test_loss = 0
+            train_loss = 0
+            dp1_test_loss = 0
+            dp1_train_loss = 0
+            dp10_test_loss = 0
+            dp10_train_loss = 0
 
             for _ in range(config.repeat):
-                syn_loss += diffusion.forward_mia(syn_data, sigma=sigma)
-                original_loss += diffusion.forward_mia(original_data, sigma=sigma)
-                dp_syn_loss += dp_diffusion.forward_mia(syn_data, sigma=sigma)
-                dp_original_loss += dp_diffusion.forward_mia(original_data, sigma=sigma)
-            syn_loss /= config.repeat
-            original_loss /= config.repeat
-            dp_syn_loss /= config.repeat
-            dp_original_loss /= config.repeat
-            syn_label = torch.ones_like(syn_loss)
-            original_label = torch.zeros_like(original_loss)
-            print(syn_loss.sum(), original_loss.sum())
-            print(dp_syn_loss.sum(), dp_original_loss.sum())
+                test_loss += diffusion.forward_mia(test_data, sigma=sigma)
+                train_loss += diffusion.forward_mia(train_data, sigma=sigma)
+                dp1_test_loss += dp1_diffusion.forward_mia(test_data, sigma=sigma)
+                dp1_train_loss += dp1_diffusion.forward_mia(train_data, sigma=sigma)
+                dp10_test_loss += dp10_diffusion.forward_mia(test_data, sigma=sigma)
+                dp10_train_loss += dp10_diffusion.forward_mia(train_data, sigma=sigma)
+            test_loss /= config.repeat
+            train_loss /= config.repeat
+            dp1_test_loss /= config.repeat
+            dp1_train_loss /= config.repeat
+            dp10_test_loss /= config.repeat
+            dp10_train_loss /= config.repeat
+            test_label = torch.ones_like(test_loss)
+            train_label = torch.zeros_like(train_loss)
+            print(test_loss.sum(), train_loss.sum())
+            print(dp1_test_loss.sum(), dp1_train_loss.sum())
+            print(dp10_test_loss.sum(), dp10_train_loss.sum())
 
-            results = torch.cat([syn_loss, original_loss]).cpu().detach().numpy()
-            dp_results = torch.cat([dp_syn_loss, dp_original_loss]).cpu().detach().numpy()
-            labels = torch.cat([syn_label, original_label]).cpu().detach().numpy().astype(int)
+            results = torch.cat([test_loss, train_loss]).cpu().detach().numpy()
+            dp1_results = torch.cat([dp1_test_loss, dp1_train_loss]).cpu().detach().numpy()
+            dp10_results = torch.cat([dp10_test_loss, dp10_train_loss]).cpu().detach().numpy()
+            labels = torch.cat([test_label, train_label]).cpu().detach().numpy().astype(int)
 
             tpr_at_low_fpr_1 = get_metrics(labels, results, fixed_fpr=0.1)
             tpr_at_low_fpr_2 = get_metrics(labels, results, fixed_fpr=0.01)
             tpr_at_low_fpr_3 = get_metrics(labels, results, fixed_fpr=0.001)
-            tpr_at_low_fpr_4 = get_metrics(labels, results, fixed_fpr=0.0001)
+            tpr_at_low_fpr_4 = get_metrics(labels, results, fixed_fpr=0.2)
 
-            print("sigma: %.3f TPR@10%%FPR: %.2f TPR@1%%FPR: %.2f TPR@0.1%%FPR: %.2f TPR@0.01%%FPR: %.2f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+            print("sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
 
-            tpr_at_low_fpr_1 = get_metrics(labels, dp_results, fixed_fpr=0.1)
-            tpr_at_low_fpr_2 = get_metrics(labels, dp_results, fixed_fpr=0.01)
-            tpr_at_low_fpr_3 = get_metrics(labels, dp_results, fixed_fpr=0.001)
-            tpr_at_low_fpr_4 = get_metrics(labels, dp_results, fixed_fpr=0.0001)
+            tpr_at_low_fpr_1 = get_metrics(labels, dp1_results, fixed_fpr=0.1)
+            tpr_at_low_fpr_2 = get_metrics(labels, dp1_results, fixed_fpr=0.01)
+            tpr_at_low_fpr_3 = get_metrics(labels, dp1_results, fixed_fpr=0.001)
+            tpr_at_low_fpr_4 = get_metrics(labels, dp1_results, fixed_fpr=0.2)
 
-            print("dpsigma: %.3f TPR@10%%FPR: %.2f TPR@1%%FPR: %.2f TPR@0.1%%FPR: %.2f TPR@0.01%%FPR: %.2f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+            print("dp1sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
 
-    return original_data, syn_data, diffusion, dp_diffusion
+            tpr_at_low_fpr_1 = get_metrics(labels, dp10_results, fixed_fpr=0.1)
+            tpr_at_low_fpr_2 = get_metrics(labels, dp10_results, fixed_fpr=0.01)
+            tpr_at_low_fpr_3 = get_metrics(labels, dp10_results, fixed_fpr=0.001)
+            tpr_at_low_fpr_4 = get_metrics(labels, dp10_results, fixed_fpr=0.2)
+
+            print("dp10sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+
+    return train_data, test_data, diffusion
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
+    parser.add_argument("--dataset", "-d", type=str, default="halfcheetah-medium-replay-v2")
     parser.add_argument("--pretraining_rate", type=float, default=1.0)
     parser.add_argument("--finetuning_rate", type=float, default=0.8)
-    parser.add_argument("--nondp_weight", type=str, default="retraining-model-9.pt")
-    parser.add_argument("--dp_weight", type=str, default="finetuning-model-4.pt")
-    parser.add_argument("--sigma", type=list, default=[0.01])
-    parser.add_argument("--repeat", type=int, default=32)
+    parser.add_argument("--nondp_weight", type=str, default="1e3data-300epoch finetuning without dp-model-299.pt")
+    # parser.add_argument("--nondp_weight", type=str, default="pretraining-model-9.pt")
+    parser.add_argument("--dp1_weight", type=str, default="finetuning_dp1.0-model-4.pt")
+    parser.add_argument("--dp10_weight", type=str, default="finetuning_dp10.0-model-4.pt")
+    parser.add_argument("--sigma", type=list, default=[0.05, 0.01])
+    parser.add_argument("--repeat", type=int, default=64)
+    parser.add_argument("--sample_num", type=int, default=10000)
     args = parser.parse_args()
 
-    original_data, syn_data, diffusion, dpdiffusion = get_data_and_model(config=args)
+    get_data_and_model(config=args)

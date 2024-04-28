@@ -314,8 +314,10 @@ class Trainer(object):
             train_num_steps: int = 100000,
 
             train_epochs: int = 10,
-            finetune_epochs: int = 5,
+            finetune_epochs: int = 1,
+            # finetune_epochs: int = 5,
             # finetune_epochs: int = 10,
+            # finetune_epochs: int = 300,
 
             ema_update_every: int = 10,
             ema_decay: float = 0.995,
@@ -447,6 +449,15 @@ class Trainer(object):
 
         data = torch.load(self.load_path)
 
+        ## for ablation test no pretraining maze2d medium sampling
+        # data_model = {}
+        # for key, value in data['model'].items():
+        #     new_key = key.replace('_module.', '')
+        #     data_model[new_key] = value
+        # model = self.accelerator.unwrap_model(self.model)
+        # model.load_state_dict(data_model)
+
+        
         model = self.accelerator.unwrap_model(self.model)
         model.load_state_dict(data['model'])
         self.model = model
@@ -665,7 +676,7 @@ class Trainer(object):
 
                     print(f"Hello, finetuning epoch: {epoch}")
                     if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
-                        self.save(epoch, 'finetuning')
+                        self.save(epoch, f'finetuning_dp{self.dp_epsilon}')
 
         accelerator.print('training complete')
 
@@ -721,7 +732,7 @@ class Trainer(object):
 
                 print(f"Hello, finetuning epoch: {epoch}")
                 if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
-                    self.save(epoch, 'finetuning without dp')
+                    self.save(epoch, '1e3data-300epoch finetuning without dp')
 
         accelerator.print('training complete')
 

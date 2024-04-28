@@ -48,7 +48,7 @@ def make_part_inputs(
     if modelled_terminals:
         terminals = dataset['terminals'].astype(np.float32)
         inputs = np.concatenate([inputs, terminals[:, None]], axis=1)
-    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=False)
+    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=True)
     return inputs_pretrain, inputs_finetune
 
 # Convert diffusion samples back to (s, a, r, s') format.

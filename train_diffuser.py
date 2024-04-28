@@ -82,9 +82,25 @@ def load_data(dataset_name, sample_ratio):
     if sample_ratio == 1.0:
         input = make_inputs(env)
     else:
-        input, _ = make_part_inputs(env, sample_ratio)
+        train_data, test_data = make_part_inputs(env, sample_ratio)
+        
+        if args.save_data:
+            np.random.seed(0)
+            train_indices = np.random.choice(train_data.shape[0], 1000, replace=False)
+            train_data = train_data[train_indices, :]
+            test_indices = np.random.choice(test_data.shape[0], 1000, replace=False)
+            test_data = test_data[test_indices, :]
+            with open(f'{args.results_folder}/train_data_1000.npy', 'wb') as f:
+                np.save(f, train_data)
+            with open(f'{args.results_folder}/test_data_1000.npy', 'wb') as f:
+                np.save(f, test_data)
+            input = train_data
+        else:
+            input = train_data
+
     input = torch.from_numpy(input).float()
     return input
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -116,6 +132,9 @@ if __name__ == '__main__':
     # curiosity driven
     parser.add_argument('--curiosity_driven', action='store_true')
     parser.add_argument('--curiosity_driven_rate', type=float ,default=0.5)
+    # mia
+    parser.add_argument('--save_data', action='store_true')
+    
 
     args = parser.parse_args()
 

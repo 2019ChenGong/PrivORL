@@ -31,11 +31,18 @@ import subprocess
 # datasets = ["maze2d-large-dense-v1", "maze2d-medium-dense-v1"]
 
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1"]
-# datasets = ["maze2d-medium-dense-v1"]
+# datasets = ["maze2d-umaze-dense-v1"]
 
 # datasets = ["maze2d-open-dense-v0"]
-# datasets = ["kitchen-partial-v0", "kitchen-mixed-v0", 'antmaze-medium-play-v1', "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"]
-datasets = ["halfcheetah-medium-replay-v2"]
+datasets = [
+            "kitchen-partial-v0",
+            # "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1", 
+            # "halfcheetah-medium-replay-v2", 
+            # "walker2d-medium-replay-v2"
+            ]
+# datasets = ["halfcheetah-medium-replay-v2"]
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
@@ -59,22 +66,25 @@ datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'ha
 
 
 
-# dp_epsilons = [1, 5, 10, 15, 20]
+# dp_epsilons = [1, 5, 10, 15]
 # dp_epsilons = [1, 5, 10]
-dp_epsilons = [10]
+# dp_epsilons = [5, 10]
 # dp_epsilons = [10, 15]
-# dp_epsilons = [20]
-num_samples = [5e5, 2e6]
+dp_epsilons = [10]
+num_samples = [1e6]
 seeds = [0]
 # gpus = ['0', '1', '2', '3', '4', '5', '6', '7']
-# gpus = ['0',]
-gpus = ['1', '2']
+# gpus = ['5', '6', '7']
+gpus = ['0', '1']
+# gpus = ['0']
+# gpus = ['0', '1', '2', '3', '4']
+# gpus = ['6', '7']
 max_workers = 20
 
 pretraining_rate = 1.0
 finetuning_rates = [0.8]
 # curiosity_driven_rates = [0.1, 0.2, 0.3, 0.4, 0.5]
-curiosity_driven_rates = [0.2]
+curiosity_driven_rates = [0.3]
 
 
 def get_directories(path):
@@ -101,18 +111,27 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             dataset_name = datasets_name[dataset]
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
-                            results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"            
+                            # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                            # results_folder = f"./alter_for_mia_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"            
-                            # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"            
-                            if dataset == 'maze2d-medium-dense-v1':
-                                finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
-                            else:
-                                finetune_load_path = os.path.join(results_folder, "pretraining-model-9.pt")
-                            
-                            store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
-                            # store_path = f"without_dp_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"            
+                            # if dataset == 'maze2d-medium-dense-v1':
+                            #     finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
+                            # else:
+                            #     finetune_load_path = os.path.join(results_folder, "pretraining-model-9.pt")
+                            finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
 
+                            # if dataset == 'maze2d-medium-dense-v1':
+                            #     finetune_load_path = os.path.join(f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}", "pretraining-model-4.pt")
+                            # else:
+                            #     finetune_load_path = os.path.join(f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}", "pretraining-model-9.pt")
+                            
+                            # store_path = f"for_ablation_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            # store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            store_path = f"2epoch_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            # store_path = f"without_dp_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            # store_path = f"pretraining_cur_syn_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
                             env, version = dataset.split('-', 1)
                             
                             arguments = [
@@ -129,6 +148,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--pretraining_rate', pretraining_rate,
                                 '--finetuning_rate', finetuning_rate,
                                 '--save_num_samples', int(num_sample),
+                                # '--save_data',
                             ]
                             script_path = 'train_diffuser.py'
                             
