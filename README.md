@@ -14,6 +14,8 @@ git submodule update --init --recursive
 pip install -r requirements.txt
 ```
 
+For baseline
+
 The code was tested on Python 3.8 and 3.9.
 If you don't have MuJoCo installed, follow the instructions here: https://github.com/openai/mujoco-py#install-mujoco.
 

@@ -7,7 +7,7 @@ def calculate_and_update_average_scores(directory, model):
     for root, dirs, files in os.walk(directory):
         for dir in dirs:
             if model in dir:
-                json_path = os.path.join(root, dir, 'eval_0.json')
+                json_path = os.path.join(root, dir, 'eval_1.json')
                 if os.path.exists(json_path):
                     with open(json_path, 'r') as file:
                         data = json.load(file)
@@ -29,14 +29,14 @@ def calculate_and_update_average_scores(directory, model):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", "-d", type=str, default="maze2d")
-parser.add_argument("--model", "-m", type=str, default="0")
+parser.add_argument("--model", "-m", type=str, default="0.3CurRate_CurDPsynthER-cql-maze2d-umaze-dense-v1-epsilon_20-seed_1-202404290153")
 
 args = parser.parse_args()
 
 # score_path = f'corl_logs_{args.dataset}'
 # score_path = f'corl_logs_without_dp_{args.dataset}'
 # score_path = f'corl_logs_ablation_{args.dataset}'
-score_path = f'corl_logs_param_analysis_{args.dataset}'
+score_path = f'corl_logs_param_analysis_v1_{args.dataset}'
 
 
 calculate_and_update_average_scores(score_path,  args.model)
