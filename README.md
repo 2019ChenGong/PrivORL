@@ -14,7 +14,7 @@ git submodule update --init --recursive
 pip install -r requirements.txt
 ```
 
-For baseline
+For baseline, we refer to the public repository in [SynMeter](https://github.com/zealscott/SynMeter)
 
 The code was tested on Python 3.8 and 3.9.
 If you don't have MuJoCo installed, follow the instructions here: https://github.com/openai/mujoco-py#install-mujoco.

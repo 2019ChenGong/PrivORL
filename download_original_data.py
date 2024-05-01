@@ -20,4 +20,4 @@ def load_data(dataset_name):
     with open(f'saved_original_data/{dataset_name}_original_data.npy', 'wb') as f:
         np.save(f, input)
 
-load_data('walker2d-medium-replay-v2')
+load_data('maze2d-umaze-dense-v1')
