@@ -11,6 +11,7 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
 ## 1. Contents
 - PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
   - [1. Contents](#1-contents)
+  - [2. Project structure](#2-project-structure)
   - [3. Get Start](#3-get-start)
     - [3.1 Installation](#31-installation)
     - [3.2 Dataset and Files Preparation](#32-dataset-and-files-preparation)
@@ -20,6 +21,37 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
   - [5. Acknowledgment](#5-acknowledgment)
   - [6. Citation](#6-citation)
 
+
+## 2. Project structure
+
+The structure of this project is as follows:
+```
+MuJoCo
+    -- bash-agent-training.py ------------ the script for downstream tasks (training the agents using the real or synthetic transitions)
+    -- src
+        -- adv_train.py ------------------ train the adversarial agents using our approach.
+        -- victim_train.py --------------- retrain the victim agents.
+        -- test_masked_victim.py --------- play the adversarial agent with a regular victim agent or mask victim agent.
+        -- generate_activations.py ------- collect the victim activations when playing against different opponents.
+        -- rnd_result
+            -- calnon_loss.py ------------ obtain the non-loss rates of adversarial agents.
+            -- plot2.py ------------------ visualize the performance of adversarial agents.
+            -- retrain_win
+                -- calnon_loss.py -------- obtain the non-loss rates of retrained victim agents.
+                -- retrain_plot.py ------- visualize the performance of retrained victim agents.
+    -- our agent
+        -- attack ------------------------ the policy network weights of adversarial agents.
+        -- retrained --------------------- the policy network weights of retrained victim agents.
+    -- multiagent-competition ------------ the agent zoo downloaded from the package (https://github.com/openai/multiagent-competition).
+    -- adv-agent
+        -- baseline ---------------------- the policy network weights of adversarial agents trained by baseline approach.
+    -- tensorboard_records ------------------ the curves recorded in tensorboard files during training adversarial policies.
+    -- video ------------------ the game videos show adversarial policies and regular agents aginst with victim agents, respectively.
+
+Baselines
+    -- 
+            
+```
 
 ## Get Start
 
