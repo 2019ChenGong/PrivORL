@@ -113,18 +113,6 @@ python td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.
 ### Baselines
 
 
-## Thinking of adding SynthER to your own algorithm?
-
-Our codebase has everything you need for diffusion with low-dimensional data along with example integrations with RL algorithms.
-For a custom use-case, we recommend starting from the training script and `SimpleDiffusionGenerator` class
-in `synther/diffusion/train_diffuser.py`. You can modify the hyperparameters specified in `config/resmlp_denoiser.gin`
-to suit your own needs.
-
-## Additional Notes
-
-- Our codebase uses `wandb` for logging, you will need to set `--wandb-entity` across the repository.
-- Our pixel-based experiments are based on a modified version of the [V-D4RL](https://github.com/conglu1997/v-d4rl) repository. The latent representations are derived from the trunks of the [actor](https://github.com/conglu1997/v-d4rl/blob/55fde823f3ddb001dd439a701c74390eb3ac34fb/drqbc/drqv2.py#L82) and [critic](https://github.com/conglu1997/v-d4rl/blob/55fde823f3ddb001dd439a701c74390eb3ac34fb/drqbc/drqv2.py#L108C15-L108C15).
-
 ## Acknowledgements
 
 SynthER builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We
