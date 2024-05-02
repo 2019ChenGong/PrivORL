@@ -33,11 +33,13 @@ def update_config(config, epsilon, model, dataset):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str, default="pgm")
+    parser.add_argument("--model", "-m", type=str, default="pretraining_pategan")
     parser.add_argument("--dataset", "-d", type=str, default="kitchen-complete-v0")
     parser.add_argument("--cuda", "-c", type=str, default="0")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--epsilon", type=float, default=10.0)
+    parser.add_argument('--finetuning', action='store_true')
+
 
     args = parser.parse_args()
 
@@ -54,7 +56,10 @@ def main():
     synthesizer = __import__("synthesizer." + args.model, fromlist=[args.model])
 
     print("Tuning {0} on {1} with seed {2}".format(args.model, args.dataset, seed))
-    synthesizer.syn(config, args.epsilon, args.cuda, args.dataset, seed=seed)
+    if args.model == "pretraining_pategan":
+        synthesizer.syn(config, args.finetuning, args.cuda, args.seed)
+    else:
+        synthesizer.syn(config, args.epsilon, args.cuda, args.dataset, seed=seed)
 
 
 if __name__ == "__main__":

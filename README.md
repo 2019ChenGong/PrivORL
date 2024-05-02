@@ -33,12 +33,35 @@ MuJoCo
     -- cql.py ---------------------------- training agent using cql algorithm
     -- iql.py ---------------------------- training agent using iql algorithm
     -- td3_bc.py ------------------------- training agent using td3_bc algorithm
-    -- marginal.py ------------------------- computing marginal between synthetic and real transitions
+    -- train_diffuser.py ----------------- pre-training and fine-tuning of diffusion models
+    -- marginal.py ----------------------- computing marginal between synthetic and real transitions
     -- mia.py ---------------------------- mia for the diffusion models
-
+    -- synther
+      -- corl ---------------------------- configuration files of downstream tasks
+      -- diffuser ------------------------ utilities and scripts of diffusion model
+    -- t-SNE ----------------------------- t-SNE visualization
+    -- config ---------------------------- gin configuration files of PrivTranR training and synthetizing
 Baselines
-    -- 
-            
+    -- datasets
+      -- maze2d-umaze-dense-v1
+      -- ...
+      -- walker2d-medium-repaly-v2 ------- csv and json files of your own datasets
+      -- bash-data-generate.py ----------- the script for loading d4rl datasets and saving csv and json
+      -- data-generate.py ---------------- loading d4rl datasets and saving csv and json
+    -- exp ------------------------------- model weights and synthetic transitions
+    -- samples --------------------------- npz files of synthetic transitions for downstream tasks      
+    -- scripts
+      -- bash-data-process.py ------------ the script for splitting datasets
+      -- bash-train-baselines.py --------- the script for training and synthetizing of baselines
+      -- bash-completion.py -------------- the script for completing the missing dimensions of synthetic transitions
+      -- data_process.py ----------------- splitting datasets
+      -- syn_synthesizer.py -------------- training and synthetizing of baselines
+      -- completion.py ------------------- completing the missing dimensions of synthetic transitions
+    -- synthesizer
+      -- pgm.py -------------------------- training pgm and synthetizing transitions
+      -- privsyn.py ---------------------- training privsyn and synthetizing transitions
+      -- pategan.py ---------------------- training pategan and synthetizing transitions
+      -- pretraining_pategan.py ---------- training pretraining_pategan and synthetizing transitions
 ```
 
 ## Get Start
@@ -111,24 +134,3 @@ would like to particularly thank the authors of:
 - [CORL](https://github.com/tinkoff-ai/CORL)
 - [SynMeter](https://github.com/zealscott/SynMeter)
 - [MIA](https://github.com/fseclab-osaka/mia-diffusion)
-
-#### dpsynrl
-
-## pretrain(completed)
-
-## fine-tuning
-
-```bash
-# run lines 45 to 63, while commenting on lines 65 to 81
-# dataset = halfcheetah, epsilon = 5 (uncompleted)
-python bash-train-diffusion.py
-# saved in f"./SynthER/results_{dataset}-medium-replay-v2"
-```
-
-## offlineRL
-
-```bash
-# run lines 65 to 81, while commenting on lines 45 to 63
-python bash-train-diffusion.py
-# results will be saved in "./corl_logs/f"DPsynthER-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(uuid.uuid4())[:8]}"
-```

@@ -1,14 +1,14 @@
 import argparse
-import gym
-import d4rl
+# import gym
+# import d4rl
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 # Setting font family to 'Liberation Serif' or another available serif font
-# mpl.rcParams['font.family'] = 'Liberation Serif'
-# mpl.rcParams['font.size'] = 12  # Set default font size
+mpl.rcParams['font.family'] = 'Times New Roman'
+# mpl.rcParams['font.size'] = 28  # Set default font size
 
 def make_inputs(dataset):
     obs = dataset['observations']
@@ -22,20 +22,21 @@ def make_inputs(dataset):
 if __name__ =='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", "-d", type=str, default="maze2d-umaze-dense-v1")
-    # parser.add_argument("--dataset", "-d", type=str, default="kitchen-partial-v0")
     parser.add_argument("--sample_points", type=int, default=500)
     args = parser.parse_args()
 
     # Load original and synthetic data
-    try:
-        with open(f't-SNE/{args.dataset}_original_data.npy', 'rb') as f:
-            original_data = np.load(f)
-    except FileNotFoundError:
-        env = gym.make(args.dataset)
-        original_data = d4rl.qlearning_dataset(env)
-        original_data = make_inputs(original_data)
-        with open(f't-SNE/{args.dataset}_original_data.npy', 'wb') as f:
-            np.save(f, original_data)
+    # try:
+    #     with open(f't-SNE/{args.dataset}_original_data.npy', 'rb') as f:
+    #         original_data = np.load(f)
+    # except FileNotFoundError:
+    #     env = gym.make(args.dataset)
+    #     original_data = d4rl.qlearning_dataset(env)
+    #     original_data = make_inputs(original_data)
+    #     with open(f't-SNE/{args.dataset}_original_data.npy', 'wb') as f:
+    #         np.save(f, original_data)
+    with open(f't-SNE/{args.dataset}_original_data.npy', 'rb') as f:
+        original_data = np.load(f)
 
     # Dictionary of synthetic datasets with descriptions
     syn_datasets = {
@@ -78,15 +79,15 @@ if __name__ =='__main__':
         synthetic_points = experiences_2d[args.sample_points:]
 
         ax = plt.subplot(1, 5, i+1)
-        ax.scatter(original_points[:, 0], original_points[:, 1], c='#88DDF1', label='Original Data', s=50, alpha=0.5)
+        ax.scatter(original_points[:, 0], original_points[:, 1], c='#88DDF1', label='Real Data', s=50, alpha=0.5)
         ax.scatter(synthetic_points[:, 0], synthetic_points[:, 1], c='#FD836E', label=f'Synthetic Data', s=50, alpha=0.5)
-        ax.set_title(f'{description}', fontsize=18, fontweight='bold')  # Increased font size for title
+        ax.set_title(f'{description}', fontsize=28, fontweight='bold')  # Increased font size for title
         ax.set_xlabel('')  # Explicitly empty x-axis labels
         ax.set_ylabel('')  # Explicitly empty y-axis labels
         ax.set_xticks([])  # Remove x-axis tick numbers
         ax.set_yticks([])  # Remove y-axis tick numbers
-        ax.legend(fontsize=14, title_fontsize=14)  # Increased font size for legend
+        legend = ax.legend(fontsize=20, title_fontsize=14, handlelength=0.5, handleheight=0.5, markerscale=2.5, labelspacing=0.3)
 
     plt.tight_layout()
-    plt.savefig('t-SNE/all_dpdiffusion.png')
+    plt.savefig('t-SNE/maze2d_tsne.pdf')
     plt.close()

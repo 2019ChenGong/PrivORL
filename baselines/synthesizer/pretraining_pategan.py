@@ -157,26 +157,40 @@ def tune(config, cuda, dataset, seed=0):
     return config
 
 
-def syn(config, epsilon, cuda, dataset, seed=0):
-    def ctgan_objective():
-        # configure the model for this trail
-        model_params = {}
-        model_params["n_iter"] = 3195
-        model_params["generator_n_layers_hidden"] = 3
-        model_params["generator_n_units_hidden"] = 141
-        model_params["discriminator_n_layers_hidden"] = 2
-        model_params["discriminator_n_units_hidden"] = 113
-        model_params["n_teachers"] = 15
-        model_params["lr"] = 7.50195444362012e-05
+def syn(args, finetuning, cuda, seed=0):
+    improve_reproducibility(seed)
 
-        model_params["epsilon"] = epsilon
+    device = torch.device("cuda:" + cuda)
+    model_params = args["model_params"]    
+    path_params = args["path_params"]
+    model_params["generator_n_layers_hidden"] = 3
+    model_params["generator_n_units_hidden"] = 141
+    model_params["discriminator_n_layers_hidden"] = 2
+    model_params["discriminator_n_units_hidden"] = 113
+    model_params["n_teachers"] = 15
+    model_params["lr"] = 7.50195444362012e-05
+    train_data_pd, meta_data, discrete_columns = read_csv(path_params["train_data"], path_params["meta_data"])
+    val_data_pd, _, _ = read_csv(path_params["val_data"], path_params["meta_data"])
+    # combine train and val data
+    data_pd = pd.concat([train_data_pd, val_data_pd], ignore_index=True, sort=False)
 
-        # store configures
-        config["model_params"] = model_params
-
-        # train model
-        loader = GenericDataLoader(real_train_data_pd)
+    loader = GenericDataLoader(data_pd)
+    print(path_params["out_model"])
+    print(f'finetuning is {finetuning}')
+    if not finetuning:
+        model_params["n_iter"] = 10
+        model_params["epsilon"] = 1000000000.0 # inf
         model = Plugins().get("pategan", **model_params, device=device)
+        model.fit(loader)
+        
+        # save training record and model
+        os.makedirs(os.path.dirname(path_params["loss_record"]), exist_ok=True)
+        save_to_file(path_params["out_model"], model)
+
+    else:
+        model = load_from_file(path_params["out_model"])
+        model.model.max_iter = 5
+        model.model.epsilon = 10.0
         model.fit(loader)
 
         # sample and save the temporary synthetic data
@@ -184,15 +198,3 @@ def syn(config, epsilon, cuda, dataset, seed=0):
         sampled = model.generate(n_samples).dataframe()
         os.makedirs(os.path.dirname(path_params["out_data"]), exist_ok=True)
         sampled.to_csv(path_params["out_data"], index=False)
-
-    device = torch.device("cuda:" + cuda)
-    path_params = config["path_params"]
-
-    # load real data
-    real_train_data_pd, meta_data, discrete_columns = read_csv(path_params["train_data"], path_params["meta_data"])
-
-    ctgan_objective()
-
-    print("finished {0}".format(dataset))
-
-    return config
