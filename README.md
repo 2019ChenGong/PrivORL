@@ -1,5 +1,6 @@
 <div align=center>
-  # PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
+  
+# PRIVIMAGE: Differentially Private Synthetic Image Generation using Diffusion Models with Semantic-Aware Pretraining
 </div>
 
 <!-- [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
@@ -21,7 +22,7 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
   - [6. Citation](#6-citation)
 
 
-## Get Startp
+## Get Start
 
 To install, clone the repository and run the following:
 
