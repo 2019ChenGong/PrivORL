@@ -1,11 +1,27 @@
-# DPTrajectorySyn
+<div align=center>
+  # PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
+</div>
 
 <!-- [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
 [![arXiv](https://img.shields.io/badge/arXiv-2210.07105-b31b1b.svg)](https://arxiv.org/abs/2303.06614) -->
 
+This is the official implementaion of paper ***PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning***. This repository contains Pytorch training code and evaluation code. PRIVIMAGE is a Differetial Privacy (DP) offline RL transitions synthesis tool, which leverages the DP technique to generate synthetic transitions to replace the sensitive data, allowing organizations to share and utilize synthetic images without privacy concerns.
+
+## 1. Contents
+- PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
+  - [1. Contents](#1-contents)
+  - [2. Introduction](#2-introduction)
+  - [3. Get Start](#3-get-start)
+    - [3.1 Installation](#31-installation)
+    - [3.2 Dataset and Files Preparation](#32-dataset-and-files-preparation)
+    - [3.3 Training](#33-training)
+    - [3.4 Inference](#34-inference)
+  - [4. Contacts](#4-contacts)
+  - [5. Acknowledgment](#5-acknowledgment)
+  - [6. Citation](#6-citation)
 
 
-## Setup
+## Get Startp
 
 To install, clone the repository and run the following:
 
