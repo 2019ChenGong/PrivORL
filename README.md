@@ -1,6 +1,6 @@
 <div align=center>
   
-# PRIVIMAGE: Differentially Private Synthetic Image Generation using Diffusion Models with Semantic-Aware Pretraining
+# PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
 </div>
 
 <!-- [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
