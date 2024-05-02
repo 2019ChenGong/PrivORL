@@ -28,25 +28,15 @@ The structure of this project is as follows:
 ```
 MuJoCo
     -- bash-agent-training.py ------------ the script for downstream tasks (training the agents using the real or synthetic transitions)
-    -- src
-        -- adv_train.py ------------------ train the adversarial agents using our approach.
-        -- victim_train.py --------------- retrain the victim agents.
-        -- test_masked_victim.py --------- play the adversarial agent with a regular victim agent or mask victim agent.
-        -- generate_activations.py ------- collect the victim activations when playing against different opponents.
-        -- rnd_result
-            -- calnon_loss.py ------------ obtain the non-loss rates of adversarial agents.
-            -- plot2.py ------------------ visualize the performance of adversarial agents.
-            -- retrain_win
-                -- calnon_loss.py -------- obtain the non-loss rates of retrained victim agents.
-                -- retrain_plot.py ------- visualize the performance of retrained victim agents.
-    -- our agent
-        -- attack ------------------------ the policy network weights of adversarial agents.
-        -- retrained --------------------- the policy network weights of retrained victim agents.
-    -- multiagent-competition ------------ the agent zoo downloaded from the package (https://github.com/openai/multiagent-competition).
-    -- adv-agent
-        -- baseline ---------------------- the policy network weights of adversarial agents trained by baseline approach.
-    -- tensorboard_records ------------------ the curves recorded in tensorboard files during training adversarial policies.
-    -- video ------------------ the game videos show adversarial policies and regular agents aginst with victim agents, respectively.
+    -- bash-baselines-agent-training.py -- the script for downstream task for the baselines (training the agents using the real or synthetic transitions)
+    -- bash-evaluate-marginal.py --------- the script for computing the marginal
+    -- bash-train-diffusion.py ----------- the script for pre-training and fine-tuning of diffusion models
+    -- awac.py --------------------------- training agent using awac algorithm
+    -- cql.py ---------------------------- training agent using cql algorithm
+    -- iql.py ---------------------------- training agent using iql algorithm
+    -- td3_bc.py ------------------------- training agent using td3_bc algorithm
+    -- marginal.py ------------------------- computing marginal between synthetic and real transitions
+    -- mia.py ---------------------------- mia for the diffusion models
 
 Baselines
     -- 
