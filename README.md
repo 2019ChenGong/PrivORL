@@ -89,27 +89,8 @@ python td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.
 
 ```
 
-### Online RL
+### Baselines
 
-Baselines (SAC, REDQ):
-
-```bash
-# SAC.
-python3 synther/online/online_exp.py --env quadruped-walk-v0 --results_folder online_logs/ --exp_name SAC --gin_config_files 'config/online/sac.gin'
-
-# REDQ.
-python3 synther/online/online_exp.py --env quadruped-walk-v0 --results_folder online_logs/ --exp_name REDQ --gin_config_files 'config/online/redq.gin'
-```
-
-SynthER (SAC):
-
-```bash
-# DMC environments.
-python3 synther/online/online_exp.py --env quadruped-walk-v0 --results_folder online_logs/ --exp_name SynthER --gin_config_files 'config/online/sac_synther_dmc.gin' --gin_params 'redq_sac.utd_ratio = 20' 'redq_sac.num_samples = 1000000'
-
-# OpenAI environments (different gin config).
-python3 synther/online/online_exp.py --env HalfCheetah-v2 --results_folder online_logs/ --exp_name SynthER --gin_config_files 'config/online/sac_synther_openai.gin' --gin_params 'redq_sac.utd_ratio = 20' 'redq_sac.num_samples = 1000000'
-```
 
 ## Thinking of adding SynthER to your own algorithm?
 
@@ -129,11 +110,9 @@ SynthER builds upon many works and open-source codebases in both diffusion model
 would like to particularly thank the authors of:
 
 - [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch)
-- [REDQ](https://github.com/watchernyu/REDQ)
 - [CORL](https://github.com/tinkoff-ai/CORL)
-
-
-
+- [SynMeter](https://github.com/zealscott/SynMeter)
+- [MIA](https://github.com/fseclab-osaka/mia-diffusion)
 
 #### dpsynrl
 
@@ -145,7 +124,7 @@ would like to particularly thank the authors of:
 # run lines 45 to 63, while commenting on lines 65 to 81
 # dataset = halfcheetah, epsilon = 5 (uncompleted)
 python bash-train-diffusion.py
-# saved in f"/p/fzv6enresearch/SynthER/results_{dataset}-medium-replay-v2"
+# saved in f"./SynthER/results_{dataset}-medium-replay-v2"
 ```
 
 ## offlineRL
