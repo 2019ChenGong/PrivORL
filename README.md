@@ -11,7 +11,6 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
 ## 1. Contents
 - PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
   - [1. Contents](#1-contents)
-  - [2. Introduction](#2-introduction)
   - [3. Get Start](#3-get-start)
     - [3.1 Installation](#31-installation)
     - [3.2 Dataset and Files Preparation](#32-dataset-and-files-preparation)
