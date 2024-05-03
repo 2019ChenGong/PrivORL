@@ -14,7 +14,7 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
   - [2. Project structure](#2-project-structure)
   - [3. Get Start](#3-get-start)
     - [3.1 Installation](#31-installation)
-    - [3.2 Dataset and Files Preparation](#32-dataset-and-files-preparation)
+    - [3.2 Dataset](#32-dataset)
     - [3.3 Training](#33-training)
     - [3.4 Inference](#34-inference)
   - [5. Acknowledgment](#5-acknowledgment)
@@ -64,7 +64,9 @@ Baselines
       -- pretraining_pategan.py ---------- training pretraining_pategan and synthetizing transitions
 ```
 
-## Get Start
+## 3. Get Start
+
+### 3.1 Installation
 
 To install, clone the repository and run the following:
 
@@ -77,6 +79,10 @@ For baseline, we refer to the public repository in [SynMeter](https://github.com
 
 The code was tested on Python 3.8 and 3.9.
 If you don't have MuJoCo installed, follow the instructions here: https://github.com/openai/mujoco-py#install-mujoco.
+
+### 3.2 Dataset
+
+We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4RL).
 
 ## Running Instructions
 
@@ -132,5 +138,6 @@ would like to particularly thank the authors of:
 
 - [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch)
 - [CORL](https://github.com/tinkoff-ai/CORL)
+- [D4RL](https://github.com/Farama-Foundation/D4RL)
 - [SynMeter](https://github.com/zealscott/SynMeter)
 - [MIA](https://github.com/fseclab-osaka/mia-diffusion)
