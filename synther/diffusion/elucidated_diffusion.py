@@ -314,7 +314,7 @@ class Trainer(object):
             train_num_steps: int = 100000,
 
             train_epochs: int = 10,
-            finetune_epochs: int = 1,
+            finetune_epochs: int = 5,
             # finetune_epochs: int = 5,
             # finetune_epochs: int = 10,
             # finetune_epochs: int = 300,

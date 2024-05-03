@@ -80,37 +80,49 @@ If you don't have MuJoCo installed, follow the instructions here: https://github
 
 ## Running Instructions
 
-### marginal
+### Curiosity-driven Pre-training
 
+Diffusion model pre-training (this automatically generates samples and saves them):
+
+```
+python --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> ----curiosity_driven --curiosity_driven_rate 0.3 --dp_epsilon 10.0 --results_folder <the-target-folder>  --save_file_name <store_path> 
+```
+
+### Fine-tuning
+
+Fine-tuning the pre-trained diffusion models:
+
+```
 python 
-
-### Offline RL
-
-Diffusion model training (this automatically generates samples and saves them):
-
-```bash
-python3 synther/diffusion/train_diffuser.py --dataset halfcheetah-medium-replay-v2
 ```
 
-Baseline without SynthER (e.g. on TD3+BC):
+### Agent Training
 
-```bash
-python synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/walker2d/medium_replay_v2.yaml --checkpoints_path corl_logs/
+Training agents using the synthetic transitions of PrivTranR
+
+```
+python 
 ```
 
-Offline RL training with SynthER:
+### Abalation
 
-```bash
-# Generating diffusion samples on the fly.
-python3 synther/corl/algorithms/td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/ --name SynthER --diffusion.path path/to/model-100000.pt
+```
+python
+```
 
+### Marginal and Correlation Computing
 
-# Using saved dp_diffusion samples.
-python td3_bc.py --config synther/corl/yaml/td3_bc/halfcheetah/medium_replay_v2.yaml --checkpoints_path corl_logs/ --name DPsynthER --dp_epsilon 5 --diffusion.path path/to/samples.npz
-
+```
+python 
 ```
 
 ### Baselines
+
+```
+python
+```
+
+### MIA
 
 
 ## Acknowledgements

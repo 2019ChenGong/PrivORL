@@ -111,16 +111,16 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             dataset_name = datasets_name[dataset]
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
-                            # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                            results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_for_mia_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"            
-                            results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"            
-                            # if dataset == 'maze2d-medium-dense-v1':
-                            #     finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
-                            # else:
-                            #     finetune_load_path = os.path.join(results_folder, "pretraining-model-9.pt")
-                            finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
+                            # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"            
+                            if dataset == 'maze2d-medium-dense-v1':
+                                finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
+                            else:
+                                finetune_load_path = os.path.join(results_folder, "pretraining-model-9.pt")
+                            # finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
 
                             # if dataset == 'maze2d-medium-dense-v1':
                             #     finetune_load_path = os.path.join(f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}", "pretraining-model-4.pt")
@@ -128,8 +128,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             #     finetune_load_path = os.path.join(f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}", "pretraining-model-9.pt")
                             
                             # store_path = f"for_ablation_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
-                            # store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
-                            store_path = f"2epoch_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            store_path = f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                            # store_path = f"2epoch_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
                             # store_path = f"without_dp_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
                             # store_path = f"pretraining_cur_syn_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
                             env, version = dataset.split('-', 1)
@@ -138,7 +138,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dataset', dataset,
                                 '--datasets_name', dataset_name,
                                 '--seed', seed,
-                                '--load_checkpoint',
+                                # '--load_checkpoint',
                                 '--curiosity_driven',
                                 '--curiosity_driven_rate', curiosity_driven_rate,
                                 '--dp_epsilon', dp_epsilon,
