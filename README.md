@@ -15,6 +15,7 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
   - [3. Get Start](#3-get-start)
     - [3.1 Installation](#31-installation)
     - [3.2 Dataset](#32-dataset)
+  - [4. Running Instructions](#running-instructions)
     - [3.3 Training](#33-training)
     - [3.4 Inference](#34-inference)
   - [5. Acknowledgment](#5-acknowledgment)
@@ -84,9 +85,9 @@ If you don't have MuJoCo installed, follow the instructions here: https://github
 
 We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4RL).
 
-## Running Instructions
+## 4. Running Instructions
 
-### Curiosity-driven Pre-training
+### 4.1 Curiosity-driven Pre-training
 
 Diffusion model pre-training (this automatically generates samples and saves them):
 
@@ -94,7 +95,7 @@ Diffusion model pre-training (this automatically generates samples and saves the
 python --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> ----curiosity_driven --curiosity_driven_rate 0.3 --dp_epsilon 10.0 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
-### Fine-tuning
+### 4.2 Fine-tuning
 
 Fine-tuning the pre-trained diffusion models:
 
@@ -102,7 +103,7 @@ Fine-tuning the pre-trained diffusion models:
 python 
 ```
 
-### Agent Training
+### 4.3 Agent Training
 
 Training agents using the synthetic transitions of PrivTranR
 
@@ -110,28 +111,28 @@ Training agents using the synthetic transitions of PrivTranR
 python 
 ```
 
-### Abalation
+### 4.4 Abalation
 
 ```
 python
 ```
 
-### Marginal and Correlation Computing
+### 4.5 Marginal and Correlation Computing
 
 ```
 python 
 ```
 
-### Baselines
+### 4.6 Baselines
 
 ```
 python
 ```
 
-### MIA
+### 4.7 MIA
 
 
-## Acknowledgements
+## 5. Acknowledgements
 
 SynthER builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We
 would like to particularly thank the authors of:
