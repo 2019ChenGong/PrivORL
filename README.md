@@ -16,8 +16,6 @@ This is the official implementaion of paper ***PrivTranR: Differentially Private
     - [3.1 Installation](#31-installation)
     - [3.2 Dataset](#32-dataset)
   - [4. Running Instructions](#running-instructions)
-    - [3.3 Training](#33-training)
-    - [3.4 Inference](#34-inference)
   - [5. Acknowledgment](#5-acknowledgment)
 
 
