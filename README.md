@@ -87,18 +87,18 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 
 ### 4.1 Curiosity-driven Pre-training
 
-Diffusion model pre-training (this automatically generates samples and saves them):
+Diffusion model pre-training 
 
 ```
-python --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> ----curiosity_driven --curiosity_driven_rate 0.3 --dp_epsilon 10.0 --results_folder <the-target-folder>  --save_file_name <store_path> 
+python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
 ### 4.2 Fine-tuning
 
-Fine-tuning the pre-trained diffusion models:
+Fine-tuning the pre-trained diffusion models (this automatically generates samples and saves them):
 
 ```
-python 
+python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
 
 ### 4.3 Agent Training
@@ -106,33 +106,79 @@ python
 Training agents using the synthetic transitions of PrivTranR
 
 ```
-python 
+python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 ### 4.4 Abalation
 
+NonCurPrivTranR:
+
 ```
-python
+python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --results_folder <the-target-folder>  --save_file_name <store_path> 
+```
+
+```
+python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
+```
+
+```
+python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
+```
+
+NonPrePrivTranR:
+
+```
+python train_NonPrePrivTranR.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
+```
+
+```
+python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 ### 4.5 Marginal and Correlation Computing
 
 ```
-python 
+python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
 ```
 
 ### 4.6 Baselines
 
 ```
-python
+python baselines/datasets/data_generate.py --dataset <the-name-of-dataset>
+```
+
+```
+python baselines/scripts/data_process.py --dataset <the-name-of-dataset>
+```
+
+```
+python baselines/scripts/syn_synthesizer.py --model <baseline-model> --dataset <the-name-of-dataset> --epsilon 10.0 --finetuning <for pre-pategan>
+```
+
+```
+python baselines/scripts/completion.py --model <baseline-model> --dataset <the-name-of-transitions>
+```
+
+```
+python baselines/scripts/csv_to_npz.py --model <baseline-model> --dataset <the-name-of-transitions> --epsilon 10.0 
+```
+
+```
+python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 ### 4.7 MIA
 
+Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
+
+```
+python mia.py
+```
+
 
 ## 5. Acknowledgements
 
-SynthER builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We
+PrivTranR builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We
 would like to particularly thank the authors of:
 
 - [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch)
