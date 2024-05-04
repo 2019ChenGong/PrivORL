@@ -99,12 +99,6 @@ Then, you are free to tune, run and test the new synthesizer!
 |**TableDiffusion**| DP | Generating tabular datasets under differential privacy. | [Paper](https://arxiv.org/abs/2308.14784) |
 
 
-### Large Language Model (LLM)-based models
-
-| Method | Type | Description | Reference |
-|--- | --- | --- | --- |
-|**GReaT**| HP | Language Models are Realistic Tabular Data Generators | [Paper](https://openreview.net/forum?id=cEygmQNOeI) |
-
 
 
 
@@ -117,8 +111,3 @@ Then, you are free to tune, run and test the new synthesizer!
 
 *Please see our paper for details and usages.*
 
-
-## :rainbow: Acknowledge 
-Many excellent synthesis algorithms and open-source libraries are used in this project:
-* [Synthetic Data Vault](https://sdv.dev/)
-* [Synthcity](https://github.com/vanderschaarlab/synthcity)
