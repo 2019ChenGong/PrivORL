@@ -146,13 +146,14 @@ python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkp
 
 ### 4.5 Marginal and Correlation Computing
 
-
+Compute the marginal and correlation values between the synthetic and real transitions:
 
 ```
 python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
 ```
 
 ### 4.6 Baselines
+
 
 ```
 python baselines/datasets/data_generate.py --dataset <the-name-of-dataset>
