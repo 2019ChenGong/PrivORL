@@ -154,26 +154,37 @@ python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <t
 
 ### 4.6 Baselines
 
+Load d4rl datasets and save as csv and json:
 
 ```
 python baselines/datasets/data_generate.py --dataset <the-name-of-dataset>
 ```
 
+Split datasets into train, valid and test dataset:
+
 ```
 python baselines/scripts/data_process.py --dataset <the-name-of-dataset>
 ```
+
+Train the baseline models, automatically generate samples and save them (pretrain pre-pategan with infinite privacy budget, finetune with privacy budget of 10.0):
 
 ```
 python baselines/scripts/syn_synthesizer.py --model <baseline-model> --dataset <the-name-of-dataset> --epsilon 10.0 --finetuning <for pre-pategan>
 ```
 
+Complete the missing dimensions of synthetic transitions:
+
 ```
 python baselines/scripts/completion.py --model <baseline-model> --dataset <the-name-of-transitions>
 ```
 
+Save the csv transitions as npz to adapt to downstream tasks:
+
 ```
 python baselines/scripts/csv_to_npz.py --model <baseline-model> --dataset <the-name-of-transitions> --epsilon 10.0 
 ```
+
+Train the agent using the synthetic transitions of baselines:
 
 ```
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
