@@ -87,7 +87,7 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 
 ### 4.1 Curiosity-driven Pre-training
 
-Diffusion model pre-training 
+Diffusion model pre-training:
 
 ```
 python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
@@ -103,7 +103,7 @@ python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --res
 
 ### 4.3 Agent Training
 
-Training agents using the synthetic transitions of PrivTranR
+Training agents using the synthetic transitions of PrivTranR:
 
 ```
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
@@ -113,13 +113,19 @@ python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkp
 
 NonCurPrivTranR:
 
+Pre-train the diffusion model without curosity-driven method:
+
 ```
 python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
+Fine-tune the pre-trained diffusion model:
+
 ```
 python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
+
+Train the agent using the synthetic transitisons:
 
 ```
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
@@ -127,15 +133,20 @@ python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkp
 
 NonPrePrivTranR:
 
+Train the diffusion model without DP protection:
 ```
 python train_NonPrePrivTranR.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
+
+Train the agent using the synthetic transitions:
 
 ```
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 ### 4.5 Marginal and Correlation Computing
+
+
 
 ```
 python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
