@@ -81,24 +81,7 @@ Then, you are free to tune, run and test the new synthesizer!
 
 | Method | Type | Description | Reference |
 |--- | --- | --- | --- |
-|**CTGAN**| HP | A conditional generative adversarial network which can handle tabular data.| [Paper](https://arxiv.org/abs/1907.00503)|
 |**PATE-GAN**| DP | The method uses the Private Aggregation of Teacher Ensembles (PATE) framework and applies it to GANs.|  [Paper](https://openreview.net/forum?id=S1zk9iRqF7) |
-
-### Variational autoencoders (VAE)
-
-| Method | Type | Description | Reference |
-|--- | --- | --- | --- |
-|**TVAE**| HP | A conditional VAE network which can handle tabular data.|  [Paper](https://arxiv.org/abs/1907.00503) |
-
-
-### Diffusion models
-
-| Method | Type | Description | Reference |
-|--- | --- | --- | --- |
-|**TabDDPM**| HP | TabDDPM: Modelling Tabular Data with Diffusion Models. | [Paper](https://arxiv.org/abs/2209.15421) |
-|**TableDiffusion**| DP | Generating tabular datasets under differential privacy. | [Paper](https://arxiv.org/abs/2308.14784) |
-
-
 
 
 
