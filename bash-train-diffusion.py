@@ -35,12 +35,12 @@ import subprocess
 
 # datasets = ["maze2d-open-dense-v0"]
 datasets = [
-            "kitchen-partial-v0",
+            # "kitchen-partial-v0",
             # "maze2d-umaze-dense-v1", 
             # "maze2d-medium-dense-v1", 
             # "maze2d-large-dense-v1", 
-            # "halfcheetah-medium-replay-v2", 
-            # "walker2d-medium-replay-v2"
+            "halfcheetah-medium-replay-v2", 
+            "walker2d-medium-replay-v2"
             ]
 # datasets = ["halfcheetah-medium-replay-v2"]
 
@@ -51,7 +51,7 @@ datasets = [
 
 
 datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-full-replay-v2', 'walker2d-medium-v2'],
-                 "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'walker2d-medium-v2', 'halfcheetah-full-replay-v2'],   
+                 "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'walker2d-full-replay-v2', 'halfcheetah-full-replay-v2'],   
                  "maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
                  "maze2d-umaze-dense-v1":     ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
@@ -111,11 +111,12 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             dataset_name = datasets_name[dataset]
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
-                            results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                            # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_for_mia_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"            
-                            # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"            
+                            # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"       
+                            results_folder = f"./alter_whole_mujoco_full_results_{dataset}_{pretraining_rate}"     
                             if dataset == 'maze2d-medium-dense-v1':
                                 finetune_load_path = os.path.join(results_folder, "pretraining-model-4.pt")
                             else:
@@ -138,7 +139,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dataset', dataset,
                                 '--datasets_name', dataset_name,
                                 '--seed', seed,
-                                # '--load_checkpoint',
+                                '--load_checkpoint',
                                 '--curiosity_driven',
                                 '--curiosity_driven_rate', curiosity_driven_rate,
                                 '--dp_epsilon', dp_epsilon,
