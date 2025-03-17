@@ -26,8 +26,8 @@ def flatten_multidimensional_columns(df):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='kitchen-partial-v0')
-    # parser.add_argument('--dataset', type=str, default='maze2d-medium-dense-v1')
+    # parser.add_argument('--dataset', type=str, default='kitchen-partial-v0')
+    parser.add_argument('--dataset', type=str, default='maze2d-medium-dense-v1')
     # parser.add_argument('--dataset', type=str, default='maze2d-umaze-dense-v1')
     parser.add_argument('--pretraining_rate', type=float, default=1.0)
     parser.add_argument('--finetuning_rate', type=float, default=0.8)
@@ -71,6 +71,11 @@ if __name__ == '__main__':
 
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(original_experience_cpu)
+
+    if 'rewards_1' in original_experience.columns:
+        original_experience.rename(columns={'rewards_1': 'rewards'}, inplace=True)
+    if 'rewards_1' in dpsynther_experience.columns:
+        dpsynther_experience.rename(columns={'rewards_1': 'rewards'}, inplace=True)
 
     quality_report = evaluate_quality(
         dataset=args.dataset,
