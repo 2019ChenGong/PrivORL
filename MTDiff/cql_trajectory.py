@@ -28,10 +28,10 @@ TensorBatch = List[torch.Tensor]
 class TrainConfig:
     # Experiment
     prefix: str = "default"
-    device: str = "cuda:1"
-    env: str = "maze2d-medium-dense-v1"  # OpenAI gym environment name
+    device: str = "cuda"
+    env: str = "halfcheetah-medium-expert-v2"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(25000)  # How often (time steps) we evaluate
+    eval_freq: int = int(5e3)  # How often (time steps) we evaluate
     n_episodes: int = 10  # How many episodes run during evaluation
     max_timesteps: int = int(1e6)  # Max time steps to run environment
     checkpoints_path: Optional[str] = None  # Save path
@@ -78,13 +78,14 @@ class TrainConfig:
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = "DPsynthER"
-    diffusion_path: str = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar15_02-26-09/state_450000/sampled_trajectories.npz"
+    diffusion_path: str = "results/sampled_trajectories.npz"
     
     def __post_init__(self):
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
         self.name = f"{self.prefix}_{self.name}-cql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
-        self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/-Mar15_02-26-09/state_450000/sampled_trajectories"
+        if self.checkpoints_path is not None:
+            self.checkpoints_path = "results/hopper-medium-v2-cql"
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):
     for target_param, source_param in zip(target.parameters(), source.parameters()):
@@ -179,29 +180,21 @@ class ReplayBuffer:
         dones = self._dones[indices]
         return [states, actions, rewards, next_states, dones]
 
-
     def add_transition(self, syndata_path):
-        # 加载数据
+        # Use this method to add new data into the replay buffer during fine-tuning.
+        # I left it unimplemented since now we do not do fine-tuning.
         data = np.load(syndata_path)
         states = self._to_tensor(data["observations"])
         actions = self._to_tensor(data["actions"])
-        
-        # 处理 rewards
-        rewards = self._to_tensor(data["rewards"]).squeeze(-1)
-        rewards = rewards.unsqueeze(-1)  # 确保最终维度为 (N, 1)
-        
-        # 处理 dones
-        dones = self._to_tensor(data["terminals"]).squeeze(-1)  # 移除多余的维度
-        dones = dones.unsqueeze(-1)  # 确保维度为 (N, 1)
-        
+        rewards = self._to_tensor(data["rewards"][..., None])
         next_states = self._to_tensor(data["next_observations"])
-
+        dones = self._to_tensor(data["terminals"][..., None])
+        
         if self._size != 0:
             raise ValueError("Trying to load data into non-empty replay buffer")
-            
         n_transitions = data["observations"].shape[0]
 
-        # 添加到 buffer
+        # Add transitions to the buffer
         self._states[:n_transitions] = states
         self._actions[:n_transitions] = actions
         self._rewards[:n_transitions] = rewards
@@ -212,8 +205,6 @@ class ReplayBuffer:
         self._pointer = min(self._size, n_transitions)
 
         print(f"Dataset size: {n_transitions}")
-
-
 
 
 def set_seed(
@@ -1029,6 +1020,10 @@ def train(config: TrainConfig):
                     trainer.state_dict(),
                     os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
                 )
+            # wandb.log(
+            #     {"d4rl_normalized_score": normalized_eval_score},
+            #     step=trainer.total_it,
+            # )
 
             log_dict = {"d4rl_normalized_score": normalized_eval_score}
             logger.log({'step': trainer.total_it, **log_dict}, mode='eval')

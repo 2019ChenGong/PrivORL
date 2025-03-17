@@ -69,7 +69,7 @@ class TrainConfig:
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
         self.name = f"{self.prefix}_{self.name}-cql-{self.env_name}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
-        self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/edac/-Mar15_02-26-09/state_450000/sampled_trajectories"
+        self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/edac/-Mar17_02-26-09/state_450000/sampled_trajectories"
         self.diffusion.path = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar15_02-26-09/state_450000/sampled_trajectories.npz"
 
 

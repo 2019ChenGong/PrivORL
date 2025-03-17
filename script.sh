@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=2 python cql_trajectory.py --config synther/corl/yaml/cql/maze2d/medium-dense-v1.yaml --checkpoints_path a_test_cql_trajectory
