@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 import einops
 from einops.layers.torch import Rearrange
 import pickle
@@ -667,6 +668,20 @@ class TasksmetaAug(nn.Module):
 #         return output
 
 
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=4096):
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.pe = pe.unsqueeze(0)  # (1, max_len, d_model)
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1)].to(x.device)
+
 class TasksAug(nn.Module):
     def __init__(
         self,
@@ -686,43 +701,36 @@ class TasksAug(nn.Module):
         self.state_dim = transition_dim - 1  # exclude reward and terminal
         self.action_dim = action_dim
 
-        config = transformers.GPT2Config(
-            vocab_size=1,
-            n_embd=hidden_size,
-            n_layer=6,
-            n_head=4,
-            n_inner=4 * 256,
-            activation_function='mish',
-            n_positions=1024,
-            n_ctx=1023,
-            resid_pdrop=0.1,
-            attn_pdrop=0.1,
-        )
-
         self.time_mlp = nn.Sequential(
             SinusoidalPosEmb(2 * dim),
             nn.Linear(2 * dim, dim * 4),
-            nn.Mish(),
+            nn.GELU(),
             nn.Linear(dim * 4, 2 * dim),
         )
-        self.reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.Mish(), nn.Linear(dim * 2, 2 * dim))
-        self.terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.Mish(), nn.Linear(dim * 2, 2 * dim))
-        self.state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.Mish(), nn.Linear(dim * 2, 2 * dim))
-        self.action_mlp = nn.Sequential(nn.Linear(self.action_dim, dim * 2), nn.Mish(), nn.Linear(dim * 2, 2 * dim))
+        self.reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
+        self.terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
+        self.state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
+        self.action_mlp = nn.Sequential(nn.Linear(self.action_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
 
-        self.transformer = GPT2Model(config)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_size,
+            nhead=4,
+            dim_feedforward=hidden_size * 4,
+            dropout=0.1,
+            activation="gelu",
+            batch_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=6)
+        self.pos_enc = PositionalEncoding(hidden_size)
+
         self.embed_ln = nn.LayerNorm(hidden_size)
-        self.position_emb = nn.Parameter(torch.zeros(1, 1 + 5 * horizon, hidden_size))
 
-        self.predict_act = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.Mish(), nn.Linear(dim * 2, self.action_dim))
-        self.predict_state = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.Mish(), nn.Linear(dim * 2, self.state_dim))
-        self.predict_reward = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.Mish(), nn.Linear(dim * 2, 1))
-        self.predict_terminal = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.Mish(), nn.Linear(dim * 2, 1))
+        self.predict_act = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.GELU(), nn.Linear(dim * 2, self.action_dim))
+        self.predict_state = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.GELU(), nn.Linear(dim * 2, self.state_dim))
+        self.predict_reward = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.GELU(), nn.Linear(dim * 2, 1))
+        self.predict_terminal = nn.Sequential(nn.Linear(dim * 2, dim * 2), nn.GELU(), nn.Linear(dim * 2, 1))
 
     def forward(self, x, time, x_condition=None, force=False, return_cond=False, flag=False, attention_mask=None):
-        '''
-            x : [ batch x horizon x transition ]
-        '''
         states, actions, rewards, terminals, next_states = (
             x[:, :, :self.state_dim], 
             x[:, :, self.state_dim:self.state_dim + self.action_dim], 
@@ -736,40 +744,37 @@ class TasksAug(nn.Module):
         action_embeddings = self.action_mlp(actions)
         reward_embeddings = self.reward_mlp(rewards)
         terminal_embeddings = self.terminal_mlp(terminals)
-        t = self.time_mlp(time).unsqueeze(1)
+        t = self.time_mlp(time).unsqueeze(1)  # (B, 1, D)
 
         batch_size, seq_length = x.shape[0], x.shape[1]
 
         if attention_mask is None:
-            attention_mask = torch.ones((batch_size, 5 * seq_length), dtype=torch.long, device=x.device)
+            attention_mask = torch.ones((batch_size, 5 * seq_length), dtype=torch.bool, device=x.device)
+        else:
+            attention_mask = attention_mask.to(dtype=torch.bool)
 
         stacked_inputs = torch.stack(
             (state_embeddings, action_embeddings, reward_embeddings, terminal_embeddings, next_state_embeddings), dim=1
         ).permute(0, 2, 1, 3).reshape(batch_size, 5 * seq_length, self.hidden_size)
 
         all_inputs = torch.cat((t, stacked_inputs), dim=1)
+        all_inputs = self.pos_enc(all_inputs)
+        final_inputs = self.embed_ln(all_inputs)
+
+        prefix_mask = torch.ones((batch_size, 1), dtype=torch.bool, device=x.device)
+        stacked_attention_mask = torch.cat((prefix_mask, attention_mask), dim=1)
         
-        required_length = all_inputs.shape[1]
-        if self.position_emb.shape[1] < required_length:
-            extra_length = required_length - self.position_emb.shape[1]
-            extra_emb = torch.zeros((1, extra_length, self.hidden_size), device=all_inputs.device)
-            self.position_emb = nn.Parameter(torch.cat([self.position_emb, extra_emb], dim=1))
+        key_padding_mask = ~stacked_attention_mask  # bool mask, True = masked
+        key_padding_mask = key_padding_mask.to(torch.bool)
+        
+        assert key_padding_mask.dtype == torch.bool, f"Expected dtype: torch.bool, but got {key_padding_mask.dtype}"
 
-        # Stack attention mask (adding mask for time embedding)
-        stacked_attention_mask = torch.cat(
-            (torch.ones((batch_size, 1), dtype=torch.long, device=x.device), attention_mask), dim=1
-        )
-
-        final_inputs = t * all_inputs + self.position_emb[:, :all_inputs.shape[1], :]
-        final_inputs = self.embed_ln(final_inputs)
-
-        # Transformer forward pass
         transformer_outputs = self.transformer(
-            inputs_embeds=final_inputs,
-            attention_mask=stacked_attention_mask,
+            final_inputs,
+            src_key_padding_mask=key_padding_mask
         )
 
-        x = transformer_outputs['last_hidden_state'][:, -5 * seq_length:, :]
+        x = transformer_outputs[:, -5 * seq_length:, :]
         x = x.reshape(batch_size, seq_length, 5, self.hidden_size).permute(0, 2, 1, 3)
 
         act_preds = self.predict_act(x[:, 1])

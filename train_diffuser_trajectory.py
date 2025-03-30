@@ -27,15 +27,11 @@ def cleanup():
     dist.destroy_process_group()
 
 def main(rank, world_size, args):
-    setup(rank, world_size)  # 先初始化分布式环境
+    setup(rank, world_size)
 
     # Set device for this rank
     device = torch.device(f"cuda:{rank}")
     torch.cuda.set_device(device)
-
-    # Parser 初始化，仅 rank 0 执行完整初始化
-    # parser = Parser()
-    # args = parser.parse_args('diffusion', full_init=(rank == 0))
 
     # Dataset setup
     dataset_config = utils.Config(
@@ -132,6 +128,6 @@ def main(rank, world_size, args):
 
 if __name__ == "__main__":
     world_size = torch.cuda.device_count()
-    args = Parser().parse_args('diffusion', full_init=True)  # 单进程时完整初始化
+    args = Parser().parse_args('diffusion', full_init=True) 
     # pdb.set_trace()
     mp.spawn(main, args=(world_size, args), nprocs=world_size, join=True)

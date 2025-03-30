@@ -1,5 +1,6 @@
 import os
 import copy
+import json
 import numpy as np
 import torch
 import einops
@@ -7,12 +8,21 @@ import pdb
 import random
 from .arrays import batch_to_device, to_np, to_device, apply_dict
 from .timer import Timer
+from tqdm import tqdm
 from .cloud import sync_logs
 import metaworld
 import time
 import gym
 import d4rl
 import statistics
+import torch.distributed as dist
+from torch.utils.data import DataLoader, DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+from opacus import GradSampleModule, PrivacyEngine
+from opacus.validators import ModuleValidator
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
 DTYPE = torch.float
 from collections import namedtuple
 import diffuser.utils as utils
@@ -68,7 +78,7 @@ class MetaworldTrainer(object):
         log_freq=100,
         sample_freq=1000,
         save_freq=1000,
-        label_freq=100000,
+        label_freq=100,#100000,
         save_parallel=False,
         results_folder='./results',
         n_reference=8,
@@ -314,12 +324,27 @@ class MetaworldTrainer(object):
             savepath = os.path.join(self.logdir, f'sample-{self.step}-{i}.png')
             self.renderer.composite(savepath, observations)
 
+import json
+import os
+from tqdm import tqdm  # 导入 tqdm 用于进度条
+from torch.utils.tensorboard import SummaryWriter
+from torch.nn.parallel import DistributedDataParallel as DDP
+from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+from opacus import PrivacyEngine
+from opacus.validators import ModuleValidator
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from torch.utils.data.distributed import DistributedSampler
+import torch.distributed as dist
+import copy
+
 class AugTrainer(object):
     def __init__(
         self,
         diffusion_model,
         dataset,
         renderer,
+        sample=False,
+        checkpoint_path="",
         ema_decay=0.995,
         train_batch_size=32,
         train_lr=2e-5,
@@ -329,7 +354,7 @@ class AugTrainer(object):
         log_freq=100,
         sample_freq=1000,
         save_freq=1000,
-        label_freq=100000,
+        label_freq=100,#100000,
         save_parallel=False,
         results_folder='./results',
         n_reference=8,
@@ -339,17 +364,20 @@ class AugTrainer(object):
         is_unet=False,
         trainer_device=None,
         horizon=32,
+        privacy=False,
+        noise_multiplier=1.0,
+        max_grad_norm=1.0
     ):
         super().__init__()
-        self.model = diffusion_model
+        self.original_model = diffusion_model
+        self.model = diffusion_model.to(trainer_device)
         self.ema = EMA(ema_decay)
-        self.ema_model = copy.deepcopy(self.model)
         self.update_ema_every = update_ema_every
         self.envs = envs
         self.device = trainer_device
         self.horizon = horizon
         self.task_list = task_list
-        self.is_unet=is_unet
+        self.is_unet = is_unet
 
         self.step_start_ema = step_start_ema
         self.log_freq = log_freq
@@ -362,87 +390,211 @@ class AugTrainer(object):
         self.gradient_accumulate_every = gradient_accumulate_every
 
         self.dataset = dataset
-        self.dataloader = cycle(torch.utils.data.DataLoader(
-            self.dataset, batch_size=train_batch_size, num_workers=1, shuffle=True, pin_memory=True
-        ))
+        sampler = DistributedSampler(dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank())
+        self.sample = sample
+        # print("in training.py, sample is ", self.sample)
+
+        self.raw_dataloader = torch.utils.data.DataLoader(
+            self.dataset,
+            batch_size=train_batch_size,
+            sampler=sampler,
+            num_workers=1,
+            pin_memory=True,
+        )
+        self.dataloader = cycle(self.raw_dataloader)
         self.dataloader_vis = cycle(torch.utils.data.DataLoader(
             self.dataset, batch_size=1, num_workers=0, shuffle=True, pin_memory=True
         ))
-        self.renderer = renderer
-        self.optimizer = torch.optim.Adam(diffusion_model.parameters(), lr=train_lr)
 
+        self.renderer = renderer
+        self.train_lr = train_lr
+        self.privacy = privacy
+        self.noise_multiplier = noise_multiplier
+        self.max_grad_norm = max_grad_norm
+
+        if self.privacy:
+            self.privacy_engine = PrivacyEngine()
+            if not self.sample:
+                data = torch.load(checkpoint_path, map_location=self.device)
+                self.model.load_state_dict(data['model'])
+            self.model = ModuleValidator.fix(self.model)
+            if not self.sample:
+                self.model = DPDDP(self.model)
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.train_lr)
+            self.model, self.optimizer, self.raw_dataloader = self.privacy_engine.make_private_with_epsilon(
+                module=self.model,
+                optimizer=self.optimizer,
+                data_loader=self.raw_dataloader,
+                target_epsilon=20.0,
+                target_delta=1e-6,
+                epochs=2,
+                max_grad_norm=self.max_grad_norm,
+            )
+            self.dataloader = cycle(self.raw_dataloader)
+        else:
+            # self.model = DDP(self.model, device_ids=[dist.get_rank()])
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.train_lr)
+
+        self.ema_model = copy.deepcopy(self.model)
         self.logdir = results_folder
         self.bucket = bucket
         self.n_reference = n_reference
-        self.writer = SummaryWriter(self.logdir)
+        self.writer = SummaryWriter(self.logdir + f"/rank_{dist.get_rank()}")
+
+        self.json_log_path = os.path.join(self.logdir, "training_log.json") if dist.get_rank() == 0 else None
+
         self.reset_parameters()
         self.step = 0
+
+
     def reset_parameters(self):
-        self.ema_model.load_state_dict(self.model.state_dict())
+        if isinstance(self.model, (DDP, DPDDP)):
+            self.ema_model.load_state_dict(self.model.module.state_dict(), strict=False)
+        else:
+            self.ema_model.load_state_dict(self.model.state_dict(), strict=False)
 
     def step_ema(self):
         if self.step < self.step_start_ema:
             self.reset_parameters()
             return
-        self.ema.update_model_average(self.ema_model, self.model)
-
-    #-----------------------------------------------------------------------------#
-    #------------------------------------ api ------------------------------------#
-    #-----------------------------------------------------------------------------#
+        self.ema.update_model_average(self.ema_model, self.model.module if isinstance(self.model, (DDP, DPDDP)) else self.model)
 
     def train(self, n_train_steps):
-
+        self.model.train()
         timer = Timer()
-        for step in range(n_train_steps):
-            for i in range(self.gradient_accumulate_every):
-                batch = next(self.dataloader)
-                #print("BATCH LOAD!")
-                batch = batch_to_device(batch, self.device)
-                # pdb.set_trace()
-                loss, infos = self.model.loss(*batch)
-                loss = loss / self.gradient_accumulate_every
-                loss.backward()
-            self.writer.add_scalar('Loss', loss, global_step=self.step)
-            self.optimizer.step()
-            self.optimizer.zero_grad()
 
-            if self.step % self.update_ema_every == 0:
-                self.step_ema()
-            if self.step % self.save_freq == 0:
-                label = self.step // self.label_freq * self.label_freq
-                self.save(label)
+        total_iterations = n_train_steps
+        print('n_train_steps is ', n_train_steps, 'raw_dataloader is ', len(self.raw_dataloader))
 
+        if self.privacy:
+            with BatchMemoryManager(
+                data_loader=self.raw_dataloader,
+                max_physical_batch_size=self.batch_size // self.gradient_accumulate_every,
+                optimizer=self.optimizer
+            ) as memory_safe_dataloader:
+                progress_bar = tqdm(total=total_iterations, desc=f"Rank {dist.get_rank()} Training (Privacy)", disable=dist.get_rank() != 0)
+                for step in range(n_train_steps):
+                    for i, batch in enumerate(memory_safe_dataloader):
+                        batch = batch_to_device(batch, self.device)
+                        loss, infos = self.model.module.compute_loss(*batch)
 
-            if self.step % self.log_freq == 0:
-                infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
-                print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
-            self.step += 1
+                        loss.backward()
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+
+                        self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
+
+                        if self.step % self.update_ema_every == 0:
+                            self.step_ema()
+
+                        if self.step % self.save_freq == 0 and dist.get_rank() == 0:
+                            label = self.step // self.label_freq * self.label_freq
+                            # pdb.set_trace()
+                            self.save(label)
+
+                        if self.step % self.log_freq == 0 and dist.get_rank() == 0:
+                            infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
+                            print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
+                            self._log_to_json(self.step, loss.item())
+
+                        self.step += 1
+                        progress_bar.update(1)
+                progress_bar.close()
+        else:
+            progress_bar = tqdm(total=total_iterations, desc=f"Rank {dist.get_rank()} Training", disable=dist.get_rank() != 0)
+            for step in range(n_train_steps):
+                for i, batch in enumerate(self.dataloader):
+                    batch = batch_to_device(batch, self.device)
+                    # print(self.model)
+                    loss, infos = self.model.compute_loss(*batch)
+                    loss = loss / self.gradient_accumulate_every
+                    loss.backward()
+
+                    if (i + 1) % self.gradient_accumulate_every == 0:
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
+
+                    self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
+
+                    if self.step % self.update_ema_every == 0:
+                        self.step_ema()
+
+                    if self.step % self.save_freq == 0 and dist.get_rank() == 0:
+                        label = self.step // self.label_freq * self.label_freq
+                        self.save(label)
+
+                    if self.step % self.log_freq == 0 and dist.get_rank() == 0:
+                        infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
+                        print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
+                        self._log_to_json(self.step, loss.item())
+
+                    self.step += 1
+                    progress_bar.update(1)
+            progress_bar.close()
+
+    def _log_to_json(self, step, loss):
+        if dist.get_rank() != 0 or self.json_log_path is None:
+            return
+
+        log_entry = {"step": step, "loss": float(loss)}
+        if os.path.exists(self.json_log_path):
+            with open(self.json_log_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            data.append(log_entry)
+        else:
+            data = [log_entry]
+
+        with open(self.json_log_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+
     def save(self, epoch):
-        '''
-            saves model and ema to disk;
-            syncs to storage bucket if a bucket is specified
-        '''
-        data = {
-            'step': self.step,
-            'model': self.model.state_dict(),
-            'ema': self.ema_model.state_dict()
-        }
+        if dist.get_rank() != 0:
+            return
+        if self.privacy:
+            data = {
+                'step': self.step,
+                'model': self.model.module.state_dict(),
+                'ema': self.ema_model.state_dict(),
+            }
+        else:
+            data = {
+                'step': self.step,
+                'model': self.model.state_dict(),
+                'ema': self.ema_model.state_dict(),
+            }
+
         savepath = os.path.join(self.logdir, f'state_{epoch}.pt')
         torch.save(data, savepath)
         print(f'[ utils/training ] Saved model to {savepath}', flush=True)
-        if self.bucket is not None:
-            sync_logs(self.logdir, bucket=self.bucket, background=self.save_parallel)
 
     def load(self, epoch):
-        '''
-            loads model and ema from disk
-        '''
         loadpath = os.path.join(self.logdir, f'state_{epoch}.pt')
-        data = torch.load(loadpath)
-
+        data = torch.load(loadpath, map_location=self.device)
         self.step = data['step']
-        self.model.load_state_dict(data['model'])
-        self.ema_model.load_state_dict(data['ema'])
+
+        model_state_dict = data['model']
+        
+        new_model_state_dict = {}
+        for key, value in model_state_dict.items():
+            new_key = key
+            if new_key.startswith("_module.module."):
+                new_key = new_key.replace("_module.module.", "_module.")
+            elif new_key.startswith("module."):
+                new_key = new_key.replace("module.", "_module.")
+            new_model_state_dict[new_key] = value
+        
+        self.model.load_state_dict(new_model_state_dict)
+
+        ema_state_dict = data['ema']
+        new_ema_state_dict = {}
+        for key, value in ema_state_dict.items():
+            new_key = key.replace("_module.module.", "_module.")
+            new_ema_state_dict[new_key] = value
+            
+        self.ema_model.load_state_dict(new_ema_state_dict, strict=False)
+
+        
+
 class MazeTrainer(object):
     def __init__(
         self,
@@ -513,6 +665,7 @@ class MazeTrainer(object):
         if self.step < self.step_start_ema:
             self.reset_parameters()
             return
+        
         self.ema.update_model_average(self.ema_model, self.model)
 
     #-----------------------------------------------------------------------------#

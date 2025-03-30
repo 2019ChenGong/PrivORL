@@ -22,8 +22,8 @@ import diffuser.utils as utils
 class Parser(utils.Parser):
     dataset: str = 'maze2d-medium-dense-v1'
     config: str = 'config.locomotion'
-    checkpoint_path: str = "logs/maze2d-medium-dense-v1/-Mar15_02-26-09/state_450000.pt"
-    output_csv_path: str = "results/maze2d-medium-dense-v1/-Mar16_02-26-09/state_450000/sampled_trajectories.csv"
+    checkpoint_path: str = "logs/maze2d-medium-dense-v1/-Mar28_01-10-57/state_150000.pt"
+    output_csv_path: str = "results/maze2d-medium-dense-v1/-Mar28_01-10-57/state_150000/sampled_trajectories.csv"
     # checkpoint_path: str = "logs_horizon16/maze2d-medium-dense-v1/-Mar15_02-28-29/state_450000.pt"
     # output_csv_path: str = "results_horizon16/maze2d-medium-dense-v1/-Mar15_02-28-29/state_450000/sampled_trajectories.csv"
     num_trajectories: int = 1000
@@ -48,9 +48,10 @@ def load_model(_, checkpoint_path, device):
         # loadbase=os.path.dirname(checkpoint_path),   # Base directory of the checkpoint
         # dataset=None,                                # Dataset is optional, based on how `utils.load_diffusion` works
         os.path.dirname(checkpoint_path),                    # Full checkpoint path
-        epoch=450000,                                  # Load the latest epoch or specify if needed
+        epoch=500000,                                  # Load the latest epoch or specify if needed
         device=device,
-        seed=None                                    # Optional, if you need deterministic results
+        seed=None,                                    # Optional, if you need deterministic results
+        sample=True
     )
     
     # Use the EMA model for higher-quality sampling
@@ -64,42 +65,39 @@ def load_model(_, checkpoint_path, device):
 
 
 def sample_complete_trajectory(diffusion, initial_condition, args, max_length, trajectory_index, dataset):
-    trajectory = []
-    current_state = initial_condition
-    terminal = False
-    step_count = 0
-
     state_dim = dataset.observation_dim
     action_dim = dataset.action_dim
+    trajectory = []
 
-    with tqdm(total=max_length, desc=f"Trajectory {trajectory_index} Progress", leave=False) as pbar:
-        while not terminal and step_count < max_length:
-            condition = torch.tensor(current_state, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(args.device)
+    current_state = torch.tensor(initial_condition, dtype=torch.float32).unsqueeze(0).to(args.device)
 
-            sample = diffusion.module.conditional_sample(
-                horizon=args.transition_steps
-            )
+    for step_count in range(max_length // args.horizon):
+        conditions = current_state.unsqueeze(0)
+        
+        samples = diffusion.module.conditional_sample(
+            cond=conditions,  
+            task=torch.tensor([0], device=args.device),  
+            value=torch.tensor([0], device=args.device),  
+            horizon=args.horizon
+        )
 
-            sampled_transitions = sample.cpu().numpy().squeeze(0)
+        sampled_transitions = samples.cpu().numpy().squeeze(0)  
 
-            for sampled_transition in sampled_transitions:
-                states = sampled_transition[:state_dim]
-                actions = sampled_transition[state_dim:state_dim + action_dim]
-                reward = sampled_transition[state_dim + action_dim]
-                terminal_flag = int(sampled_transition[state_dim + action_dim + 1] >= 0.5)
-                next_states = sampled_transition[state_dim + action_dim + 2:]
+        for i, sampled_transition in enumerate(sampled_transitions):
+            states = sampled_transition[:state_dim]
+            actions = sampled_transition[state_dim:state_dim + action_dim]
+            reward = sampled_transition[state_dim + action_dim]
+            terminal_flag = int(sampled_transition[state_dim + action_dim + 1] >= 0.5)
+            next_states = sampled_transition[state_dim + action_dim + 2:]
 
-                trajectory.append([
-                    trajectory_index, step_count, *states, *actions, reward, terminal_flag, *next_states
-                ])
+            trajectory.append([
+                trajectory_index, step_count * args.horizon + i, *states, *actions, reward, terminal_flag, *next_states
+            ])
 
-                if terminal_flag == 1:
-                    terminal = True
-                    break
+            if terminal_flag == 1:
+                return trajectory 
 
-                current_state = next_states
-                step_count += 1
-                pbar.update(1)
+            current_state = torch.tensor(next_states, dtype=torch.float32).unsqueeze(0).to(args.device)  # 更新 condition
 
     return trajectory
 
@@ -198,7 +196,6 @@ def main():
     os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
     
     args = Parser().parse_args('diffusion')
-    args.transition_steps = 32
     args.horizon = 32
     
     world_size = torch.cuda.device_count()

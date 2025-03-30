@@ -36,7 +36,7 @@ LOG_STD_MAX = 2.0
 class TrainConfig:
     # Experiment
     prefix: str = "default"
-    device: str = "cuda:1"
+    device: str = "cuda:0"
     env: str = "maze2d-medium-dense-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_freq: int = int(5e4)  # How often (time steps) we evaluate
@@ -71,8 +71,8 @@ class TrainConfig:
         current_datetime = datetime.now()
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
         self.name = f"{self.prefix}_{self.name}-cql-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
-        self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/iql/-Mar15_02-26-09_conditional/state_450000/sampled_trajectories"
-        self.diffusion.path = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar15_02-26-09_conditional/state_450000/sampled_trajectories.npz"
+        self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/iql/-Mar28_11-43-47/state_500000/sampled_trajectories"
+        self.diffusion.path = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar28_11-43-47/state_500000/sampled_trajectories.npz"
 
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):

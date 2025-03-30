@@ -141,9 +141,6 @@ def load_synthetic_dataset(path):
     
     return trajectory
 
-
-
-
 def main(args):
     print("Loading datasets...")
     original_trajectory, state_dim, action_dim = load_d4rl_dataset(args.dataset)
@@ -166,8 +163,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="maze2d-medium-dense-v1", help="D4RL dataset name")
-    # parser.add_argument("--load_path", type=str, default="/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar15_02-26-09_conditional/state_450000/sampled_trajectories.npz", help="Path to synthetic dataset")
-    parser.add_argument("--load_path", type=str, default="baselines/samples/maze2d-medium-dense-v1/pgm_10.0/maze2d-medium-dense-v1.npz", help="Path to synthetic dataset")
+    parser.add_argument("--load_path", type=str, default="/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Mar28_11-43-47/state_200000/sampled_trajectories.npz", help="Path to synthetic dataset")
+    # parser.add_argument("--load_path", type=str, default="baselines/samples/maze2d-medium-dense-v1/pgm_10.0/maze2d-medium-dense-v1.npz", help="Path to synthetic dataset")
     args = parser.parse_args()
 
     main(args)

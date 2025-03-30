@@ -37,20 +37,21 @@ def watch(args_to_watch):
     return _fn
 
 def lazy_fstring(template, args):
-    ## https://stackoverflow.com/a/53671539
     return eval(f"f'{template}'")
 
 class Parser(Tap):
-
     def save(self):
         fullpath = os.path.join(self.savepath, 'args.json')
         print(f'[ utils/setup ] Saved args to {fullpath}')
         super().save(fullpath, skip_unpicklable=True)
 
-    def parse_args(self, experiment=None):
+    def parse_args(self, experiment=None, full_init=True):
         args = super().parse_args(known_only=True)
-        ## if not loading from a config script, skip the result of the setup
-        if not hasattr(args, 'config'): return args
+        ## 如果没有 config 参数或不需要完整初始化，直接返回解析结果
+        if not hasattr(args, 'config') or not full_init:
+            return args
+        
+        # 以下操作仅在 full_init=True（通常为 rank 0）时执行
         args = self.read_config(args, experiment)
         self.add_extras(args)
         self.eval_fstrings(args)
@@ -63,9 +64,6 @@ class Parser(Tap):
         return args
 
     def read_config(self, args, experiment):
-        '''
-            Load parameters from config file
-        '''
         dataset = args.dataset.replace('-', '_')
         print(f'[ utils/setup ] Reading config: {args.config}:{dataset}')
         module = importlib.import_module(args.config)
@@ -82,19 +80,13 @@ class Parser(Tap):
         for key, val in params.items():
             setattr(args, key, val)
             self._dict[key] = val
-
         return args
 
     def add_extras(self, args):
-        '''
-            Override config parameters with command-line arguments
-        '''
         extras = args.extra_args
         if not len(extras):
             return
-
         print(f'[ utils/setup ] Found extras: {extras}')
-        #assert len(extras) % 2 == 0, f'Found odd number ({len(extras)}) of extras: {extras}'
         for i in range(0, len(extras), 2):
             key = extras[i].replace('--', '')
             val = extras[i+1]

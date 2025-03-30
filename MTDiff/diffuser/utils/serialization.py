@@ -33,7 +33,7 @@ def load_config(*loadpath):
     #print(config)
     return config
 
-def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None):
+def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample=False):
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')
     model_config = load_config(*loadpath, 'model_config.pkl')
     diffusion_config = load_config(*loadpath, 'diffusion_config.pkl')
@@ -47,7 +47,10 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None):
     renderer = None
     model = model_config()
     diffusion = diffusion_config(model)
-    trainer = trainer_config(diffusion, dataset, renderer)
+    
+    trainer = trainer_config(diffusion, dataset, renderer, sample)
+    print("in serialization.py, sample is ", sample)
+
     if epoch == 'latest':
         epoch = get_latest_epoch(loadpath)
 

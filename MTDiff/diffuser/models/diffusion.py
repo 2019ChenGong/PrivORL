@@ -540,7 +540,6 @@ class GaussianActDiffusion(GaussianInvDiffusion):
 
 
 
-
 class AugDiffusion(GaussianInvDiffusion):
     def __init__(self, *args, loss_discount=1.0, loss_type='l1', action_weight=10, **kwargs):
         super().__init__(*args, loss_discount=loss_discount, loss_type=loss_type, action_weight=action_weight, **kwargs)
@@ -556,12 +555,11 @@ class AugDiffusion(GaussianInvDiffusion):
         loss_weights = torch.einsum('h,t->ht', discounts, dim_weights)
         return loss_weights
 
-    def loss(self, x, *args):
-        x = einops.rearrange(x, 'i j h k -> (i j) h k')
+    def compute_loss(self, batch, *args):
+        x = einops.rearrange(batch, 'i j h k -> (i j) h k')
         batch_size = len(x)
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long()
-        diffusion_loss, info = self._losses(x, t)
-        return diffusion_loss, info
+        return self._losses(x, t)
 
     def _losses(self, x_start, t):
         noise = torch.randn_like(x_start)
@@ -583,18 +581,29 @@ class AugDiffusion(GaussianInvDiffusion):
         return self._sample_loop(shape, transition_steps, **sample_kwargs)
 
     @torch.no_grad()
-    def _sample_loop(self, shape, transition_steps=5, verbose=True, return_chain=False, **sample_kwargs):
+    def _sample_loop(self, shape, transition_steps=5, verbose=True, return_chain=False, init_state=None, **sample_kwargs):
         device = self.betas.device
-        batch_size = shape[0]
-        x = torch.randn(shape, device=device)
+        batch_size, horizon, transition_dim = shape
+        
+        if init_state is not None:
+            init_state = init_state.to(device)
+
+            if init_state.shape[-1] < transition_dim:
+                x = torch.zeros((batch_size, horizon, transition_dim), device=device)
+                
+                x[:, 0, :init_state.shape[-1]] = init_state
+            else:
+                raise ValueError(f"init_state 维度不匹配，expected last dim < {transition_dim}, but got {init_state.shape[-1]}")
+
+        else:
+            x = torch.randn(shape, device=device)
 
         chain = [x] if return_chain else None
         progress = utils.Progress(self.n_timesteps) if verbose else utils.Silent()
 
-        # 按批次进行采样
         for i in reversed(range(0, self.n_timesteps, transition_steps)):
             current_steps = min(transition_steps, i + 1)
-            t = torch.full((batch_size,), i, device=device, dtype=torch.long)
+            t = torch.full((batch_size,), i, device=device, dtype=torch.long)  # 设定时间步 t
             x = self.default_sample_fn(x, t, current_steps=current_steps, **sample_kwargs)
             if return_chain:
                 chain.append(x)
@@ -607,9 +616,6 @@ class AugDiffusion(GaussianInvDiffusion):
 
     @torch.no_grad()
     def default_sample_fn(self, x, t, current_steps=1, **sample_kwargs):
-        """
-        支持一次采样多个transition steps
-        """
         b, *_, device = *x.shape, x.device
         for _ in range(current_steps):
             model_mean, _, model_log_variance = self._mean_variance(x, t)
