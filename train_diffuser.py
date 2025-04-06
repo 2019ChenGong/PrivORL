@@ -131,7 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('--dp_n_splits', type=int, default=4)
     # curiosity driven
     parser.add_argument('--curiosity_driven', action='store_true')
-    parser.add_argument('--curiosity_driven_rate', type=float ,default=0.5)
+    parser.add_argument('--curiosity_driven_rate', type=float ,default=0.3)
     # mia
     parser.add_argument('--save_data', action='store_true')
     
