@@ -78,7 +78,7 @@ class TrainConfig:
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = "DPsynthER"
-    diffusion_path: str = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Apr04_14-20-16/state_200000/sampled_trajectories.npz"
+    diffusion_path: str = "/MTDiff/results/maze2d-medium-dense-v1/-Apr04_14-20-16/state_200000/sampled_trajectories.npz"
     
     def __post_init__(self):
         current_datetime = datetime.now()
