@@ -69,7 +69,7 @@ class TrainConfig:
         formatted_datetime = current_datetime.strftime('%Y%m%d%H%M')
         self.name = f"{self.prefix}_{self.name}-td3_bc-{self.env}-epsilon_{self.dp_epsilon}-seed_{self.seed}-{str(formatted_datetime)}"
         self.checkpoints_path = "results_trajectory/maze2d-medium-dense-v1/td3_bc/-Apr04_14-20-16/state_200000/sampled_trajectories"
-        self.diffusion.path = "/p/fzv6enresearch/liuzheng/MTDiff/results/maze2d-medium-dense-v1/-Apr04_14-20-16/state_200000/sampled_trajectories.npz"
+        self.diffusion.path = "/MTDiff/results/maze2d-medium-dense-v1/-Apr04_14-20-16/state_200000/sampled_trajectories.npz"
 
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):
