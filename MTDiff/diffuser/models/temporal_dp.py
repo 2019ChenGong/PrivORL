@@ -707,6 +707,13 @@ class TasksAug(nn.Module):
             nn.GELU(),
             nn.Linear(dim * 4, 2 * dim),
         )
+
+        self.cond_mlp = nn.Sequential(
+            nn.Linear(self.state_dim, dim * 2),
+            nn.GELU(),
+            nn.Linear(dim * 2, 2 * dim),
+        )
+
         self.reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
         self.terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
         self.state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
@@ -746,6 +753,16 @@ class TasksAug(nn.Module):
         terminal_embeddings = self.terminal_mlp(terminals)
         t = self.time_mlp(time).unsqueeze(1)  # (B, 1, D)
 
+        # print("x_condition is none, ", x_condition is None)
+        if x_condition is not None:
+            # print("x_condition.shape is ", x_condition.shape)
+            cond_embedding = self.cond_mlp(x_condition)    # (batch_size, 2*dim)
+            # print("before cond_embedding.shape is ", cond_embedding.shape)
+            cond_embedding = cond_embedding.unsqueeze(1)  # (batch_size, 1, 2*dim)
+        else:
+            cond_embedding = nn.Parameter(torch.zeros(1, 1, 2 * self.dim)).to(x.device)
+            cond_embedding = cond_embedding.repeat(x.shape[0], 1, 1)
+
         batch_size, seq_length = x.shape[0], x.shape[1]
 
         if attention_mask is None:
@@ -757,11 +774,15 @@ class TasksAug(nn.Module):
             (state_embeddings, action_embeddings, reward_embeddings, terminal_embeddings, next_state_embeddings), dim=1
         ).permute(0, 2, 1, 3).reshape(batch_size, 5 * seq_length, self.hidden_size)
 
-        all_inputs = torch.cat((t, stacked_inputs), dim=1)
+        # print("t.shape is ", t.shape)
+        # print("cond_embedding.shape is ", cond_embedding.shape)
+        # print("stacked_inputs.shape is ", stacked_inputs.shape)
+        all_inputs = torch.cat((t, cond_embedding, stacked_inputs), dim=1)
+        # print("all_inputs.shape is ", all_inputs.shape)
         all_inputs = self.pos_enc(all_inputs)
         final_inputs = self.embed_ln(all_inputs)
 
-        prefix_mask = torch.ones((batch_size, 1), dtype=torch.bool, device=x.device)
+        prefix_mask = torch.ones((batch_size, 2), dtype=torch.bool, device=x.device)
         stacked_attention_mask = torch.cat((prefix_mask, attention_mask), dim=1)
         
         key_padding_mask = ~stacked_attention_mask  # bool mask, True = masked

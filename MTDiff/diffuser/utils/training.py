@@ -18,15 +18,14 @@ import statistics
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
-from opacus import GradSampleModule, PrivacyEngine
-from opacus.validators import ModuleValidator
-from opacus.utils.batch_memory_manager import BatchMemoryManager
-from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
 
 DTYPE = torch.float
 from collections import namedtuple
 import diffuser.utils as utils
+from diffuser.utils.rnd import Rnd
 DTBatch = namedtuple('DTBatch', 'actions rtg observations timestep mask')
+AugBatch = namedtuple('AugBatch', 'trajectories task cond')
 DEVICE = 'cuda'
 from torch.utils.tensorboard import SummaryWriter
 def cycle(dl):
@@ -345,6 +344,9 @@ class AugTrainer(object):
         renderer,
         sample=False,
         checkpoint_path="",
+        # rnd
+        curiosity_driven_rate=0.3,
+
         ema_decay=0.995,
         train_batch_size=32,
         train_lr=2e-5,
@@ -390,14 +392,14 @@ class AugTrainer(object):
         self.gradient_accumulate_every = gradient_accumulate_every
 
         self.dataset = dataset
-        sampler = DistributedSampler(dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank())
+        # sampler = DistributedSampler(dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank())
         self.sample = sample
         # print("in training.py, sample is ", self.sample)
 
         self.raw_dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=train_batch_size,
-            sampler=sampler,
+            shuffle=True,
             num_workers=1,
             pin_memory=True,
         )
@@ -412,39 +414,42 @@ class AugTrainer(object):
         self.noise_multiplier = noise_multiplier
         self.max_grad_norm = max_grad_norm
 
-        if self.privacy:
-            self.privacy_engine = PrivacyEngine()
-            if not self.sample:
-                data = torch.load(checkpoint_path, map_location=self.device)
-                self.model.load_state_dict(data['model'])
-            self.model = ModuleValidator.fix(self.model)
-            if not self.sample:
-                self.model = DPDDP(self.model)
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.train_lr)
-            self.model, self.optimizer, self.raw_dataloader = self.privacy_engine.make_private_with_epsilon(
-                module=self.model,
-                optimizer=self.optimizer,
-                data_loader=self.raw_dataloader,
-                target_epsilon=20.0,
-                target_delta=1e-6,
-                epochs=2,
-                max_grad_norm=self.max_grad_norm,
-            )
-            self.dataloader = cycle(self.raw_dataloader)
-        else:
-            # self.model = DDP(self.model, device_ids=[dist.get_rank()])
+        print("self.privacy is : ", self.privacy)
+        print("self.sample is : ", self.sample)
+        if not self.privacy:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.train_lr)
 
         self.ema_model = copy.deepcopy(self.model)
+
         self.logdir = results_folder
         self.bucket = bucket
         self.n_reference = n_reference
-        self.writer = SummaryWriter(self.logdir + f"/rank_{dist.get_rank()}")
+        self.writer = SummaryWriter(self.logdir)
 
-        self.json_log_path = os.path.join(self.logdir, "training_log.json") if dist.get_rank() == 0 else None
+        self.json_log_path = os.path.join(self.logdir, "training_log.json")
 
         self.reset_parameters()
         self.step = 0
+        
+        # self.save(self.step)
+
+        # rnd
+        if not self.privacy:
+            self.curiosity_driven_rate = curiosity_driven_rate
+            self.sample_batch_size = train_batch_size
+            for name, param in self.model.named_parameters():
+                print(f"{name}: requires_grad={param.requires_grad}")
+            # self.sample_batch_size = 20
+
+            initial_cond = torch.zeros((1, self.dataset.observation_dim), device=self.device)
+            diffusion_samples = self.model.conditional_sample(
+                cond=initial_cond,
+                task=torch.tensor([0], device=self.device),  
+                value=torch.tensor([0], device=self.device),  
+                horizon=self.horizon
+            )
+            self.rnd = Rnd(input_dim=diffusion_samples.shape[2], device=self.device)
+
 
 
     def reset_parameters(self):
@@ -464,76 +469,142 @@ class AugTrainer(object):
         timer = Timer()
 
         total_iterations = n_train_steps
-        print('n_train_steps is ', n_train_steps, 'raw_dataloader is ', len(self.raw_dataloader))
+        steps_taken = 0
+        # print('n_train_steps is ', n_train_steps, 'raw_dataloader is ', len(self.raw_dataloader))
 
         if self.privacy:
-            with BatchMemoryManager(
-                data_loader=self.raw_dataloader,
-                max_physical_batch_size=self.batch_size // self.gradient_accumulate_every,
-                optimizer=self.optimizer
-            ) as memory_safe_dataloader:
-                progress_bar = tqdm(total=total_iterations, desc=f"Rank {dist.get_rank()} Training (Privacy)", disable=dist.get_rank() != 0)
-                for step in range(n_train_steps):
-                    for i, batch in enumerate(memory_safe_dataloader):
-                        batch = batch_to_device(batch, self.device)
-                        loss, infos = self.model.module.compute_loss(*batch)
+                progress_bar = tqdm(total=total_iterations, desc="Training (Privacy)")
+                
+                while steps_taken < n_train_steps:
+                    with BatchMemoryManager(
+                        data_loader=self.raw_dataloader,
+                        max_physical_batch_size=self.batch_size // self.gradient_accumulate_every,
+                        optimizer=self.optimizer
+                    ) as memory_safe_dataloader:
+                        for batch in memory_safe_dataloader:
+                            if steps_taken >= n_train_steps:
+                                pdb.set_trace()
+                                break
 
-                        loss.backward()
-                        self.optimizer.step()
-                        self.optimizer.zero_grad()
+                            if self.step % self.save_freq == 0:
+                                label = self.step // self.label_freq * self.label_freq
+                                self.save(label)
 
-                        self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
+                            batch = batch_to_device(batch, self.device)
+                            loss, infos = self.model._module.compute_loss(*batch)
 
-                        if self.step % self.update_ema_every == 0:
-                            self.step_ema()
+                            loss.backward()
+                            self.optimizer.step()
+                            self.optimizer.zero_grad()
 
-                        if self.step % self.save_freq == 0 and dist.get_rank() == 0:
-                            label = self.step // self.label_freq * self.label_freq
-                            # pdb.set_trace()
-                            self.save(label)
+                            self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
 
-                        if self.step % self.log_freq == 0 and dist.get_rank() == 0:
-                            infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
-                            print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
-                            self._log_to_json(self.step, loss.item())
+                            if self.step % self.update_ema_every == 0:
+                                self.step_ema()
 
-                        self.step += 1
-                        progress_bar.update(1)
+                            if self.step % self.log_freq == 0:
+                                infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
+                                print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
+                                self._log_to_json(self.step, loss.item())
+
+                            self.step += 1
+                            steps_taken += 1
+                            progress_bar.update(1)
+
+                            if steps_taken >= n_train_steps:
+                                break
                 progress_bar.close()
+                    
         else:
-            progress_bar = tqdm(total=total_iterations, desc=f"Rank {dist.get_rank()} Training", disable=dist.get_rank() != 0)
-            for step in range(n_train_steps):
-                for i, batch in enumerate(self.dataloader):
-                    batch = batch_to_device(batch, self.device)
-                    # print(self.model)
-                    loss, infos = self.model.compute_loss(*batch)
-                    loss = loss / self.gradient_accumulate_every
-                    loss.backward()
+            # rnd
+            diffusion_samples = []
+            initial_cond = torch.zeros((self.sample_batch_size, self.dataset.observation_dim), device=self.device)
+            for i in tqdm(range(self.sample_batch_size), desc="Sampling Curiosity-Driven Samples", unit="sample"):
+                sampled_data = self.model.conditional_sample(
+                    cond=initial_cond[i:i+1],
+                    task=torch.tensor([0], device=self.device),
+                    value=torch.tensor([0], device=self.device),
+                    horizon=self.horizon
+                )  # Shape will be [1, self.horizon, input_dim]
+                
+                diffusion_samples.append(sampled_data.unsqueeze(0))  # Adding a new batch dimension, resulting in [1, 1, self.horizon, input_dim]
 
-                    if (i + 1) % self.gradient_accumulate_every == 0:
-                        self.optimizer.step()
-                        self.optimizer.zero_grad()
+            # Concatenate all the sampled data into a single tensor with shape [self.sample_batch_size, 1, self.horizon, input_dim]
+            diffusion_samples = torch.cat(diffusion_samples, dim=0)
+            # print("diffusion_samples.shape is ", diffusion_samples.shape)
 
-                    self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
+            sample_loss_list = []
+            rnd_loss_total = 0.0
+            for sample in diffusion_samples:
+                sample_loss = self.rnd.forward(sample)  # Each sample is now of shape [1, self.horizon, input_dim]
+                sample_loss_list.append(sample_loss.item())
+                rnd_loss_total += sample_loss
 
-                    if self.step % self.update_ema_every == 0:
-                        self.step_ema()
+            rnd_loss_total = rnd_loss_total / len(diffusion_samples)
+            self.rnd.train_step(rnd_loss_total)
 
-                    if self.step % self.save_freq == 0 and dist.get_rank() == 0:
-                        label = self.step // self.label_freq * self.label_freq
-                        self.save(label)
+            # Calculate the RND loss for each of the samples
+            diffusion_samples_loss = torch.tensor(sample_loss_list, device=self.device)
 
-                    if self.step % self.log_freq == 0 and dist.get_rank() == 0:
-                        infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
-                        print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
-                        self._log_to_json(self.step, loss.item())
+            # Select the top k curiosity-driven samples based on RND loss
+            _, selected_idx = torch.topk(diffusion_samples_loss, k=int(self.sample_batch_size * self.curiosity_driven_rate))
+            # print(selected_idx)
+            selected_samples = diffusion_samples[selected_idx, :, :, :]
+            # print("selected_samples.shape is ", selected_samples.shape)
+            self.idx = [i for i in range(selected_samples.shape[0])]
+            # print("self.idx is ", self.idx)
 
-                    self.step += 1
-                    progress_bar.update(1)
+            progress_bar = tqdm(total=total_iterations, desc=f"Training")
+            for i, batch in enumerate(self.dataloader):
+                if steps_taken >= n_train_steps:
+                    break
+            
+                if self.step % self.save_freq == 0:
+                    label = self.step // self.label_freq * self.label_freq
+                    self.save(label)
+                    
+                batch = batch_to_device(batch, self.device)
+                trajectories, task, cond = batch.trajectories, batch.task, batch.cond
+
+                # Concatenate the selected curiosity-driven samples with the current batch
+                random_idx = random.sample(self.idx, int(len(self.idx) * self.curiosity_driven_rate))
+                # print("random_idx is ", random_idx)
+                # print(random_idx)
+                random_samples = selected_samples[random_idx, :, :, :]
+                # print("batch.shape is ", batch.shape)
+                # print("random_samples.shape is ", random_samples.shape)
+                # print("batch.trajectories.shape is ", batch.trajectories.shape)
+                trajectories = torch.cat((batch.trajectories, random_samples), dim=0)
+                task = batch.task
+                cond = torch.cat((cond, cond[:len(random_idx)]), dim=0)
+                # print("Creating AugBatch with:", trajectories.shape, task.shape, cond.shape)
+                batch = AugBatch(trajectories, task, cond)
+                
+                loss, infos = self.model.compute_loss(*batch)
+                loss = loss / self.gradient_accumulate_every
+                loss.backward()
+
+                if (i + 1) % self.gradient_accumulate_every == 0:
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+                self.writer.add_scalar('Loss', loss.item(), global_step=self.step)
+
+                if self.step % self.update_ema_every == 0:
+                    self.step_ema()
+
+                if self.step % self.log_freq == 0:
+                    infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
+                    print(f'{self.step}: {loss:8.5f} | {infos_str} | t: {timer():8.4f}', flush=True)
+                    self._log_to_json(self.step, loss.item())
+
+                self.step += 1
+                steps_taken += 1
+                progress_bar.update(1)
             progress_bar.close()
 
     def _log_to_json(self, step, loss):
-        if dist.get_rank() != 0 or self.json_log_path is None:
+        if self.json_log_path is None:
             return
 
         log_entry = {"step": step, "loss": float(loss)}
@@ -548,14 +619,17 @@ class AugTrainer(object):
             json.dump(data, f, indent=4)
 
     def save(self, epoch):
-        if dist.get_rank() != 0:
-            return
         if self.privacy:
             data = {
                 'step': self.step,
-                'model': self.model.module.state_dict(),
+                'model': self.model.state_dict(),
                 'ema': self.ema_model.state_dict(),
             }
+            # data = {
+            #     'step': self.step,
+            #     'model': self.model.state_dict(),
+            #     'ema': self.ema_model.state_dict(),
+            # }
         else:
             data = {
                 'step': self.step,
@@ -567,32 +641,105 @@ class AugTrainer(object):
         torch.save(data, savepath)
         print(f'[ utils/training ] Saved model to {savepath}', flush=True)
 
-    def load(self, epoch):
+    def load_for_sample(self, epoch):
         loadpath = os.path.join(self.logdir, f'state_{epoch}.pt')
         data = torch.load(loadpath, map_location=self.device)
         self.step = data['step']
 
-        model_state_dict = data['model']
-        
-        new_model_state_dict = {}
-        for key, value in model_state_dict.items():
-            new_key = key
-            if new_key.startswith("_module.module."):
-                new_key = new_key.replace("_module.module.", "_module.")
-            elif new_key.startswith("module."):
-                new_key = new_key.replace("module.", "_module.")
-            new_model_state_dict[new_key] = value
-        
-        self.model.load_state_dict(new_model_state_dict)
-
-        ema_state_dict = data['ema']
-        new_ema_state_dict = {}
-        for key, value in ema_state_dict.items():
-            new_key = key.replace("_module.module.", "_module.")
-            new_ema_state_dict[new_key] = value
+        if self.privacy:
+            model_state_dict = data['model']
             
-        self.ema_model.load_state_dict(new_ema_state_dict, strict=False)
+            new_model_state_dict = {}
+            for key, value in model_state_dict.items():
+                new_key = key
+                # If the key doesn't already start with '_module.', add it
+                if not new_key.startswith('_module.'):
+                    new_key = '_module.' + new_key
+                new_model_state_dict[new_key] = value
 
+            # print("Initialized model state_dict keys:", self.model.state_dict().keys())
+            
+            # print("Adjusted new_model_state_dict keys:", new_model_state_dict.keys())
+            self.model.load_state_dict(new_model_state_dict)
+
+            ema_state_dict = data['ema']
+            new_ema_state_dict = {}
+            for key, value in ema_state_dict.items():
+                new_key = key
+                # If the key doesn't already start with '_module.', add it
+                if not new_key.startswith('_module.'):
+                    new_key = '_module.' + new_key
+                new_ema_state_dict[new_key] = value
+            
+            self.ema_model.load_state_dict(new_ema_state_dict)
+
+        else:
+            model_state_dict = data['model']
+        
+            new_model_state_dict = {}
+            for key, value in model_state_dict.items():
+                new_key = key
+                if new_key.startswith("_module.module."):
+                    new_key = new_key.replace("_module.module.", "_module.")
+                elif new_key.startswith("module."):
+                    new_key = new_key.replace("module.", "_module.")
+                new_model_state_dict[new_key] = value
+            
+            self.model.load_state_dict(model_state_dict)
+
+            ema_state_dict = data['ema']
+            new_ema_state_dict = {}
+            for key, value in ema_state_dict.items():
+                new_key = key.replace("_module.module.", "_module.")
+                new_ema_state_dict[new_key] = value
+                
+            self.ema_model.load_state_dict(ema_state_dict)
+        print("successfully load!!")
+
+    def load_for_finetune(self, checkpoint_path):
+        # loadpath = os.path.join(self.logdir, f'state_{epoch}.pt')
+        data = torch.load(checkpoint_path, map_location=self.device)
+        # self.step = data['step']
+
+        if self.privacy:
+            model_state_dict = data['model']
+            
+            new_model_state_dict = {}
+            for key, value in model_state_dict.items():
+                new_key = key
+                # If the key doesn't already start with '_module.', add it
+                if not new_key.startswith('_module.'):
+                    new_key = '_module.module.' + new_key
+                new_model_state_dict[new_key] = value
+
+            # print("Initialized model state_dict keys:", self.model.state_dict().keys())
+            
+            # print("Adjusted new_model_state_dict keys:", new_model_state_dict.keys())
+            self.model.load_state_dict(model_state_dict)
+
+        # for no dp finetune
+        else:
+            model_state_dict = data['model']
+        
+            new_model_state_dict = {}
+            for key, value in model_state_dict.items():
+                new_key = key
+                if new_key.startswith("_module.module."):
+                    new_key = new_key.replace("_module.module.", "_module.")
+                elif new_key.startswith("module."):
+                    new_key = new_key.replace("module.", "_module.")
+                new_model_state_dict[new_key] = value
+            
+            self.model.load_state_dict(new_model_state_dict)
+
+            ema_state_dict = data['ema']
+            new_ema_state_dict = {}
+            for key, value in ema_state_dict.items():
+                new_key = key.replace("_module.module.", "_module.")
+                new_ema_state_dict[new_key] = value
+                
+            self.ema_model.load_state_dict(new_ema_state_dict, strict=False)
+        print("successfully load!!")
         
 
 class MazeTrainer(object):

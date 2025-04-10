@@ -15,8 +15,9 @@ args_to_watch = [
     ('discount', 'd'),
 ]
 
-logbase = 'logs_horizon100'
-# logbase = 'logs'
+# logbase = 'logs_horizon64'
+# logbase = 'logs_horizon100'
+logbase = 'logs'
 # logbase = 'logs_horizon16'
 
 base = {
@@ -25,7 +26,7 @@ base = {
         'model': 'models.Tasksmeta',
         'diffusion': 'models.GaussianActDiffusion',
         'env_id': 'dial-turn-v2',
-        'horizon': 100,#100
+        'horizon': 32,#100
         'n_diffusion_steps': 200,
         'action_weight': 10,
         'num_tasks':4,
@@ -71,13 +72,18 @@ base = {
 
         ## training
         'n_steps_per_epoch': 100000,
+        # 'n_steps_per_epoch': 100,
         'loss_type': 'huber',
-        'n_train_steps': 5e5,
+        # 'n_train_steps': 5e5,
+        'n_train_steps': 2e5,
+        # 'n_train_steps': 200,
         'batch_size': 128,
+        # 'batch_size': 64,
         'learning_rate': 2e-4,
         'gradient_accumulate_every': 2,
         'ema_decay': 0.995,
         'save_freq': 50000,
+        # 'save_freq': 100,
         'sample_freq': 20000,
         'n_saves': 20,
         'save_parallel': False,
@@ -86,7 +92,19 @@ base = {
         'bucket': None,
         'device': 'cuda:0',
         'seed': None,
-        'inv_task': 'pick-place-v2'
+        'inv_task': 'pick-place-v2',
+
+        # dp
+        'privacy': True,
+        # 'privacy': False,
+        'noise_multiplier': 1.0,
+        'target_delta': 1e-6,
+        'target_epsilon': 5,
+        'max_grad_norm': 1.0,
+
+        # finetune
+        'finetune': True,
+        'checkpoint_path':'logs/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000.pt'
     },
 
 

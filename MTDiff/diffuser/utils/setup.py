@@ -140,6 +140,11 @@ class Parser(Tap):
 
     def mkdir(self, args):
         if 'logbase' in dir(args) and 'dataset' in dir(args) and 'exp_name' in dir(args):
+            if args.finetune:
+                args.exp_name = f"finetune/epsilon{args.target_epsilon}_horizon{args.horizon}"
+            else:
+                args.exp_name = f"pretrain/horizon{args.horizon}"
+                
             args.savepath = os.path.join(args.logbase, args.dataset, args.exp_name)
             self._dict['savepath'] = args.savepath
             if 'suffix' in dir(args):

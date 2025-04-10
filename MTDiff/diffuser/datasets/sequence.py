@@ -17,7 +17,7 @@ import os
 import gym
 import d4rl
 Batch = namedtuple('Batch', 'trajectories conditions')
-AugBatch = namedtuple('AugBatch', 'trajectories task')
+AugBatch = namedtuple('AugBatch', 'trajectories task cond')
 TaskBatch = namedtuple('TaskBatch', 'trajectories conditions task value')
 DTBatch = namedtuple('DTBatch', 'actions rtg observations timestep mask')
 DT1Batch = namedtuple('DT1Batch', 'actions rtg observations timestep mask task')
@@ -466,7 +466,8 @@ class AugDataset(MetaSequenceDataset):
                 max_start = min(max_start, path_length - horizon)
             for start in range(max_start):
                 end = start + horizon
-                indices.append((i, start, end))
+                cond_start = max(0, start - horizon)
+                indices.append((i, cond_start, start, end))
         indices = np.array(indices)
         return indices
 
@@ -486,7 +487,7 @@ class AugDataset(MetaSequenceDataset):
         return len(self.indices)
 
     def __getitem__(self, idx, eps=1e-4):
-        path_ind, start, end = self.indices[idx]
+        path_ind, cond_start, start, end = self.indices[idx]
 
         if len(self.task_list) > 1:
             path_inds = []
@@ -511,9 +512,22 @@ class AugDataset(MetaSequenceDataset):
         # Concatenate all components to form trajectories
         trajectories = np.concatenate([observations, actions, rewards, terminals, next_observations], axis=-1)
 
+        # Load condition (x_condition): previous horizon's last next_states
+        if start >= self.horizon:
+            cond_end = start
+            cond_start = cond_end - self.horizon
+            cond_next_observations = self.fields.normed_observations[path_inds, cond_start + 1:cond_end + 1]
+            if cond_next_observations.shape[1] < self.horizon:
+                padding = np.repeat(cond_next_observations[:, -1:, :], self.horizon - cond_next_observations.shape[1], axis=1)
+                cond_next_observations = np.concatenate([cond_next_observations, padding], axis=1)
+            cond = cond_next_observations[:, -1, :]  # (batch_size, observation_dim)
+        else:
+            cond = np.zeros((len(path_inds), self.observation_dim))
+
         if len(self.task_list) > 1:
             task = np.array([self.task_list.index(self.fields.get_task(path_ind)) for path_ind in path_inds])
         else:
             task = np.array([0])  
 
-        return AugBatch(trajectories, task)
+        # print("cond is:\n", cond)
+        return AugBatch(trajectories, task, cond)

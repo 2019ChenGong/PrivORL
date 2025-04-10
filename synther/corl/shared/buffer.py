@@ -143,6 +143,8 @@ class ReplayBuffer(ReplayBufferBase):
             raise ValueError(
                 "Replay buffer is smaller than the dataset you are trying to load!"
             )
+        # import pdb
+        # pdb.set_trace()
         self._states[:n_transitions] = self._to_tensor(data["observations"])
         self._actions[:n_transitions] = self._to_tensor(data["actions"])
         self._rewards[:n_transitions] = self._to_tensor(data["rewards"])

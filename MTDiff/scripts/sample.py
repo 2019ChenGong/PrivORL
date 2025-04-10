@@ -15,6 +15,7 @@ os.sys.path.insert(0, parentdir)
 
 import diffuser.utils as utils
 
+
 # ----------------------------- #
 #        Load Model Setup       #
 # ----------------------------- #
@@ -22,10 +23,10 @@ import diffuser.utils as utils
 class Parser(utils.Parser):
     dataset: str = 'maze2d-medium-dense-v1'
     config: str = 'config.locomotion'
-    checkpoint_path: str = "logs/maze2d-medium-dense-v1/-Mar28_01-10-57/state_150000.pt"
-    output_csv_path: str = "results/maze2d-medium-dense-v1/-Mar28_01-10-57/state_150000/sampled_trajectories.csv"
-    # checkpoint_path: str = "logs_horizon16/maze2d-medium-dense-v1/-Mar15_02-28-29/state_450000.pt"
-    # output_csv_path: str = "results_horizon16/maze2d-medium-dense-v1/-Mar15_02-28-29/state_450000/sampled_trajectories.csv"
+    sample_checkpoint_path: str = "logs/maze2d-medium-dense-v1/-Apr06_05-09-44/state_200000.0.pt"
+    output_csv_path: str = "logs/maze2d-medium-dense-v1/-Apr05_12-16-11/state_0/sampled_trajectories.csv"
+    # sample_checkpoint_path: str = "logs/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000.pt"
+    # output_csv_path: str = "results/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000/sampled_trajectories.csv"
     num_trajectories: int = 1000
     max_length: int = 1000
 
@@ -48,10 +49,12 @@ def load_model(_, checkpoint_path, device):
         # loadbase=os.path.dirname(checkpoint_path),   # Base directory of the checkpoint
         # dataset=None,                                # Dataset is optional, based on how `utils.load_diffusion` works
         os.path.dirname(checkpoint_path),                    # Full checkpoint path
-        epoch=500000,                                  # Load the latest epoch or specify if needed
+        epoch=0,                                  # Load the latest epoch or specify if needed
+        # epoch=500000,                                  # Load the latest epoch or specify if needed
         device=device,
         seed=None,                                    # Optional, if you need deterministic results
-        sample=True
+        sample=True,
+        privacy=True
     )
     
     # Use the EMA model for higher-quality sampling
@@ -72,14 +75,30 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
     current_state = torch.tensor(initial_condition, dtype=torch.float32).unsqueeze(0).to(args.device)
 
     for step_count in range(max_length // args.horizon):
-        conditions = current_state.unsqueeze(0)
+        conditions = current_state#.unsqueeze(0)
+        # print("conditions.shape is ", conditions.shape)
         
-        samples = diffusion.module.conditional_sample(
-            cond=conditions,  
-            task=torch.tensor([0], device=args.device),  
-            value=torch.tensor([0], device=args.device),  
-            horizon=args.horizon
-        )
+        if args.privacy:
+            samples = diffusion.module._module.conditional_sample(
+                cond=conditions,  
+                task=torch.tensor([0], device=args.device),  
+                value=torch.tensor([0], device=args.device),  
+                horizon=args.horizon
+            )
+            
+            # samples = diffusion.module.conditional_sample(
+            #     cond=conditions,  
+            #     task=torch.tensor([0], device=args.device),  
+            #     value=torch.tensor([0], device=args.device),  
+            #     horizon=args.horizon
+            # )
+        else:
+            samples = diffusion.module.conditional_sample(
+                cond=conditions,  
+                task=torch.tensor([0], device=args.device),  
+                value=torch.tensor([0], device=args.device),  
+                horizon=args.horizon
+            )
 
         sampled_transitions = samples.cpu().numpy().squeeze(0)  
 
@@ -169,7 +188,7 @@ def sample_trajectory(rank, world_size, args):
 
     model = model_config().to(rank)
     diffusion = diffusion_config(model).to(rank)
-    diffusion = load_model(diffusion, args.checkpoint_path, rank)
+    diffusion = load_model(diffusion, args.sample_checkpoint_path, rank)
     diffusion = DDP(diffusion, device_ids=[rank])
 
     trajectories = []
@@ -193,7 +212,7 @@ def sample_trajectory(rank, world_size, args):
 
 
 def main():
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
     
     args = Parser().parse_args('diffusion')
     args.horizon = 32

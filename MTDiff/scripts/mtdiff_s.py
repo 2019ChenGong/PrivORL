@@ -6,9 +6,18 @@ os.sys.path.insert(0, parentdir)
 import diffuser.utils as utils
 import numpy as np
 import pdb
+import copy
 import torch
 import torch.multiprocessing as mp
 import torch.distributed as dist
+
+from tqdm import tqdm
+
+from opacus import GradSampleModule, PrivacyEngine
+from opacus.validators import ModuleValidator
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+from opacus.accountants import RDPAccountant
 
 #-----------------------------------------------------------------------------#
 #----------------------------------- setup -----------------------------------#
@@ -18,24 +27,28 @@ class Parser(utils.Parser):
     dataset: str = 'maze2d-medium-dense-v1'
     config: str = 'config.locomotion'
 
-def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+def setup(device):
+    torch.cuda.set_device(device)
 
 def cleanup():
     dist.destroy_process_group()
 
-def main(rank, world_size, args):
-    setup(rank, world_size)  # 先初始化分布式环境
+def cycle(dl):
+    while True:
+        for data in dl:
+            yield data
 
-    # Set device for this rank
-    device = torch.device(f"cuda:{rank}")
-    torch.cuda.set_device(device)
+def main(args):
+    device = args.device
+    setup(device)
+    # torch.cuda.set_device(device)
 
-    # Parser 初始化，仅 rank 0 执行完整初始化
-    # parser = Parser()
-    # args = parser.parse_args('diffusion', full_init=(rank == 0))
+    if args.finetune:
+        args.privacy = True
+        args.n_train_steps = 2e5
+    else:
+        args.privacy = False
+        args.n_train_steps = 5e5
 
     # Dataset setup
     dataset_config = utils.Config(
@@ -117,21 +130,41 @@ def main(rank, world_size, args):
     # Wrap trainer with DDP compatibility
     trainer = trainer_config(diffusion, dataset, renderer)
 
-    # Only rank 0 reports parameters and prints epoch info
-    if rank == 0:
-        utils.report_parameters(model)
-
-    # Training loop
     n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)
-    for i in range(n_epochs):
-        if rank == 0:
-            print(f'Epoch {i} / {n_epochs} | {args.savepath}')
-        trainer.train(n_train_steps=args.n_steps_per_epoch)
 
-    cleanup()
+    if args.finetune:
+        trainer.load_for_finetune(args.checkpoint_path)
+
+        trainer.privacy_engine = PrivacyEngine()
+        # print("before ModuleValidator, model is:\n", self.model)
+        trainer.model = ModuleValidator.fix(trainer.model)
+        # print("after ModuleValidator, model is:\n", self.model)
+            
+        trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=trainer.train_lr)
+
+        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon(
+            module=trainer.model,
+            optimizer=trainer.optimizer,
+            data_loader=trainer.raw_dataloader,
+            target_epsilon=args.target_epsilon,
+            target_delta=args.target_delta,
+            epochs=n_epochs,
+            max_grad_norm=trainer.max_grad_norm,
+        )
+        # pdb.set_trace()
+        trainer.ema_model = copy.deepcopy(trainer.model)
+
+        trainer.dataloader = cycle(trainer.raw_dataloader)
+
+
+    utils.report_parameters(model)
+
+    # Training loop    
+    for epoch in range(n_epochs):
+        print(f'Epoch {epoch + 1} / {n_epochs} | {args.savepath}')
+        trainer.train(n_train_steps=args.n_steps_per_epoch)
+    trainer.save(int(args.n_train_steps))
 
 if __name__ == "__main__":
-    world_size = torch.cuda.device_count()
-    args = Parser().parse_args('diffusion', full_init=True)  # 单进程时完整初始化
-    # pdb.set_trace()
-    mp.spawn(main, args=(world_size, args), nprocs=world_size, join=True)
+    args = Parser().parse_args('diffusion', full_init=True)
+    main(args)

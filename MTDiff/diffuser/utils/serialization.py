@@ -3,11 +3,24 @@ import pickle
 import glob
 import torch
 import pdb
+import copy
 
 from collections import namedtuple
 
-DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model diffusion ema trainer epoch')
+from opacus import GradSampleModule, PrivacyEngine
+from opacus.validators import ModuleValidator
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
+DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model trainermodel diffusion ema trainer epoch')
 mtdtExperiment = namedtuple('mtdtExperiment', 'dataset model ema trainer epoch')
+
+
+def cycle(dl):
+    while True:
+        for data in dl:
+            yield data
+
 def mkdir(savepath):
     """
         returns `True` iff `savepath` is created
@@ -33,7 +46,7 @@ def load_config(*loadpath):
     #print(config)
     return config
 
-def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample=False):
+def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample=False, privacy=True):
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')
     model_config = load_config(*loadpath, 'model_config.pkl')
     diffusion_config = load_config(*loadpath, 'diffusion_config.pkl')
@@ -56,8 +69,31 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample
 
     print(f'\n[ utils/serialization ] Loading model epoch: {epoch}\n')
 
-    trainer.load(epoch)
-    return DiffusionExperiment(dataset, renderer, model, diffusion, trainer.ema_model, trainer, epoch)
+    if privacy:
+        trainer.privacy_engine = PrivacyEngine()
+        # print("before ModuleValidator, model is:\n", self.model)
+        trainer.model = ModuleValidator.fix(trainer.model)
+        # print("after ModuleValidator, model is:\n", self.model)
+
+        # trainer.model = DPDDP(trainer.model)
+            
+        trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=trainer.train_lr)
+        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon(
+            module=trainer.model,
+            optimizer=trainer.optimizer,
+            data_loader=trainer.raw_dataloader,
+            target_epsilon=10.0,
+            target_delta=1e-6,
+            epochs=2,
+            max_grad_norm=trainer.max_grad_norm,
+        )
+        trainer.dataloader = cycle(trainer.raw_dataloader)
+        trainer.ema_model = copy.deepcopy(trainer.model)
+    
+    trainer.load_for_sample(epoch)
+
+    return DiffusionExperiment(dataset, renderer, model, trainer.model, diffusion, trainer.ema_model, trainer, epoch)
+
 
 def load_mtdt(*loadpath, epoch='latest', device='cuda:0', seed=None):
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')

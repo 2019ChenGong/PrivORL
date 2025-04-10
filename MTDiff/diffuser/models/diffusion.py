@@ -555,17 +555,23 @@ class AugDiffusion(GaussianInvDiffusion):
         loss_weights = torch.einsum('h,t->ht', discounts, dim_weights)
         return loss_weights
 
-    def compute_loss(self, batch, *args):
-        x = einops.rearrange(batch, 'i j h k -> (i j) h k')
+    def compute_loss(self, *batch):
+        trajectories, task, cond = batch
+        x = einops.rearrange(trajectories, 'i j h k -> (i j) h k')
         batch_size = len(x)
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long()
-        return self._losses(x, t)
+        return self._losses(x, t, cond=cond)
 
-    def _losses(self, x_start, t):
+    def _losses(self, x_start, t, cond=None):
         noise = torch.randn_like(x_start)
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
-        x_recon = self.model(x_noisy, t)
-
+        
+        # print("stacked_inputs.shape is ", stacked_inputs.shape)
+        cond = cond.squeeze(1)
+        # print("t.shape is ", t.shape)
+        # print("cond.shape is ", cond.shape)
+        x_recon = self.model(x_noisy, t, x_condition=cond)
+        
         assert noise.shape == x_recon.shape
         if self.predict_epsilon:
             loss, info = self.loss_fn(x_recon, noise)
@@ -573,12 +579,12 @@ class AugDiffusion(GaussianInvDiffusion):
             loss, info = self.loss_fn(x_recon, x_start)
         return loss, info
 
-    def conditional_sample(self, horizon=None, transition_steps=5, **sample_kwargs):
+    def conditional_sample(self, cond=None, horizon=None, transition_steps=5, **sample_kwargs):
         device = self.betas.device
         batch_size = 1  # 默认一个任务
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.transition_dim)
-        return self._sample_loop(shape, transition_steps, **sample_kwargs)
+        return self._sample_loop(shape, transition_steps, init_state=cond, **sample_kwargs)
 
     @torch.no_grad()
     def _sample_loop(self, shape, transition_steps=5, verbose=True, return_chain=False, init_state=None, **sample_kwargs):
@@ -593,7 +599,7 @@ class AugDiffusion(GaussianInvDiffusion):
                 
                 x[:, 0, :init_state.shape[-1]] = init_state
             else:
-                raise ValueError(f"init_state 维度不匹配，expected last dim < {transition_dim}, but got {init_state.shape[-1]}")
+                raise ValueError(f"init_state dimention dismatch, expected last dim < {transition_dim}, but got {init_state.shape[-1]}")
 
         else:
             x = torch.randn(shape, device=device)
@@ -604,7 +610,7 @@ class AugDiffusion(GaussianInvDiffusion):
         for i in reversed(range(0, self.n_timesteps, transition_steps)):
             current_steps = min(transition_steps, i + 1)
             t = torch.full((batch_size,), i, device=device, dtype=torch.long)  # 设定时间步 t
-            x = self.default_sample_fn(x, t, current_steps=current_steps, **sample_kwargs)
+            x = self.default_sample_fn(x, t, current_steps=current_steps, cond=init_state, **sample_kwargs)
             if return_chain:
                 chain.append(x)
 
@@ -615,19 +621,20 @@ class AugDiffusion(GaussianInvDiffusion):
         return x
 
     @torch.no_grad()
-    def default_sample_fn(self, x, t, current_steps=1, **sample_kwargs):
+    def default_sample_fn(self, x, t, current_steps=1, cond=None, **sample_kwargs):
         b, *_, device = *x.shape, x.device
         for _ in range(current_steps):
-            model_mean, _, model_log_variance = self._mean_variance(x, t)
+            model_mean, _, model_log_variance = self._mean_variance(x, t, cond=cond)
             noise = torch.randn_like(x)
             nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1))) 
             x = model_mean + nonzero_mask * (1.0 * model_log_variance).exp() * noise
             t = torch.clamp(t - 1, min=0)
         return x
 
-    def _mean_variance(self, x, t):
+    def _mean_variance(self, x, t, cond=None):
         batch_size = x.shape[0]
-        noise = self.model(x, t)
+        # print("Creating with:", x.shape, t.shape, cond.shape)
+        noise = self.model(x, t, x_condition=cond)
         x_recon = self.predict_start_from_noise(x, t=t, noise=noise)
 
         if self.clip_denoised:
