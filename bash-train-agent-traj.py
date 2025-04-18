@@ -9,21 +9,30 @@ gpus = ['0', '1']
 gpus = ['0', '1', '2', '3']
 
 epsilons = [
-            1,
+            # 1,
              10
              ]
-agents = ['cql', 'iql', 'edac', 'td3_bc']
+agents = [
+    # 'cql', 
+    'iql', 
+    # 'edac', 
+    'td3_bc'
+    ]
 
 datasets=[
     # 'maze2d-umaze-dense-v1',
-    # 'maze2d-medium-dense-v1',
-    'maze2d-large-dense-v1',
+    'maze2d-medium-dense-v1',
+    # 'maze2d-large-dense-v1',
     # 'kitchen-partial-v0',
     # 'halfcheetah-medium-replay-v2',
 ]
+
+# finetune = False
+finetune = True
+
 seeds = [
-    3, 4, 5,
-        #   6, 
+    # 3, 4, 5, 6
+          6, 8, 9 ,10
         #   7
          ]
 
@@ -44,10 +53,13 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             for epsilon in epsilons:
                 for agent in agents:
                     gpu = gpus[gpu_index]
-
-                    diffusion_path = f"/p/fzv6enresearch/liuzheng/MTDiff/results/{dataset}/finetune/epsilon{epsilon}_horizon32/state_200000/sampled_trajectories.npz"
-                    checkpoints_path = f"results_trajectory/{dataset}/finetune/epsilon{epsilon}_horizon32/state{200000}/seed{seed}/{agent}"
-
+                    
+                    if finetune:
+                        diffusion_path = f"/p/fzv6enresearch/liuzheng/MTDiff/results/{dataset}/finetune/epsilon{epsilon}_horizon32/state_200000/sampled_trajectories.npz"
+                        checkpoints_path = f"results_trajectory/{dataset}/finetune/epsilon{epsilon}_horizon32/state200000/seed{seed}/{agent}"
+                    else:
+                        diffusion_path = f"/p/fzv6enresearch/liuzheng/MTDiff/results/{dataset}/pretrain/horizon32/state_500000/sampled_trajectories.npz"
+                        checkpoints_path = f"results_trajectory/{dataset}/pretrain/horizon32/state500000/seed{seed}/{agent}"
                     dataset_prefix = dataset.split('-')[0]
                     dataset_suffix = '-'.join(dataset.split('-')[1:])
 

@@ -169,6 +169,8 @@ if __name__ == '__main__':
     else:
         inputs = load_data(args.dataset, args.finetuning_rate)
 
+    import pdb
+    pdb.set_trace()
     dataset = torch.utils.data.TensorDataset(inputs)
 
     results_folder = pathlib.Path(args.results_folder)
