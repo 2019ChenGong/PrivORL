@@ -7,7 +7,7 @@ This is the official implementaion of paper ***PrivORL: Differentially Private S
 Additionally, PrivORL introduces curiosity-driven pre-training, which uses feedback from the curiosity module to diversify the synthetic dataset and thus can generate diverse synthetic transitions and trajectories that closely resemble the sensitive dataset.
 
 <div align=center>
-<img src="./plot/privorl_00.png" width = "1000" alt="The workflow of PrivCode" align=center />
+<img src="./plot/privorl_00.png" width = "700" alt="The workflow of PrivCode" align=center />
 </div>
 
 <p align="center">The workflow of PrivCode.</p>
