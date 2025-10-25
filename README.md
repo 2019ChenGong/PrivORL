@@ -1,12 +1,10 @@
 <div align=center>
   
-# PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
+# PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Learning
 </div>
 
-<!-- [![Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/cong_ml/status/1635642214586937346)
-[![arXiv](https://img.shields.io/badge/arXiv-2210.07105-b31b1b.svg)](https://arxiv.org/abs/2303.06614) -->
-
-This is the official implementaion of paper ***PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning***. This repository contains Pytorch training code and evaluation code. PRIVIMAGE is a Differetial Privacy (DP) offline RL transitions synthesis tool, which leverages the DP technique to generate synthetic transitions to replace the sensitive data, allowing organizations to share and utilize synthetic images without privacy concerns.
+This is the official implementaion of paper ***PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Learning***. This repository contains Pytorch training code and evaluation code. PrivORL leverages a diffusion model and diffusion transformer to synthesize *transitions and trajectories*, respectively, under DP. The synthetic dataset can then be securely released for downstream analysis and research. PrivORL adopts the popular approach of pre-training a synthesizer on public datasets, and then fine-tuning on sensitive datasets using DP Stochastic Gradient Descent (DP-SGD).
+Additionally, PrivORL introduces curiosity-driven pre-training, which uses feedback from the curiosity module to diversify the synthetic dataset and thus can generate diverse synthetic transitions and trajectories that closely resemble the sensitive dataset.
 
 ## 1. Contents
 - PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
@@ -92,6 +90,10 @@ Diffusion model pre-training:
 ```
 python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
+
+For example,
+
+
 
 ### 4.2 Fine-tuning
 
