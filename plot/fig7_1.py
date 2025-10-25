@@ -11,13 +11,6 @@ def find_json_files(root_dir):
                     for file in files:
                         if file == "eval_0.json":
                             target_files.append(os.path.join(root, file))
-    
-    # for root, dirs, files in os.walk(root_dir):
-    #     if "cur" in root:
-            
-    #         for file in files:
-    #             if file == "eval_0.json":
-    #                 target_files.append(os.path.join(root, file))
     return target_files
 
 def find_mariginal_json_files(root_dir, cur_rate, epsilon):
