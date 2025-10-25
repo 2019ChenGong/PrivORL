@@ -201,6 +201,8 @@ python mia.py
 
 ## 5. Acknowledgements
 
+> **Note:** please update the acknowledgements.
+
 PrivTranR builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We
 would like to particularly thank the authors of:
 
