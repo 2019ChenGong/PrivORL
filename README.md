@@ -13,7 +13,8 @@ Additionally, PrivORL introduces curiosity-driven pre-training, which uses feedb
 <p align="center">The workflow of PrivCode.</p>
 
 ## 1. Contents
-- PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
+PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Learning
+
   - [1. Contents](#1-contents)
   - [2. Project structure](#2-project-structure)
   - [3. Get Start](#3-get-start)
