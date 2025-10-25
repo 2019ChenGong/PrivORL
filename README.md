@@ -6,6 +6,12 @@
 This is the official implementaion of paper ***PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Learning***. This repository contains Pytorch training code and evaluation code. PrivORL leverages a diffusion model and diffusion transformer to synthesize *transitions and trajectories*, respectively, under DP. The synthetic dataset can then be securely released for downstream analysis and research. PrivORL adopts the popular approach of pre-training a synthesizer on public datasets, and then fine-tuning on sensitive datasets using DP Stochastic Gradient Descent (DP-SGD).
 Additionally, PrivORL introduces curiosity-driven pre-training, which uses feedback from the curiosity module to diversify the synthetic dataset and thus can generate diverse synthetic transitions and trajectories that closely resemble the sensitive dataset.
 
+<div align=center>
+<img src="./plot/privorl_00.png" width = "1000" alt="The workflow of PrivCode" align=center />
+</div>
+
+<p align="center">The workflow of PrivCode.</p>
+
 ## 1. Contents
 - PrivTranR: Differentially Private Synthetic Transition Generation for Offline Reinforcement Learning
   - [1. Contents](#1-contents)
