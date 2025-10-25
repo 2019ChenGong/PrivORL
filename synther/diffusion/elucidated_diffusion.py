@@ -2,6 +2,7 @@
 Main diffusion code.
 Code was adapted from https://github.com/lucidrains/denoising-diffusion-pytorch
 """
+import pdb
 import math
 import pathlib
 from multiprocessing import cpu_count
@@ -305,6 +306,7 @@ class Trainer(object):
             curiosity_driven,
             curiosity_driven_rate,
             diffusion_model,
+            accountant,
             dataset: Optional[torch.utils.data.Dataset] = None,
             train_batch_size: int = 16,
             small_batch_size: int = 16,
@@ -355,6 +357,8 @@ class Trainer(object):
         self.dp_max_grad_norm = dp_max_grad_norm
         self.dp_max_physical_batch_size = dp_max_physical_batch_size
         self.dp_n_splits = dp_n_splits
+
+        self.accountant = accountant
 
         if dataset is not None:
             # If dataset size is less than 800K use the small batch size
@@ -552,7 +556,10 @@ class Trainer(object):
 
                     # concat batch of data with selected random syn diffusion samples
                     if self.curiosity_driven:
-                        random_idx = random.sample(self.idx, len(self.idx) * self.curiosity_driven_rate)                        
+                        # pdb.set_trace()      
+                        # print("self.ixd:", self.idx)   
+                        # print("len(self.idx) * self.curiosity_driven_rate:", len(self.idx) * self.curiosity_driven_rate)   
+                        random_idx = random.sample(self.idx, int(len(self.idx) * self.curiosity_driven_rate))               
                         random_samples = self.selected_samples[random_idx, :]
                         data = torch.cat((data, random_samples), dim=0)
                 
@@ -610,7 +617,7 @@ class Trainer(object):
     def train_dp(self):
         accelerator = self.accelerator
         device = accelerator.device
-        privacy_engine = PrivacyEngine()
+        privacy_engine = PrivacyEngine(accountant=self.accountant)
         # self.model = DPDDP(self.model)
 
         self.model, self.opt, self.dl = privacy_engine.make_private_with_epsilon(

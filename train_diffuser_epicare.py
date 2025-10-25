@@ -12,7 +12,7 @@ import ast
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
-from synther.diffusion.utils import make_inputs, make_part_inputs, split_diffusion_samples, construct_diffusion_model
+from synther.diffusion.utils import make_inputs, make_part_inputs, make_inputs_epicare, make_part_inputs_epicare, split_diffusion_samples, split_diffusion_samples_epicare, construct_diffusion_model, load_custom_dataset
 from synther.diffusion.delete_nan import remove_errors
 
 
@@ -21,18 +21,21 @@ from synther.diffusion.delete_nan import remove_errors
 class SimpleDiffusionGenerator:
     def __init__(
             self,
-            env: gym.Env,
+            obs_dim: int,
+            action_dim: int,
             ema_model,
             num_sample_steps: int = 128,
             sample_batch_size: int = 100000,
+            modelled_terminals: bool = True,
     ):
-        self.env = env
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
         self.diffusion = ema_model
         self.diffusion.eval()
-        # Clamp samples if normalizer is MinMaxNormalizer
         self.clamp_samples = isinstance(self.diffusion.normalizer, MinMaxNormalizer)
         self.num_sample_steps = num_sample_steps
         self.sample_batch_size = sample_batch_size
+        self.modelled_terminals = modelled_terminals
         print(f'Sampling using: {self.num_sample_steps} steps, {self.sample_batch_size} batch size.')
 
     def sample(
@@ -56,7 +59,12 @@ class SimpleDiffusionGenerator:
             sampled_outputs = sampled_outputs.cpu().numpy()
 
             # Split samples into (s, a, r, s') format
-            transitions = split_diffusion_samples(sampled_outputs, self.env)
+            transitions = split_diffusion_samples_epicare(
+                sampled_outputs,
+                obs_dim=self.obs_dim,
+                action_dim=self.action_dim,
+                modelled_terminals=self.modelled_terminals,
+            )
             if len(transitions) == 4:
                 obs, act, rew, next_obs = transitions
                 terminal = np.zeros_like(next_obs[:, 0])
@@ -78,28 +86,48 @@ class SimpleDiffusionGenerator:
 
 # full dataset
 def load_data(dataset_name, sample_ratio):
-    env = gym.make(dataset_name)
-    if sample_ratio == 1.0:
-        input = make_inputs(env)
-    else:
-        train_data, test_data = make_part_inputs(env, sample_ratio)
-        
-        if args.save_data:
-            np.random.seed(0)
-            train_indices = np.random.choice(train_data.shape[0], 1000, replace=False)
-            train_data = train_data[train_indices, :]
-            test_indices = np.random.choice(test_data.shape[0], 1000, replace=False)
-            test_data = test_data[test_indices, :]
-            with open(f'{args.results_folder}/train_data_1000.npy', 'wb') as f:
-                np.save(f, train_data)
-            with open(f'{args.results_folder}/test_data_1000.npy', 'wb') as f:
-                np.save(f, test_data)
-            input = train_data
+    if dataset_name.endswith('.hdf5'):
+        if sample_ratio == 1.0:
+            input = make_inputs_epicare(dataset_name)
         else:
-            input = train_data
+            train_data, test_data = make_part_inputs_epicare(dataset_name, sample_ratio)
+            if args.save_data:
+                np.random.seed(0)
+                train_indices = np.random.choice(train_data.shape[0], 1000, replace=False)
+                train_data = train_data[train_indices, :]
+                test_indices = np.random.choice(test_data.shape[0], 1000, replace=False)
+                with open(f'{args.results_folder}/train_data_1000.npy', 'wb') as f:
+                    np.save(f, train_data)
+                with open(f'{args.results_folder}/test_data_1000.npy', 'wb') as f:
+                    np.save(f, test_data)
+                input = train_data
+            else:
+                input = train_data
+        input = torch.from_numpy(input).float()
+        return input
+    else:
+        env = gym.make(dataset_name)
+        if sample_ratio == 1.0:
+            input = make_inputs(env)
+        else:
+            train_data, test_data = make_part_inputs(env, sample_ratio)
+            
+            if args.save_data:
+                np.random.seed(0)
+                train_indices = np.random.choice(train_data.shape[0], 1000, replace=False)
+                train_data = train_data[train_indices, :]
+                test_indices = np.random.choice(test_data.shape[0], 1000, replace=False)
+                test_data = test_data[test_indices, :]
+                with open(f'{args.results_folder}/train_data_1000.npy', 'wb') as f:
+                    np.save(f, train_data)
+                with open(f'{args.results_folder}/test_data_1000.npy', 'wb') as f:
+                    np.save(f, test_data)
+                input = train_data
+            else:
+                input = train_data
 
-    input = torch.from_numpy(input).float()
-    return input
+        input = torch.from_numpy(input).float()
+        return input
 
 
 if __name__ == '__main__':
@@ -227,9 +255,15 @@ if __name__ == '__main__':
 
     # Generate samples and save them.
     if args.load_checkpoint:
+        dataset = load_custom_dataset(args.dataset)
+        obs_dim = dataset["observations"].shape[1]
+        action_dim = 1
+
         generator = SimpleDiffusionGenerator(
-            env=gym.make(args.dataset),
+            obs_dim=obs_dim,
+            action_dim=action_dim,
             ema_model=trainer.ema.ema_model,
+            modelled_terminals=True, 
         )
         observations, actions, rewards, next_observations, terminals = generator.sample(
             num_samples=args.save_num_samples,

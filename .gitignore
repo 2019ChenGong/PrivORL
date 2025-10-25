@@ -175,3 +175,6 @@ dmypy.json
 .idea/
 .vscode/
 *.DS_Store
+
+EpiCare
+clean.sh

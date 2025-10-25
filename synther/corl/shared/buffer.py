@@ -147,11 +147,11 @@ class ReplayBuffer(ReplayBufferBase):
         # pdb.set_trace()
         self._states[:n_transitions] = self._to_tensor(data["observations"])
         self._actions[:n_transitions] = self._to_tensor(data["actions"])
-        self._rewards[:n_transitions] = self._to_tensor(data["rewards"])
-        # self._rewards[:n_transitions] = self._to_tensor(data["rewards"][..., None])
+        # self._rewards[:n_transitions] = self._to_tensor(data["rewards"])
+        self._rewards[:n_transitions] = self._to_tensor(data["rewards"][..., None])
         self._next_states[:n_transitions] = self._to_tensor(data["next_observations"])
-        self._dones[:n_transitions] = self._to_tensor(data["terminals"])
-        # self._dones[:n_transitions] = self._to_tensor(data["terminals"][..., None])
+        # self._dones[:n_transitions] = self._to_tensor(data["terminals"])
+        self._dones[:n_transitions] = self._to_tensor(data["terminals"][..., None])
         self._pointer = n_transitions
 
         print(f"Dataset size: {n_transitions}")

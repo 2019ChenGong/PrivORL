@@ -1,12 +1,15 @@
 # Utilities for diffusion.
 from typing import Optional, List, Union
 
+import pdb
 import d4rl
 import gin
 import gym
 import numpy as np
 import torch
 from torch import nn
+import h5py
+from typing import Dict
 
 # GIN-required Imports.
 from synther.diffusion.denoiser_network import ResidualMLPDenoiser
@@ -78,6 +81,29 @@ def split_diffusion_samples(
     else:
         return obs, actions, rewards, next_obs
 
+@gin.configurable
+def split_diffusion_samples_epicare(
+    samples: Union[np.ndarray, torch.Tensor],
+    obs_dim: int,
+    action_dim: int,
+    modelled_terminals: bool = False,
+    terminal_threshold: Optional[float] = None,
+):
+    obs = samples[:, :obs_dim]
+    actions = samples[:, obs_dim:obs_dim + action_dim]
+    rewards = samples[:, obs_dim + action_dim]
+    next_obs = samples[:, obs_dim + action_dim + 1: obs_dim + action_dim + 1 + obs_dim]
+    if modelled_terminals:
+        terminals = samples[:, -1]
+        if terminal_threshold is not None:
+            if isinstance(terminals, torch.Tensor):
+                terminals = (terminals > terminal_threshold).float()
+            else:
+                terminals = (terminals > terminal_threshold).astype(np.float32)
+        return obs, actions, rewards, next_obs, terminals
+    else:
+        return obs, actions, rewards, next_obs
+
 
 @gin.configurable
 def construct_diffusion_model(
@@ -106,3 +132,77 @@ def construct_diffusion_model(
         normalizer=normalizer,
         event_shape=[event_dim],
     )
+
+
+# --------- EpiCare数据加载部分 BEGIN ---------
+
+def get_cutoff(dataset, episodes_avail=None):
+    if episodes_avail is None:
+        return len(dataset["terminals"])
+    terminals = dataset["terminals"][:]
+    terminals_cumsum = np.cumsum(terminals)
+    cutoff_indices = np.where(terminals_cumsum == episodes_avail)[0]
+    if len(cutoff_indices) == 0:
+        return len(terminals)
+    return cutoff_indices[0] + 1
+
+def load_custom_dataset(dataset_path, episodes_avail=None) -> Dict[str, np.ndarray]:
+    with h5py.File(dataset_path, "r") as dataset_file:
+        cutoff = get_cutoff(dataset_file, episodes_avail)
+        observations = dataset_file["observations"][:cutoff]
+        actions = dataset_file["actions"][:cutoff]
+        rewards = dataset_file["rewards"][:cutoff]
+        next_observations = dataset_file["next_observations"][:cutoff]
+        terminals = dataset_file["terminals"][:cutoff]
+
+    observations = observations.astype(np.float32)
+    actions = actions.astype(np.float32)
+    rewards = rewards.astype(np.float32)
+    next_observations = next_observations.astype(np.float32)
+    terminals = terminals.astype(np.bool_)
+
+    custom_dataset = {
+        "observations": observations,
+        "actions": actions,
+        "rewards": rewards,
+        "next_observations": next_observations,
+        "terminals": terminals,
+    }
+    return custom_dataset
+
+def make_inputs_epicare(
+    dataset_path,
+    episodes_avail=None,
+    modelled_terminals=True
+) -> np.ndarray:
+    dataset = load_custom_dataset(dataset_path, episodes_avail)
+    obs = dataset["observations"]
+    actions = dataset["actions"]
+    rewards = dataset["rewards"]
+    next_obs = dataset["next_observations"]
+    if modelled_terminals:
+        terminals = dataset["terminals"].astype(np.float32)
+        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs, terminals[:, None]], axis=1)
+    else:
+        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs], axis=1)
+    return inputs
+
+def make_part_inputs_epicare(
+    dataset_path,
+    sample_ratio,
+    episodes_avail=None,
+    modelled_terminals=True
+):
+    dataset = load_custom_dataset(dataset_path, episodes_avail)
+    obs = dataset["observations"]
+    actions = dataset["actions"]
+    rewards = dataset["rewards"]
+    next_obs = dataset["next_observations"]
+    if modelled_terminals:
+        terminals = dataset["terminals"].astype(np.float32)
+        # pdb.set_trace()
+        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs, terminals[:, None]], axis=1)
+    else:
+        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs], axis=1)
+    inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=True)
+    return inputs_pretrain, inputs_finetune
