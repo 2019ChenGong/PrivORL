@@ -26,6 +26,9 @@ PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Lear
 
 ## 2. Project structure
 
+> **Note:** I should clean the structure after editing.
+
+
 The structure of this project is as follows:
 ```
 MuJoCo
@@ -86,7 +89,7 @@ If you don't have MuJoCo installed, follow the instructions here: https://github
 
 ### 3.2 Dataset
 
-We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4RL).
+We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4RL). Our code will automatically download and preprocess the dataset.
 
 ## 4. Running Instructions
 

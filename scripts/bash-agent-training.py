@@ -157,15 +157,15 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 ]
 
                             if algo == "td3_bc":
-                                script_path = 'td3_bc.py'
+                                script_path = 'evaluation/eval-agent/td3_bc.py'
                             elif algo == "iql":
-                                script_path = 'iql.py'
+                                script_path = 'evaluation/eval-agent/iql.py'
                             elif algo == "cql":
-                                script_path = 'cql.py'
+                                script_path = 'evaluation/eval-agent/cql.py'
                             elif algo == "awac":
-                                script_path = 'awac.py'
+                                script_path = 'evaluation/eval-agent/awac.py'
                             elif algo == "edac":
-                                script_path = 'edac.py'
+                                script_path = 'evaluation/eval-agent/edac.py'
                             
                             command = ['python', script_path] + [str(arg) for arg in arguments]
 

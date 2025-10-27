@@ -85,7 +85,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         '--load_path', load_path,
                         '--cur_rate', cur_rate,
                     ]
-                    script_path = 'marginal.py'
+                    script_path = 'evaluation/eval-fidelity/marginal.py'
                     
                     command = ['python', script_path] + [str(arg) for arg in arguments]
 

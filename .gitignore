@@ -178,3 +178,11 @@ dmypy.json
 
 EpiCare
 clean.sh
+
+# privorl-j
+PrivORL-J/srun_*.slurm
+
+# utils
+score_calculate.py
+download_original_data.py
+clean.sh
