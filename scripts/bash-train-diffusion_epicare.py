@@ -52,14 +52,9 @@ datasets = [
 
 
 datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-expert-v2', 'walker2d-medium-v2'],
-                 "walker2d-medium-replay-v2":    ['halfcheetah-expert-v2', 'walker2d-full-replay-v2', 'halfcheetah-full-replay-v2'],   
-                 "maze2d-open-dense-v0":      ['maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
                  "maze2d-umaze-dense-v1":     ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1'],
-                 "antmaze-umaze-v1":      ['antmaze-medium-play-v1', 'antmaze-large-play-v1'], 
-                 "antmaze-medium-play-v1": ['antmaze-umaze-v1', 'antmaze-large-play-v1'], 
-                 "antmaze-large-play-v1":    ['antmaze-medium-play-v1', 'antmaze-umaze-v1'],
                  "kitchen-complete-v0":      ["kitchen-partial-v0", "kitchen-mixed-v0"], 
                  "kitchen-partial-v0": ['kitchen-complete-v0', 'kitchen-mixed-v0'], 
                  "kitchen-mixed-v0":    ["kitchen-complete-v0", "kitchen-partial-v0"],
@@ -72,24 +67,14 @@ datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'ha
 
 
 
-# dp_epsilons = [1, 5, 10, 15]
-# dp_epsilons = [1, 5, 10]
-# dp_epsilons = [5, 10]
-# dp_epsilons = [10, 15]
 dp_epsilons = [1, 10]
 num_samples = [1e6]
 seeds = [0]
-# gpus = ['0', '1', '2', '3', '4', '5', '6', '7']
-# gpus = ['5', '6', '7']
 gpus = ['2', '1']
-# gpus = ['0']
-# gpus = ['0', '1', '2', '3', '4']
-# gpus = ['6', '7']
 max_workers = 20
 
 pretraining_rate = 1.0
 finetuning_rates = [0.8]
-# curiosity_driven_rates = [0.1, 0.2, 0.3, 0.4, 0.5]
 curiosity_driven_rates = [0.3]
 
 accountant = 'rdp'  # 'gdp' or 'rdp'

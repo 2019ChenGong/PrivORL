@@ -153,6 +153,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
                             gpu_index = (gpu_index + 1) % len(gpus)
-                            time.sleep(10) # especially for fine-tuning
+                            time.sleep(10)
 
     concurrent.futures.wait(futures)
