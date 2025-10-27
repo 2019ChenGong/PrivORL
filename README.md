@@ -119,7 +119,7 @@ For example,
 
 
 
-### 4.2 Fine-tuning
+### Step2: Fine-tuning
 
 Fine-tuning the pre-trained diffusion models (this automatically generates samples and saves them):
 
@@ -127,7 +127,7 @@ Fine-tuning the pre-trained diffusion models (this automatically generates sampl
 python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
 
-### 4.3 Agent Training
+### Step2: Agent Training
 
 Training agents using the synthetic transitions of PrivTranR:
 
@@ -135,7 +135,7 @@ Training agents using the synthetic transitions of PrivTranR:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### 4.4 Abalation
+### Abalation
 
 NonCurPrivTranR:
 
@@ -170,7 +170,7 @@ Train the agent using the synthetic transitions:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### 4.5 Marginal and Correlation Computing
+### Marginal and Correlation Computing
 
 Compute the marginal and correlation values between the synthetic and real transitions:
 
@@ -178,7 +178,7 @@ Compute the marginal and correlation values between the synthetic and real trans
 python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
 ```
 
-### 4.6 Baselines
+### Baselines
 
 Load d4rl datasets and save as csv and json:
 
@@ -216,7 +216,9 @@ Train the agent using the synthetic transitions of baselines:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### 4.7 MIA
+### 4.2 PrviORL-j (Table I)
+
+### 4.3 MIA
 
 Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
 
