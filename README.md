@@ -91,17 +91,15 @@ If you don't have MuJoCo installed, follow the instructions here: https://github
 
 We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4RL). Our code will automatically download and preprocess the dataset. We list the supported sensitive dataset as follows,
 
---
-Domains|Sensitive datasets
---
-Maze2D|maze2d-umaze
-Maze2D|maze2d-medium
-Maze2D|maze2d-large
---
-FreankaKitchen|kitchen-partial
---
-MuJoCo|maze2d-medium-replay
---
+
+| Domain         | Sensitive Dataset        |
+|---------------|---------------------------|
+| Maze2D        | maze2d-umaze            |
+| Maze2D        | maze2d-medium           |
+| Maze2D        | maze2d-large            |
+| FrankaKitchen | kitchen-partial         |
+| MuJoCo        | maze2d-medium-replay    |
+
 
 
 
