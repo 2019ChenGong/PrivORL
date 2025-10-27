@@ -84,7 +84,7 @@ pip install -r requirements.txt
 
 For baseline, we refer to the public repository in [SynMeter](https://github.com/zealscott/SynMeter)
 
-The code was tested on Python 3.8 and 3.9.
+The code was tested on Python 3.9.18.
 If you don't have MuJoCo installed, follow the instructions here: https://github.com/openai/mujoco-py#install-mujoco.
 
 ### 3.2 Dataset
@@ -101,10 +101,11 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 | MuJoCo        | maze2d-medium-replay    |
 
 
-
-
-
 ## 4. Running Instructions
+
+This paper includes PrivORL-n and PrivORL-j for DP offline RL transition and trajectory synthesis. We elaborate on them as follows.
+
+### 4.1 PrviORL-n (Table I)
 
 ### 4.1 Curiosity-driven Pre-training
 
