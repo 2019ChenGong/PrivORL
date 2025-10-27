@@ -107,7 +107,7 @@ This paper includes PrivORL-n and PrivORL-j for DP offline RL transition and tra
 
 ### 4.1 PrviORL-n (Table I)
 
-### 4.1 Curiosity-driven Pre-training
+### Step1: Curiosity-driven Pre-training
 
 Diffusion model pre-training:
 
