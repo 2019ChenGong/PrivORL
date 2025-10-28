@@ -94,11 +94,11 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 
 | Domain         | Sensitive Dataset        |
 |---------------|---------------------------|
-| Maze2D        | maze2d-umaze            |
-| Maze2D        | maze2d-medium           |
-| Maze2D        | maze2d-large            |
-| FrankaKitchen | kitchen-partial         |
-| MuJoCo        | maze2d-medium-replay    |
+| Maze2D        | maze2d-umaze-dense-v1            |
+| Maze2D        | maze2d-medium-dense-v1           |
+| Maze2D        | maze2d-large-dense-v1            |
+| FrankaKitchen | kitchen-partial-v0         |
+| MuJoCo        | maze2d-medium-replay-v2    |
 
 
 ## 4. Running Instructions
@@ -114,6 +114,8 @@ We list the key hyper-parameters below, including their explanations,
 - `datasets_name`: the pretranining datasets.
 - `seed`: the value of random seed.
 - `curiosity_driven_rate`: the value of curiosity driven rate in the pretraining phase.
+- `accountant`: the privacy budget accounting methods, the option is [`prv`, `rdp`]; the default option is [`rdp`].
+
 
 #### Step1: Curiosity-driven Pre-training
 
