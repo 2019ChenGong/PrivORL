@@ -15,8 +15,6 @@ from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import make_inputs, make_part_inputs, split_diffusion_samples, construct_diffusion_model
 from synther.diffusion.delete_nan import remove_errors
 
-
-
 @gin.configurable
 class SimpleDiffusionGenerator:
     def __init__(
