@@ -128,10 +128,12 @@ Diffusion model pre-training:
 python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
-For example, 
+For example, when we set `maze2d-medium-dense-v1` as the sensitive dataset and [`maze2d-open-dense-v0`, `maze2d-umaze-dense-v1`, `maze2d-large-dense-v1`] as the pretraining datasets,
 ```
 python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3_rdp --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
 ```
+
+
 
 [I don't understand what this means]
 load_checkpoint
