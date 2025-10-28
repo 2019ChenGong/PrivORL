@@ -158,7 +158,9 @@ python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --dp_
 
 #### Step3: Downstream Tasks Agent Training (Utility, Results in Table I)
 
-Training agents using the synthetic transitions of PrivTranR:
+The offline RL algorithm option is [`cql`, `edac`, `td3plusbc`].
+
+Training agents using the synthetic transitions of PrivORL-n:
 
 ```
 python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
