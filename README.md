@@ -98,7 +98,7 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 | Maze2D        | maze2d-medium-dense-v1           |
 | Maze2D        | maze2d-large-dense-v1            |
 | FrankaKitchen | kitchen-partial-v0         |
-| MuJoCo        | maze2d-medium-replay-v2    |
+| MuJoCo        | halfcheetah-medium-replay-v2    |
 
 
 ## 4. Running Instructions
@@ -130,10 +130,10 @@ python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --data
 
 For example, when we set `maze2d-medium-dense-v1` as the sensitive dataset and [`maze2d-open-dense-v0`, `maze2d-umaze-dense-v1`, `maze2d-large-dense-v1`] as the pretraining datasets,
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3_rdp --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3 --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
 ```
 
-
+After training, we can find the result in the following folder:
 
 [I don't understand what this means]
 load_checkpoint
@@ -255,10 +255,11 @@ Train the agent using the synthetic transitions of baselines:
 python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
+## 5. Computational Resource Requirements
 
 
-## 5. Acknowledgements
+## 6. Acknowledgements
 
 > **Note:** please update the acknowledgements.
 
-PrivORL builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We would like to particularly thank the authors of: [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch), [SynthER](https://github.com/conglu1997/SynthER), [CORL](https://github.com/tinkoff-ai/CORL), [D4RL](https://github.com/Farama-Foundation/D4RL), [SynMeter](https://github.com/zealscott/SynMeter), [MIA](https://github.com/fseclab-osaka/mia-diffusion), [MTDiff](https://github.com/tinnerhrhe/MTDiff).
+PrivORL builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We would like to particularly thank the authors of: [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch), [SynthER](https://github.com/conglu1997/SynthER), [CORL](https://github.com/tinkoff-ai/CORL), [D4RL](https://github.com/Farama-Foundation/D4RL), [SynMeter](https://github.com/zealscott/SynMeter), [MIA](https://github.com/fseclab-osaka/mia-diffusion), [MTDiff](https://github.com/tinnerhrhe/MTDiff), [Opacus](https://opacus.ai/).
