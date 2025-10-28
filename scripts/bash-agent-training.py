@@ -65,19 +65,11 @@ dp_epsilons = [10]
 accountant = 'prv'  # 'gdp' or 'rdp'
 
 num_samples = [1e6]
-seeds = [0, 1, 2, 3]
-# seeds = [4, 5, 6, 7]
-# seeds = [2]
-# gpus = ['0', '1', '2', '3', '4', '5', '6', '7']
+seeds = [0, 1, 2]
 gpus = ['0', '1', '2']
-# gpus = ['4', '5']
 max_workers = 4
 # algos = ['td3_bc', 'iql', 'edac', 'cql']
 algos = ['td3_bc', 'iql', 'edac']
-# algos = ['cql']
-# algos = ['awac', 'cql']
-
-# algos = ['edac']
 
 # offline RL
 name = "CurDPsynthER"
@@ -172,6 +164,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
                             gpu_index = (gpu_index + 1) % len(gpus)
-                            time.sleep(10) # especially for fine-tuning
+                            time.sleep(10)
 
     concurrent.futures.wait(futures)

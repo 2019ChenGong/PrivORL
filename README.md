@@ -105,7 +105,7 @@ We use the dataset released from [D4RL](https://github.com/Farama-Foundation/D4R
 
 This paper includes PrivORL-n and PrivORL-j for DP offline RL transition and trajectory synthesis. We elaborate on them as follows.
 
-### 4.1 PrviORL-n (Table I)
+### 4.1 PrviORL-n
 
 ### Step1: Curiosity-driven Pre-training
 
@@ -119,7 +119,7 @@ For example,
 
 
 
-### Step2: Fine-tuning
+### Step2: Fine-tuning on Sensitive Datasets
 
 Fine-tuning the pre-trained diffusion models (this automatically generates samples and saves them):
 
@@ -127,7 +127,7 @@ Fine-tuning the pre-trained diffusion models (this automatically generates sampl
 python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
 
-### Step2: Agent Training
+### Step3: Downstream Tasks Agent Training (Utility, Results in Table I)
 
 Training agents using the synthetic transitions of PrivTranR:
 
@@ -135,7 +135,25 @@ Training agents using the synthetic transitions of PrivTranR:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### Abalation
+### Step4: Marginal and Correlation Computing (Fidelity, Results in Table III)
+
+Compute the marginal and correlation values between the synthetic and real transitions:
+
+```
+python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
+```
+
+### Step5: MIA (Privacy Evaluations, Results in Table XII)
+
+Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
+
+```
+python mia.py
+```
+
+### 4.2 PrviORL-j
+
+### 4.3 Abalation
 
 NonCurPrivTranR:
 
@@ -170,13 +188,7 @@ Train the agent using the synthetic transitions:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### Marginal and Correlation Computing
 
-Compute the marginal and correlation values between the synthetic and real transitions:
-
-```
-python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
-```
 
 ### Baselines
 
@@ -216,15 +228,9 @@ Train the agent using the synthetic transitions of baselines:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-### 4.2 PrviORL-j (Table I)
 
-### 4.3 MIA
 
-Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
 
-```
-python mia.py
-```
 
 
 ## 5. Acknowledgements
