@@ -115,6 +115,9 @@ We list the key hyper-parameters below, including their explanations,
 - `seed`: the value of random seed.
 - `curiosity_driven_rate`: the value of curiosity driven rate in the pretraining phase.
 - `accountant`: the privacy budget accounting methods, the option is [`prv`, `rdp`]; the default option is [`rdp`].
+- `results_folder`: 
+- `save_file_name`:
+- `load_path`:
 
 
 #### Step1: Curiosity-driven Pre-training
@@ -122,11 +125,20 @@ We list the key hyper-parameters below, including their explanations,
 Diffusion model pre-training:
 
 ```
-python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
+python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
 For example, 
+```
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3_rdp --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
+```
 
+[I don't understand what this means]
+load_checkpoint
+
+> [!Note]
+>
+> We provide .
 
 
 #### Step2: Fine-tuning on Sensitive Datasets
@@ -134,7 +146,12 @@ For example,
 Fine-tuning the pre-trained diffusion models (this automatically generates samples and saves them):
 
 ```
-python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
+python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10 --results_folder <the-target-folder> --save_file_name <store_path> --load_path <the-path-of-saved-pretraining-model>
+```
+
+For example, 
+```
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --dp_epsilon 10 --results_folder ./results_maze2d-medium-dense-v1_0.3_rdp --load_path ./results_maze2d-medium-dense-v1_0.3_rdp/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
 ```
 
 #### Step3: Downstream Tasks Agent Training (Utility, Results in Table I)
@@ -142,7 +159,7 @@ python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --res
 Training agents using the synthetic transitions of PrivTranR:
 
 ```
-python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
+python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 #### Step4: Marginal and Correlation Computing (Fidelity, Results in Table III)
@@ -150,7 +167,7 @@ python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkp
 Compute the marginal and correlation values between the synthetic and real transitions:
 
 ```
-python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
+python evaluation/eval-fidelity/marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --cur_rate <the-curiosity-rate-of-synthetic-transitions> --load_path <the-path-of-saved-transitions>
 ```
 
 #### Step5: MIA (Privacy Evaluations, Results in Table XII)
@@ -158,7 +175,7 @@ python marginal.py --dataset <the-name-of-synthetic-transitions> --dp_epsilon <t
 Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
 
 ```
-python mia.py
+python evaluation/eval-mia/mia.py
 ```
 
 ### 4.2 PrviORL-j
@@ -170,32 +187,32 @@ NonCurPrivTranR:
 Pre-train the diffusion model without curosity-driven method:
 
 ```
-python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --results_folder <the-target-folder>  --save_file_name <store_path> 
+python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
 Fine-tune the pre-trained diffusion model:
 
 ```
-python train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
+python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
 
 Train the agent using the synthetic transitisons:
 
 ```
-python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
+python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 NonPrePrivTranR:
 
 Train the diffusion model without DP protection:
 ```
-python train_NonPrePrivTranR.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
+python synther/training/train_NonPrePrivTranR.py --dataset <the-name-of-dataset> --dp_epsilon 10.0 --results_folder <the-target-folder>  --load_path <the-path-of-saved-pretraining-model> --save_file_name <store_path>
 ```
 
 Train the agent using the synthetic transitions:
 
 ```
-python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
+python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 ### 4.4 Baselines (Results in Table I)
@@ -233,7 +250,7 @@ python baselines/scripts/csv_to_npz.py --model <baseline-model> --dataset <the-n
 Train the agent using the synthetic transitions of baselines:
 
 ```
-python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
+python evaluation/eval-agent/cql.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
 

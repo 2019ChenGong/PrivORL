@@ -31,7 +31,7 @@ pretraining_rate = 1.0
 finetuning_rates = [0.8]
 curiosity_driven_rates = [0.3]
 
-accountant = 'prv'  # 'gdp' or 'rdp'
+accountant = 'rdp'  # 'gdp' or 'rdp'
 
 
 def get_directories(path):
@@ -87,7 +87,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dataset', dataset,
                                 '--datasets_name', dataset_name,
                                 '--seed', seed,
-                                # '--load_checkpoint',
+                                '--load_checkpoint',
                                 '--curiosity_driven',
                                 '--curiosity_driven_rate', curiosity_driven_rate,
                                 '--dp_epsilon', dp_epsilon,
@@ -103,6 +103,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             script_path = 'synther/training/train_diffuser.py'
                             
                             command = ['python', script_path] + [str(arg) for arg in arguments]
+                            import pdb
+                            pdb.set_trace()
 
                             futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
