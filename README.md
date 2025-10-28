@@ -107,7 +107,11 @@ This paper includes PrivORL-n and PrivORL-j for DP offline RL transition and tra
 
 ### 4.1 PrviORL-n
 
-We list the key hyper-parameters below, including their explanations
+We list the key hyper-parameters below, including their explanations,
+
+- `dp_epsilon`: controls the privacy budget. The default value is 10.0.
+
+
 
 #### Step1: Curiosity-driven Pre-training
 
@@ -190,9 +194,7 @@ Train the agent using the synthetic transitions:
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
 
-
-
-### Baselines
+### 4.4 Baselines (Results in Table I)
 
 Load d4rl datasets and save as csv and json:
 
@@ -229,9 +231,6 @@ Train the agent using the synthetic transitions of baselines:
 ```
 python cql/edac/iql/td3_bc.py --env <the-name-of-synthetic-transitions> --checkpoints_path <store_path> --config <the-path-of-configuration-file> --dp_epsilon <the-privacy-budget-of-synthetic-transitions> --diffusion.path <the-path-of-saved-transitions> --name <the-name-of-logging> --prefix <the-prefix-of-name> --save_checkpoints <whether-to-save-ckpt>
 ```
-
-
-
 
 
 
