@@ -110,8 +110,10 @@ This paper includes PrivORL-n and PrivORL-j for DP offline RL transition and tra
 We list the key hyper-parameters below, including their explanations,
 
 - `dp_epsilon`: controls the privacy budget. The default value is 10.0.
-
-
+- `datasets`: the sensitive datasets.
+- `datasets_name`: the pretranining datasets.
+- `seed`: the value of random seed.
+- `curiosity_driven_rate`: the value of curiosity driven rate in the pretraining phase.
 
 #### Step1: Curiosity-driven Pre-training
 
@@ -121,7 +123,7 @@ Diffusion model pre-training:
 python train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
 ```
 
-For example,
+For example, 
 
 
 
