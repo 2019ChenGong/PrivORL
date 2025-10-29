@@ -115,9 +115,10 @@ We list the key hyper-parameters below, including their explanations,
 - `seed`: the value of random seed.
 - `curiosity_driven_rate`: the value of curiosity driven rate in the pretraining phase.
 - `accountant`: the privacy budget accounting methods, the option is [`prv`, `rdp`]; the default option is [`rdp`].
-- `results_folder`: 
-- `save_file_name`:
-- `load_path`:
+- `results_folder`: the path of saved model configs, checkpoints, and synthetic trajectory.
+- `save_file_name`: the name of saved synthetic trajectory under `results_folder` folder.
+- `load_path`: the path of the saved pretraining model checkpoint for further fine-tuning.
+- `load_checkpoint`: the action config, add to choose DP fine-tuning, otherwise Non-DP pretraining.
 
 
 #### Step1: Curiosity-driven Pre-training

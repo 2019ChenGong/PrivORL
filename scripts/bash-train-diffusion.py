@@ -31,7 +31,7 @@ pretraining_rate = 1.0
 finetuning_rates = [0.8]
 curiosity_driven_rates = [0.3]
 
-accountant = 'rdp'  # 'gdp' or 'rdp'
+accountant = 'rdp'  # 'prv' or 'rdp'
 
 
 def get_directories(path):
