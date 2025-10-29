@@ -387,6 +387,4 @@ python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_p
 
 ## 6. Acknowledgements
 
-> **Note:** please update the acknowledgements.
-
 PrivORL builds upon many works and open-source codebases in both diffusion modelling and reinforcement learning. We would like to particularly thank the authors of: [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch/tree/main/denoising_diffusion_pytorch), [SynthER](https://github.com/conglu1997/SynthER), [CORL](https://github.com/tinkoff-ai/CORL), [D4RL](https://github.com/Farama-Foundation/D4RL), [SynMeter](https://github.com/zealscott/SynMeter), [MIA](https://github.com/fseclab-osaka/mia-diffusion), [MTDiff](https://github.com/tinnerhrhe/MTDiff), [Opacus](https://opacus.ai/).
