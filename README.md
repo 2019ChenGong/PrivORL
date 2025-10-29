@@ -153,7 +153,7 @@ The ```load_checkpoint``` config is a action config, add to command for choosing
 
 For example, 
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --dp_epsilon 10 --results_folder ./results_maze2d-medium-dense-v1_0.3_rdp --load_path ./results_maze2d-medium-dense-v1_0.3_rdp/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz --load_checkpoint
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --dp_epsilon 10 --results_folder ./results_maze2d-medium-dense-v1_0.3 --load_path ./results_maze2d-medium-dense-v1_0.3/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz --load_checkpoint
 ```
 
 After training, we can find the result in the folder ```./results_maze2d-medium-dense-v1_0.3```, including the checkpoint ```finetuning_dp10.0-model-4.pt```, and the synthetic trajectories ```maze2d-medium-dense-v1_samples_1000000.0_10dp_0.5.npz```.
@@ -171,7 +171,7 @@ python evaluation/eval-agent/iql.py --env <the-name-of-synthetic-transitions> --
 For example, 
 
 ```
-python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ./results_maze2d-medium-dense-v1_0.3_rdp/cleaned_pretrain_samples.npz --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
+python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ./results_maze2d-medium-dense-v1_0.3/cleaned_pretrain_samples.npz --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
 ```
 
 After training, we can find the result in the folder ```./corl_logs_param_analysis_v1_maze2d_prv/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202509260435```, including the evaluation result ```eval_0.json```.
@@ -205,13 +205,13 @@ python evaluation/eval-mia/mia.py
 Diffusion model pre-training:
 
 ```
-python scripts/mtdiff_s.py --dataset <the-name-of-dataset> --finetune "False" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
+python PrivORL-J/scripts/training.py --dataset <the-name-of-dataset> --finetune "False" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
 ```
 
 For example, 
 
 ```
-python scripts/mtdiff_s.py --dataset "maze2d-large-dense-v1" --finetune "False" --curiosity_rate "0.3" --horizon "32" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
+python PrivORL-J/scripts/training.py --dataset "maze2d-large-dense-v1" --finetune "False" --curiosity_rate "0.3" --horizon "32" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
 ```
 
 #### Step2: Fine-tuning on Sensitive Datasets
@@ -219,13 +219,13 @@ python scripts/mtdiff_s.py --dataset "maze2d-large-dense-v1" --finetune "False" 
 Fine-tuning the pre-trained diffusion models:
 
 ```
-python scripts/mtdiff_s.py --dataset <the-name-of-dataset> --finetune "True" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --checkpoint_path <the-path-of-pretraining-model-checkpoint> --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
+python PrivORL-J/scripts/training.py --dataset <the-name-of-dataset> --finetune "True" --horizon <the-number-of-parallel-trajectories> --checkpoint_path <the-path-of-pretraining-model-checkpoint> --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
 ```
 
 For example, 
 
 ```
-python scripts/mtdiff_s.py --dataset "maze2d-large-dense-v1" --finetune "True" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --checkpoint_path "logs/maze2d-large-dense-v1/pretrain/horizon32_curiosity0.3/state_500000.pt" --target_epsilon "10" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
+python PrivORL-J/scripts/training.py --dataset "maze2d-large-dense-v1" --finetune "True" --horizon 32 --checkpoint_path "logs/maze2d-large-dense-v1/pretrain/horizon32_curiosity0.3/state_500000.pt" --target_epsilon "10" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
 ```
 
 #### Step3: Sampling Synthetic Trajectories
@@ -233,12 +233,12 @@ python scripts/mtdiff_s.py --dataset "maze2d-large-dense-v1" --finetune "True" -
 Sampling synthetic trajectories using the fine-tuned checkpoint:
 
 ```
-python scripts/sample.py --dataset <the-name-of-dataset> --finetune "True" --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --sample_checkpoint_path <the-path-of-saving-checkpoints> --output_csv_path <the-path-of-saving-synthetic-trajectories>  --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
+python PrivORL-J/scripts/sample.py --dataset <the-name-of-dataset> --finetune "True" --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --sample_checkpoint_path <the-path-of-saving-checkpoints> --output_csv_path <the-path-of-saving-synthetic-trajectories>  --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
 ```
 
 For example, 
 ```
-python scripts/sample.py --dataset "maze2d-medium-dense-v1" --finetune "True" --target_epsilon "1" --sample_checkpoint_path "logs/maze2d-medium-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final.pt" --output_csv_path "results/maze2d-medium-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final/sampled_trajectories.csv" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
+python PrivORL-J/scripts/sample.py --dataset "maze2d-medium-dense-v1" --finetune "True" --target_epsilon "1" --sample_checkpoint_path "logs/maze2d-medium-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final.pt" --output_csv_path "results/maze2d-medium-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final/sampled_trajectories.csv" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
 ```
 
 ### 4.3 Abalation
@@ -256,7 +256,7 @@ python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --data
 For example, 
 
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --results_folder ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --results_folder ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
 ```
 
 Fine-tune the pre-trained diffusion model:
@@ -268,7 +268,7 @@ python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --load
 For example, 
 
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --load_checkpoint --dp_epsilon 10 --results_folder ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --load_checkpoint --dp_epsilon 10 --results_folder ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
 ```
 
 Train the agent using the synthetic transitisons:
@@ -293,7 +293,7 @@ python synther/training/train_NonPrePrivTranR.py --dataset <the-name-of-dataset>
 For example, 
 
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --load_checkpoint --curiosity_driven --dp_epsilon 10 --results_folder ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8_rdp.npz
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --load_checkpoint --curiosity_driven --dp_epsilon 10 --results_folder ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
 ```
 
 Train the agent using the synthetic transitions:
