@@ -62,7 +62,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_for_mia_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
-                            # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"            
+                            results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"            
                             # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"       
                             # results_folder = f"./alter_whole_mujoco_full_results_{dataset}_{pretraining_rate}"     
                             if dataset == 'maze2d-medium-dense-v1':

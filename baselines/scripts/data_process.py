@@ -4,6 +4,10 @@ import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import argparse
+
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from lib.commons import read_csv
 from lib.info import ROOT_DIR
 

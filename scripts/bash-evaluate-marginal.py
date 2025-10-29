@@ -24,14 +24,14 @@ import subprocess
 
 datasets = [
             # "halfcheetah-medium-replay-v2", 
-            "walker2d-medium-replay-v2",
+            # "walker2d-medium-replay-v2",
             # "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
             # "kitchen-partial-v0"
             ]
 
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1", "maze2d-large-dense-v1"]
 # datasets = ["maze2d-large-dense-v1"]
-# datasets = ["maze2d-medium-dense-v1"]
+datasets = ["maze2d-medium-dense-v1"]
 # datasets = ["maze2d-umaze-dense-v1", "maze2d-medium-dense-v1"]
 
 # datasets = ["maze2d-open-dense-v0"]
@@ -50,7 +50,7 @@ max_workers = 20
 
 pretraining_rate = 1.0
 finetuning_rates = [0.8]
-cur_rate = 0.5
+cur_rate = 0.3
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
@@ -72,9 +72,9 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for finetuning_rate in finetuning_rates:
 
                     env, version = dataset.split('-', 1)
-                    load_path = f"alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}/cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                    # load_path = f"alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}/cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
                     # load_path = f"alter_curiosity_driven_results_{dataset}_{pretraining_rate}/cleaned_without_dp_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
-                    # load_path = f"alter_{cur_rate}curiosity_driven_results_{dataset}_{pretraining_rate}/cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
+                    load_path = f"alter_{cur_rate}curiosity_driven_results_{dataset}_{pretraining_rate}/cleaned_{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz"
 
                     arguments = [
                         '--dataset', dataset,
@@ -88,7 +88,8 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     script_path = 'evaluation/eval-fidelity/marginal.py'
                     
                     command = ['python', script_path] + [str(arg) for arg in arguments]
-
+                    import pdb
+                    pdb.set_trace()
                     futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
                     gpu_index = (gpu_index + 1) % len(gpus)

@@ -51,7 +51,7 @@ datasets = ["maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "maze2d-uma
 datasets = ["kitchen-partial-v0", "halfcheetah-medium-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-umaze-dense-v1"]
-# datasets = ["maze2d-medium-dense-v1"]
+datasets = ["maze2d-medium-dense-v1"]
 
 pretraining_rate = 1.0
 finetuning_rate = 0.8
@@ -62,7 +62,7 @@ curiosity_driven_rates = [0.3]
 # dp_epsilons = [1, 5, 10, 15, 20]
 # dp_epsilons = [1, 5, 10, 15]
 dp_epsilons = [10]
-accountant = 'prv'  # 'gdp' or 'rdp'
+accountant = 'rdp'  # 'gdp' or 'rdp'
 
 num_samples = [1e6]
 seeds = [0, 1, 2]
@@ -70,6 +70,7 @@ gpus = ['0', '1', '2']
 max_workers = 4
 # algos = ['td3_bc', 'iql', 'edac', 'cql']
 algos = ['td3_bc', 'iql', 'edac']
+algos = ['iql']
 
 # offline RL
 name = "CurDPsynthER"
@@ -106,11 +107,11 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             config = f"synther/corl/yaml/{algo}/{env}/{version}.yaml"
                             # dataset = dataset + "-expert-v2"
                             # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
-                            # results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"
-                            # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                            results_folder = f"./alter_without_curiosity_driven_results_{dataset}_{pretraining_rate}"
+                            results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
-                            results_folder = f"./results_{dataset}_{curiosity_driven_rate}_{accountant}"
+                            # results_folder = f"./results_{dataset}_{curiosity_driven_rate}_{accountant}"
                             # results_folder = f"./alter_whole_mujoco_full_results_{dataset}_{pretraining_rate}"
 
                             # offlineRL_load_path = os.path.join(results_folder, f"{dataset}_samples_{num_sample}_{dp_epsilon}dp_{finetuning_rate}.npz")
@@ -160,7 +161,9 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 script_path = 'evaluation/eval-agent/edac.py'
                             
                             command = ['python', script_path] + [str(arg) for arg in arguments]
-
+                            
+                            import pdb
+                            pdb.set_trace()
                             futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 
                             gpu_index = (gpu_index + 1) % len(gpus)

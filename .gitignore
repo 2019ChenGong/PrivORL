@@ -28,6 +28,7 @@ alter*
 *results*
 
 maze2d-umaze-dense-v1
+maze2d-medium-dense-v1
 
 corl_logs
 corl_logs_expert
@@ -57,7 +58,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/

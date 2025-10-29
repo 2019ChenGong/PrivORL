@@ -28,12 +28,12 @@ import subprocess
             # 'antmaze-large-play-v1'
             # ]
 
-# datasets = [
+datasets = [
             # "maze2d-open-dense-v0", 
             # "maze2d-umaze-dense-v1", 
-            # "maze2d-medium-dense-v1", 
+            "maze2d-medium-dense-v1", 
             # "maze2d-large-dense-v1"
-            # ]
+            ]
 
 # datasets = ["kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0"]
 
@@ -43,13 +43,13 @@ import subprocess
 
 # datasets = ["kitchen-complete-v0"]
 
-datasets = [
-            'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
-            # "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", 
-            # "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
-            "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0",
-            # "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"
-            ]
+# datasets = [
+#             'antmaze-umaze-v1', 'antmaze-medium-play-v1', 'antmaze-large-play-v1',
+#             # "maze2d-open-dense-v0", "maze2d-umaze-dense-v1", 
+#             # "maze2d-medium-dense-v1", "maze2d-large-dense-v1",
+#             "kitchen-complete-v0", "kitchen-partial-v0", "kitchen-mixed-v0",
+#             # "halfcheetah-medium-replay-v2", "walker2d-medium-replay-v2"
+#             ]
 
 pretraining_rate = 0.3
 finetuning_rate = 0.99
@@ -65,10 +65,11 @@ max_workers = 100
 #         'edac', 'cql', 
 #         'iql', 'td3_bc'
 #         ]
-algos = ['edac']
+algos = ['iql']
 
 # offline RL
 names = ['pategan', 'pgm', 'privsyn']
+names = ['privsyn']
 
 # names = ['pretraining_pategan']
 
@@ -113,7 +114,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion.path', offlineRL_load_path,
                                 '--name', name,
-                                '--baseline_test', baseline_test
+                                # '--baseline_test', baseline_test
                                 ]
                             elif algo == "awac" or algo == "cql":
                                 arguments = [
@@ -124,7 +125,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion_path', offlineRL_load_path,
                                 '--name', name,
-                                '--baseline_test', baseline_test
+                                # '--baseline_test', baseline_test
                                 ]
                             else:
                                 arguments = [
@@ -135,20 +136,22 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dp_epsilon', dp_epsilon,
                                 '--diffusion.path', offlineRL_load_path,
                                 '--name', name,
-                                '--baseline_test', baseline_test
+                                # '--baseline_test', baseline_test
                                 ]
                             if algo == "td3_bc":
-                                script_path = 'td3_bc.py'
+                                script_path = 'evaluation/eval-agent/td3_bc.py'
                             elif algo == "iql":
-                                script_path = 'iql.py'
+                                script_path = 'evaluation/eval-agent/iql.py'
                             elif algo == "cql":
-                                script_path = 'cql.py'
+                                script_path = 'evaluation/eval-agent/cql.py'
                             elif algo == "edac":
-                                script_path = 'edac.py'
+                                script_path = 'evaluation/eval-agent/edac.py'
                             elif algo == "awac":
-                                script_path = 'awac.py'
+                                script_path = 'evaluation/eval-agent/awac.py'
                             
                             command = ['python', script_path] + [str(arg) for arg in arguments]
+                            import pdb
+                            pdb.set_trace()
 
                             futures.append(executor.submit(run_command_on_gpu, command, gpus[gpu_index]))
 

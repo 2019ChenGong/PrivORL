@@ -5,6 +5,9 @@ Each synthesizer has its own tune function
 
 import os
 import argparse
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from lib.commons import load_config, dump_config
 from lib.info import ROOT_DIR, TUNED_PARAMS_PATH
 

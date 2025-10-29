@@ -5,7 +5,7 @@ gpus=(0 1 2 3)
 # gpus=(0)
 
 finetune="False"
-# finetune="True"
+finetune="True"
 
 # horizons=( 16 32 64 128)
 horizons=(32)
@@ -16,7 +16,7 @@ curiosity_rates=(0.3)
 # epsilons=(5 15 )
 epsilons=(1 5 10 15 20 )
 epsilons=(1 10 )
-# epsilons=(10  )
+epsilons=(10  )
 
 datasets=(
     # 'maze2d-umaze-dense-v1'
