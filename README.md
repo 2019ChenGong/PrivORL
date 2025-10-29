@@ -384,6 +384,17 @@ python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_p
 
 ## 5. Computational Resource Requirements
 
+GPU memory consumption, runtime, and normalized return: comparing PrivORL-n and PrivORL-j with baselines on synthetic datasets ( Maze2D-medium). `h' means hours.
+
+| **Evaluation Metrics** | Phase       | PGM   | PrivSyn | PrePATE-GAN | PrivORL-n | PrivORL-j-U | DP-Transformer | PrivORL-j |
+|------------------------|-------------|-------|---------|-------------|-----------|--------------|----------------|------------|
+| **Memory**             | Pre-train   | -     | -       | 1.5GB       | 0.9GB     | 7.45GB       | 19.7GB         | 13.12GB    |
+|                        | Fine-tune   | -     | -       | 0.4GB       | 21.4GB    | 14.59GB      | 43.11GB        | 39.72GB    |
+|                        | Synthesis   | 11.1GB| 9.4GB    | 8.1GB       | 4.3GB     | 4.1GB        | 9.74GB         | 8.15GB     |
+| **Time**               | Pre-train   | -     | -       | 12h         | 1.5h      | 0.45h        | 1.37h          | 0.77h      |
+|                        | Fine-tune   | -     | -       | 11h         | 2h        | 0.96h        | 5.18h          | 3.03h      |
+|                        | Synthesis   | 6h    | 8.5h     | 0.18h       | 0.5h      | 0.24h        | 10.1h          | 1.42h      |
+
 
 ## 6. Acknowledgements
 
