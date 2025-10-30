@@ -62,7 +62,7 @@ curiosity_driven_rates = [0.3]
 # dp_epsilons = [1, 5, 10, 15, 20]
 # dp_epsilons = [1, 5, 10, 15]
 dp_epsilons = [10]
-accountant = 'rdp'  # 'gdp' or 'rdp'
+accountant = 'rdp'  # 'prv' or 'rdp'
 
 num_samples = [1e6]
 seeds = [0, 1, 2]

@@ -12,8 +12,6 @@ import ast
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-# import pdb
-# pdb.set_trace()
 
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer

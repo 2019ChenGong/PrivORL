@@ -10,6 +10,9 @@ import torch
 import wandb
 import ast
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import make_inputs, make_part_inputs, split_diffusion_samples, construct_diffusion_model
@@ -129,6 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--dp_max_grad_norm', type=float, default=1.)
     parser.add_argument('--dp_max_physical_batch_size', type=int, default=8192)
     parser.add_argument('--dp_n_splits', type=int, default=4)
+    parser.add_argument('--accountant', type=str, default='rdp')
     # curiosity driven
     parser.add_argument('--curiosity_driven', action='store_true')
     parser.add_argument('--curiosity_driven_rate', type=float ,default=0.5)
@@ -189,6 +193,7 @@ if __name__ == '__main__':
         args.curiosity_driven,
         args.curiosity_driven_rate,        
         diffusion,
+        args.accountant,
         dataset,
         results_folder=args.results_folder,
     )

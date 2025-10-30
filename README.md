@@ -195,7 +195,13 @@ python evaluation/eval-fidelity/marginal.py --dataset maze2d-medium-dense-v1 --d
 Change the args nondp_weight, dp1_weight and dp10_weight to the corresponding checkpoints and run:
 
 ```
-python evaluation/eval-mia/mia.py
+python evaluation/eval-mia/mia.py --dataset <dataset-name> --nondp_weight <path-to-nondp-model> --dp1_weight <path-to-dp1-model> --dp10_weight <path-to-dp10-model> --sigma <list-of-noise-levels> --repeat <number-of-repetitions> --sample_num <number-of-samples>
+```
+
+For example, 
+
+```
+python evaluation/eval-mia/mia.py --dataset maze2d-medium-dense-v1 --nondp_weight 1e3data-300epoch-finetuning-without-dp-model-299.pt --dp1_weight finetuning_dp1.0-model-4.pt --dp10_weight finetuning_dp10.0-model-4.pt --sigma [0.05, 0.01] --repeat 64 --sample_num 10000
 ```
 
 ### 4.2 PrviORL-j
@@ -293,7 +299,7 @@ python synther/training/train_NonPrePrivTranR.py --dataset <the-name-of-dataset>
 For example, 
 
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --load_checkpoint --curiosity_driven --dp_epsilon 10 --results_folder ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
+python synther/training/train_NonPrePrivTranR.py --dataset maze2d-medium-dense-v1 --load_checkpoint --dp_epsilon 10 --results_folder ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0 --load_path ./alter_without_pretraining_curiosity_driven_results_maze2d-medium-dense-v1_1.0/pretraining-model-4.pt --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
 ```
 
 Train the agent using the synthetic transitions:
