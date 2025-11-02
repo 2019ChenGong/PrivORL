@@ -126,12 +126,12 @@ We list the key hyper-parameters below, including their explanations,
 Diffusion model pre-training:
 
 ```
-python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>  --save_file_name <store_path> 
+python synther/training/train_diffuser.py --dataset <the-name-of-dataset> --datasets_name <the-pretraining-dataset> --curiosity_driven --curiosity_driven_rate 0.3 --results_folder <the-target-folder>
 ```
 
 For example, when we set `maze2d-medium-dense-v1` as the sensitive dataset and [`maze2d-open-dense-v0`, `maze2d-umaze-dense-v1`, `maze2d-large-dense-v1`] as the pretraining datasets,
 ```
-python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3 --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz
+python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" --curiosity_driven --curiosity_driven_rate 0.3 --results_folder ./results_maze2d-medium-dense-v1_0.3
 ```
 
 After training, we can find the result in the folder ```./results_maze2d-medium-dense-v1_0.3```, including the checkpoint ```pretraining-model-9.pt```.

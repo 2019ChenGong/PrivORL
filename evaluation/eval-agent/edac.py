@@ -21,6 +21,10 @@ from tqdm import trange
 
 from datetime import datetime
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+
 from synther.corl.shared.buffer import prepare_replay_buffer, RewardNormalizer, DiffusionConfig
 from synther.corl.shared.logger import Logger
 
