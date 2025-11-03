@@ -592,12 +592,12 @@ class AugDiffusion(GaussianInvDiffusion):
         
         if init_state is not None:
             init_state = init_state.to(device)
-
-            if init_state.shape[-1] < transition_dim:
-                x = torch.zeros((batch_size, horizon, transition_dim), device=device)
+            if init_state.shape[-1] <= transition_dim:
+                # initialize x with normal noise then overwrite the prefix dims of the first timestep
+                x = torch.randn(shape, device=device)
                 x[:, 0, :init_state.shape[-1]] = init_state
             else:
-                raise ValueError(f"init_state dimension mismatch, expected last dim < {transition_dim}, but got {init_state.shape[-1]}")
+                raise ValueError(f"init_state dimension mismatch, expected last dim <= {transition_dim}, but got {init_state.shape[-1]}")
 
         else:
             x = torch.randn(shape, device=device)

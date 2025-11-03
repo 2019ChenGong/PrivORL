@@ -2,9 +2,10 @@
 
 # Define parameters
 gpus=(0 1 2 3)
+# gpus=(0 1)
 # gpus=(0)
 
-finetune="False"
+# finetune="False"
 finetune="True"
 
 # horizons=( 16 32 64 128)
@@ -19,15 +20,15 @@ epsilons=(1 10 )
 epsilons=(10  )
 
 datasets=(
-    # 'maze2d-umaze-dense-v1'
-    # 'maze2d-medium-dense-v1'
+    'maze2d-umaze-dense-v1'
+    'maze2d-medium-dense-v1'
     'maze2d-large-dense-v1'
     # 'kitchen-partial-v0'
-    # 'halfcheetah-medium-replay-v2'
+    'halfcheetah-medium-replay-v2'
 )
 
 max_gpus=${#gpus[@]} 
-max_workers=1
+max_workers=4
 
 # Initialize GPU index and process counter
 gpu_index=0
@@ -50,9 +51,9 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset\
-                        --logbase 'logs'"
+                        --logbase 'logs_transition_cond'"
                 else
-                    checkpoint_path="logs/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_500000.pt"
+                    checkpoint_path="logs_transition_cond/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
                     command="CUDA_VISIBLE_DEVICES=${gpu} python scripts/mtdiff_s.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
@@ -64,7 +65,8 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset \
-                        --logbase 'logs'"
+                        --logbase 'logs_transition_cond' \
+                        --accountant 'rdp'"
                 fi
 
                 echo "Running on GPU ${gpu}: ${command}"

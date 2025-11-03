@@ -86,35 +86,29 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
     action_dim = dataset.action_dim
     trajectory = []
 
+    prev_transition = torch.zeros((1, state_dim * 2 + action_dim + 2), dtype=torch.float32).to(args.device)
+
     current_state = torch.tensor(initial_condition, dtype=torch.float32).unsqueeze(0).to(args.device)
 
     for step_count in range(max_length // args.horizon):
-        conditions = current_state#.unsqueeze(0)
-        # print("args.privacy is ", args.privacy)
-        
+        conditions = prev_transition  # 形状 [1, cond_dim]
+
         if args.privacy:
             samples = diffusion.module._module.conditional_sample(
-                cond=conditions,  
-                task=torch.tensor([0], device=args.device),  
-                value=torch.tensor([0], device=args.device),  
+                cond=conditions,
+                task=torch.tensor([0], device=args.device),
+                value=torch.tensor([0], device=args.device),
                 horizon=args.horizon
             )
-            
-            # samples = diffusion.module.conditional_sample(
-            #     cond=conditions,  
-            #     task=torch.tensor([0], device=args.device),  
-            #     value=torch.tensor([0], device=args.device),  
-            #     horizon=args.horizon
-            # )
         else:
             samples = diffusion.module.conditional_sample(
-                cond=conditions,  
-                task=torch.tensor([0], device=args.device),  
-                value=torch.tensor([0], device=args.device),  
+                cond=conditions,
+                task=torch.tensor([0], device=args.device),
+                value=torch.tensor([0], device=args.device),
                 horizon=args.horizon
             )
 
-        sampled_transitions = samples.cpu().numpy().squeeze(0)  
+        sampled_transitions = samples.cpu().numpy().squeeze(0)
 
         for i, sampled_transition in enumerate(sampled_transitions):
             states = sampled_transition[:state_dim]
@@ -124,13 +118,22 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
             next_states = sampled_transition[state_dim + action_dim + 2:]
 
             trajectory.append([
-                trajectory_index, step_count * args.horizon + i, *states, *actions, reward, terminal_flag, *next_states
+                trajectory_index,
+                step_count * args.horizon + i,
+                *states, *actions, reward, terminal_flag, *next_states
             ])
 
-            if terminal_flag == 1:
-                return trajectory 
+            prev_transition = torch.tensor(
+                np.concatenate([
+                    states, actions, [reward], [terminal_flag], next_states
+                ]),
+                dtype=torch.float32
+            ).unsqueeze(0).to(args.device)
 
-            current_state = torch.tensor(next_states, dtype=torch.float32).unsqueeze(0).to(args.device)  # 更新 condition
+            if terminal_flag == 1:
+                return trajectory
+
+        current_state = torch.tensor(next_states, dtype=torch.float32).unsqueeze(0).to(args.device)
 
     return trajectory
 
@@ -176,8 +179,9 @@ def sample_trajectory(rank, world_size, args):
         args.model,
         savepath=(args.savepath, 'model_config.pkl'),
         horizon=args.horizon,
-        transition_dim=dataset.observation_dim + 1,
-        cond_dim=dataset.observation_dim,
+        state_dim=dataset.observation_dim,
+        transition_dim=dataset.observation_dim * 2 + dataset.action_dim + 2,
+        cond_dim=dataset.observation_dim * 2 + dataset.action_dim + 2,
         num_tasks=1,
         device=rank,
         verbose=False,

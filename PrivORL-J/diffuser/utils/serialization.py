@@ -78,7 +78,7 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample
         # trainer.model = DPDDP(trainer.model)
             
         trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=trainer.train_lr)
-        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon(
+        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon_j(
             module=trainer.model,
             optimizer=trainer.optimizer,
             data_loader=trainer.raw_dataloader,

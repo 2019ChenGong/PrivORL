@@ -179,13 +179,14 @@ class AugTrainer(object):
             for name, param in self.model.named_parameters():
                 print(f"{name}: requires_grad={param.requires_grad}")
 
-            initial_cond = torch.zeros((1, self.dataset.observation_dim), device=self.device)
-            diffusion_samples = self.model.conditional_sample(
-                cond=initial_cond,
-                task=torch.tensor([0], device=self.device),
-                value=torch.tensor([0], device=self.device),
-                horizon=self.horizon
-            )
+                transition_dim = self.dataset.action_dim + 2 * self.dataset.observation_dim + 2
+                initial_cond = torch.zeros((1, transition_dim), device=self.device)
+                diffusion_samples = self.model.conditional_sample(
+                    cond=initial_cond,
+                    task=torch.tensor([0], device=self.device),
+                    value=torch.tensor([0], device=self.device),
+                    horizon=self.horizon
+                )
             self.rnd = Rnd(input_dim=diffusion_samples.shape[2], device=self.device)
 
     def sample_fragments_from_trajectory(self, trajectory_id, num_fragments, max_samples):
@@ -335,8 +336,17 @@ class AugTrainer(object):
         
         # 生成curiosity-driven samples
         diffusion_samples = []
-        initial_cond = torch.zeros((self.sample_batch_size, self.dataset.observation_dim), device=self.device)
-        
+        transition_dim = self.dataset.action_dim + 2 * self.dataset.observation_dim + 2
+        initial_cond = torch.zeros((self.sample_batch_size, transition_dim), device=self.device)
+
+        for i in tqdm(range(self.sample_batch_size), desc="Sampling Curiosity-Driven Samples", unit="sample"):
+            sampled_data = self.model.conditional_sample(
+                cond=initial_cond[i:i+1],
+                task=torch.tensor([0], device=self.device),
+                value=torch.tensor([0], device=self.device),
+                horizon=self.horizon
+            )
+            
         print("[INFO] Generating curiosity-driven samples...")
         for i in tqdm(range(self.sample_batch_size), desc="Sampling Curiosity-Driven Samples", unit="sample"):
             sampled_data = self.model.conditional_sample(

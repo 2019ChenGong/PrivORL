@@ -47,11 +47,11 @@ import subprocess
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-datasets = ["maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "maze2d-umaze-dense-v1"]
+datasets = ["maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "maze2d-umaze-dense-v1", "maze2d-medium-dense-v1"]
 # datasets = ["kitchen-partial-v0", "halfcheetah-medium-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-umaze-dense-v1"]
-datasets = ["maze2d-medium-dense-v1"]
+# datasets = ["maze2d-medium-dense-v1"]
 
 pretraining_rate = 1.0
 finetuning_rate = 0.8
@@ -134,7 +134,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--checkpoints_path',checkpoints_path,
                                 '--config', config,
                                 '--dp_epsilon', dp_epsilon,
-                                '--diffusion.path', offlineRL_load_path,
+                                # '--diffusion.path', offlineRL_load_path,
                                 '--name', name,
                                 '--prefix', prefix,
                                 '--save_checkpoints', save_checkpoints
@@ -146,7 +146,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--checkpoints_path',checkpoints_path,
                                 '--config', config,
                                 '--dp_epsilon', dp_epsilon,
-                                '--diffusion_path', offlineRL_load_path,
+                                # '--diffusion_path', offlineRL_load_path,
                                 '--name', name,
                                 '--prefix', prefix,
                                 '--save_checkpoints', save_checkpoints

@@ -477,8 +477,8 @@ class AugDataset(MetaSequenceDataset):
             local_fragment_idx: 在trajectory内的fragment索引
             
         Returns:
-            trajectory_fragment: fragment数据
-            condition: 条件（上一个fragment的最后一个next_state）
+            trajectory_fragment: fragment数据 (shape: [horizon, transition_dim])
+            condition: 上一个连贯fragment的最后一个transition（五元组），shape: (transition_dim,)
             actual_length: fragment的实际长度
         """
         trajectory_info = self.trajectory_fragments[trajectory_id]
@@ -488,7 +488,7 @@ class AugDataset(MetaSequenceDataset):
         start = local_fragment_idx * self.horizon
         end = min(start + self.horizon, path_length)
         
-        # 获取trajectory数据
+        # 获取trajectory数据（已归一化）
         actions = self.fields.normed_actions[trajectory_id, start:end]
         observations = self.fields.normed_observations[trajectory_id, start:end]
         rewards = self.fields.normed_rewards[trajectory_id, start:end].reshape(-1, 1)
@@ -499,14 +499,38 @@ class AugDataset(MetaSequenceDataset):
             padding = np.repeat(next_observations[-1:], len(observations) - len(next_observations), axis=0)
             next_observations = np.concatenate([next_observations, padding], axis=0)
         
-        # 获取条件：上一个fragment的最后一个next_state
-        if local_fragment_idx > 0:
-            prev_fragment_end = start - 1
-            condition = self.fields.normed_observations[trajectory_id, prev_fragment_end + 1]
-        else:
-            condition = np.zeros(self.observation_dim, dtype=np.float32)
+        # --- 计算 condition：前一个连贯 fragment 的最后一个 transition（state, action, reward, terminal, next_state） ---
+        # transition_dim = obs + action + reward + terminal + next_obs
+        transition_dim = self.action_dim + 2 * self.observation_dim + 2
         
-        # Pad to horizon if needed
+        if local_fragment_idx > 0:
+            # 上一个 fragment 的最后一个 transition 的索引（在 trajectory 中）
+            prev_idx = start - 1
+            # 若 prev_idx 超出（理论上不会，因为 local_fragment_idx>0），做安全处理
+            if prev_idx < 0:
+                # fallback: zeros
+                condition = np.zeros((transition_dim,), dtype=np.float32)
+            else:
+                # 取 prev transition 的各个组成部分
+                prev_state = self.fields.normed_observations[trajectory_id, prev_idx]
+                prev_action = self.fields.normed_actions[trajectory_id, prev_idx]
+                prev_reward = self.fields.normed_rewards[trajectory_id, prev_idx].reshape(-1)  # scalar -> (1,)
+                prev_terminal = self.fields.normed_terminals[trajectory_id, prev_idx].reshape(-1)
+                # prev next_state，如果 prev_idx+1 超出 path_length 则复制 prev_state（安全填充）
+                if prev_idx + 1 < self.path_lengths[trajectory_id]:
+                    prev_next_state = self.fields.normed_observations[trajectory_id, prev_idx + 1]
+                else:
+                    prev_next_state = prev_state
+                # 按照 trajectory_fragment 中拼接顺序合并（observations, actions, rewards, terminals, next_observations）
+                condition = np.concatenate(
+                    [prev_state, prev_action, prev_reward.reshape(1,), prev_terminal.reshape(1,), prev_next_state],
+                    axis=-1
+                ).astype(np.float32)
+        else:
+            # 第一个 fragment，没有前置 fragment，使用全零向量作为 condition
+            condition = np.zeros((transition_dim,), dtype=np.float32)
+        
+        # Pad to horizon if needed (fragment本身需要保持固定长度)
         actual_length = end - start
         if actual_length < self.horizon:
             pad_length = self.horizon - actual_length
@@ -519,6 +543,7 @@ class AugDataset(MetaSequenceDataset):
         trajectory_fragment = np.concatenate([observations, actions, rewards, terminals, next_observations], axis=-1)
         
         return trajectory_fragment, condition, actual_length
+
 
     def __getitem__(self, idx):
         """

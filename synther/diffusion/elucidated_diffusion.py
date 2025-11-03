@@ -315,9 +315,7 @@ class Trainer(object):
             lr_scheduler: Optional[str] = None,
             train_num_steps: int = 100000,
 
-            # FOR REAL SYNTHESIS DATASETS
-            train_epochs: int = 5,
-            # train_epochs: int = 10,
+            train_epochs: int = 10,
             finetune_epochs: int = 5,
             # finetune_epochs: int = 5,
             # finetune_epochs: int = 10,

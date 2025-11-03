@@ -9,7 +9,6 @@ import transformers
 from transformers import TransfoXLModel, TransfoXLConfig
 from .GPT2 import GPT2Model
 import numpy as np
-from timm.models.vision_transformer import PatchEmbed, Attention, Mlp
 from .helpers import (
     SinusoidalPosEmb,
     Downsample1d,

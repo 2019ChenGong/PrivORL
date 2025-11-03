@@ -9,7 +9,7 @@ import transformers
 from transformers import TransfoXLModel, TransfoXLConfig
 from .GPT2 import GPT2Model
 import numpy as np
-from timm.models.vision_transformer import PatchEmbed, Attention, Mlp
+
 from .helpers import (
     SinusoidalPosEmb,
     Downsample1d,
@@ -686,6 +686,7 @@ class TasksAug(nn.Module):
     def __init__(
         self,
         horizon,
+        state_dim,
         transition_dim,
         cond_dim,
         num_tasks,
@@ -698,7 +699,8 @@ class TasksAug(nn.Module):
         self.dim = dim
         self.horizon = horizon
         self.hidden_size = hidden_size
-        self.state_dim = transition_dim - 1
+        self.state_dim = state_dim
+        self.transition_dim = transition_dim
         self.action_dim = action_dim
 
         self.time_mlp = nn.Sequential(
@@ -709,7 +711,7 @@ class TasksAug(nn.Module):
         )
 
         self.cond_mlp = nn.Sequential(
-            nn.Linear(self.state_dim, dim * 2),
+            nn.Linear(self.transition_dim, dim * 2),
             nn.GELU(),
             nn.Linear(dim * 2, 2 * dim),
         )
@@ -754,11 +756,15 @@ class TasksAug(nn.Module):
 
         t = self.time_mlp(time).unsqueeze(1)
 
+        # pdb.set_trace()
         if x_condition is not None and x_condition.shape[0] != x.shape[0]:
+            # pdb.set_trace()
             print(f"[Warning] Skipping batch due to mismatch: x={x.shape[0]}, x_condition={x_condition.shape[0]}")
             return None
 
         if x_condition is not None:
+            # print("x_condition.shape is: ", x_condition.shape)
+            # print("self.cond_mlp is: ", self.cond_mlp)
             cond_embedding = self.cond_mlp(x_condition).unsqueeze(1)
         else:
             cond_embedding = nn.Parameter(torch.zeros(1, 1, 2 * self.dim)).to(x.device)
@@ -769,7 +775,8 @@ class TasksAug(nn.Module):
         if attention_mask is None:
             attention_mask = torch.ones((batch_size, 5 * seq_length), dtype=torch.bool, device=x.device)
         else:
-            attention_mask = attention_mask.to(dtype=torch.bool)
+            # 兼容任何 0/1 或 float mask，强制转 bool
+            attention_mask = (attention_mask > 0.5).to(torch.bool)
 
         stacked_inputs = torch.stack(
             (state_embeddings, action_embeddings, reward_embeddings, terminal_embeddings, next_state_embeddings), dim=1
@@ -783,14 +790,23 @@ class TasksAug(nn.Module):
 
         prefix_mask = torch.ones((batch_size, 2), dtype=torch.bool, device=x.device)
         stacked_attention_mask = torch.cat((prefix_mask, attention_mask), dim=1)
+
+        key_padding_mask = (~stacked_attention_mask).to(torch.bool)
+
+        # print(f"[DEBUG] final_inputs.shape={final_inputs.shape}", flush=True)
+        # print(f"[DEBUG] key_padding_mask.dtype={key_padding_mask.dtype}, shape={key_padding_mask.shape}", flush=True)
         
-        key_padding_mask = ~stacked_attention_mask
-        key_padding_mask = key_padding_mask.to(torch.bool)
-        
-        transformer_outputs = self.transformer(
-            final_inputs,
-            src_key_padding_mask=key_padding_mask
-        )
+        try:
+            transformer_outputs = self.transformer(
+                final_inputs,
+                mask=None,
+                src_key_padding_mask=key_padding_mask
+            )
+        except Exception as e:
+            # 捕获并打印更多信息后再抛出，方便定位
+            print("[DEBUG] Transformer call failed. key_padding_mask dtype/unique:",
+                key_padding_mask.dtype, torch.unique(key_padding_mask), flush=True)
+            raise
 
         x = transformer_outputs[:, -5 * seq_length:, :]
         x = x.reshape(batch_size, seq_length, 5, self.hidden_size).permute(0, 2, 1, 3)
