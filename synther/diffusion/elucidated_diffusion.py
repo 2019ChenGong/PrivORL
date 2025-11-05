@@ -2,7 +2,6 @@
 Main diffusion code.
 Code was adapted from https://github.com/lucidrains/denoising-diffusion-pytorch
 """
-import pdb
 import math
 import pathlib
 from multiprocessing import cpu_count
@@ -24,7 +23,6 @@ from torchdiffeq import odeint
 from tqdm import tqdm
 
 from synther.diffusion.norm import BaseNormalizer
-# from synther.online.utils import make_inputs_from_replay_buffer
 from synther.diffusion.rnd import Rnd
 
 
@@ -544,7 +542,7 @@ class Trainer(object):
                     diffusion_samples = self.model.sample(batch_size=1000, clamp=True).to(device)
                     sample_loss_list = []                        
                     for sample in diffusion_samples:
-                        sample_loss = self.rnd.forward(sample)
+                        sample_loss = self.rnd(sample)
                         sample_loss_list.append(sample_loss.item())
                     diffusion_samples_loss = torch.tensor(sample_loss_list)
                     _, selected_idx = torch.topk(diffusion_samples_loss, k=int(1000 * self.curiosity_driven_rate))
@@ -556,10 +554,7 @@ class Trainer(object):
 
                     # concat batch of data with selected random syn diffusion samples
                     if self.curiosity_driven:
-                        # pdb.set_trace()      
-                        # print("self.ixd:", self.idx)   
-                        # print("len(self.idx) * self.curiosity_driven_rate:", len(self.idx) * self.curiosity_driven_rate)   
-                        random_idx = random.sample(self.idx, int(len(self.idx) * self.curiosity_driven_rate))               
+                        random_idx = random.sample(self.idx, 16)                        
                         random_samples = self.selected_samples[random_idx, :]
                         data = torch.cat((data, random_samples), dim=0)
                 
@@ -600,7 +595,7 @@ class Trainer(object):
                 # rnd training
                 if self.curiosity_driven:
                     if self.epoch % 2 == 0:
-                        rnd_loss = self.rnd.train_step(diffusion_samples)
+                        rnd_loss = self.rnd(diffusion_samples)
                         print(f"Epoch {self.epoch}, RndLoss: {rnd_loss.item()}")
 
                 if self.lr_scheduler is not None:
@@ -808,72 +803,3 @@ class Trainer(object):
 
         return total_loss
 
-
-# @gin.configurable
-# class REDQTrainer(Trainer):
-#     def __init__(
-#             self,
-#             diffusion_model,
-#             train_batch_size: int = 16,
-#             gradient_accumulate_every: int = 1,
-#             train_lr: float = 1e-4,
-#             lr_scheduler: Optional[str] = None,
-#             train_num_steps: int = 100000,
-#             ema_update_every: int = 10,
-#             ema_decay: float = 0.995,
-#             adam_betas: Tuple[float, float] = (0.9, 0.99),
-#             save_and_sample_every: int = 10000,
-#             weight_decay: float = 0.,
-#             results_folder: str = './results',
-#             amp: bool = False,
-#             fp16: bool = False,
-#             split_batches: bool = True,
-#             model_terminals: bool = False,
-#     ):
-#         super().__init__(
-#             diffusion_model,
-#             dataset=None,
-#             train_batch_size=train_batch_size,
-#             gradient_accumulate_every=gradient_accumulate_every,
-#             train_lr=train_lr,
-#             lr_scheduler=lr_scheduler,
-#             train_num_steps=train_num_steps,
-#             ema_update_every=ema_update_every,
-#             ema_decay=ema_decay,
-#             adam_betas=adam_betas,
-#             save_and_sample_every=save_and_sample_every,
-#             weight_decay=weight_decay,
-#             results_folder=results_folder,
-#             amp=amp,
-#             fp16=fp16,
-#             split_batches=split_batches,
-#         )
-
-#         self.model_terminals = model_terminals
-
-#     def train_from_redq_buffer(self, buffer: ReplayBuffer, num_steps: Optional[int] = None):
-#         num_steps = num_steps or self.train_num_steps
-#         for j in range(num_steps):
-#             b = buffer.sample_batch(self.batch_size)
-#             obs = b['obs1']
-#             next_obs = b['obs2']
-#             actions = b['acts']
-#             rewards = b['rews'][:, None]
-#             done = b['done'][:, None]
-#             data = [obs, actions, rewards, next_obs]
-#             if self.model_terminals:
-#                 data.append(done)
-#             data = np.concatenate(data, axis=1)
-#             data = torch.from_numpy(data).float()
-#             loss = self.train_on_batch(data, use_wandb=False)
-#             if j % 1000 == 0:
-#                 print(f'[{j}/{num_steps}] loss: {loss:.4f}')
-
-#     def update_normalizer(self, buffer: ReplayBuffer, device=None):
-#         data = make_inputs_from_replay_buffer(buffer, self.model_terminals)
-#         data = torch.from_numpy(data).float()
-#         self.model.normalizer.reset(data)
-#         self.ema.ema_model.normalizer.reset(data)
-#         if device:
-#             self.model.normalizer.to(device)
-#             self.ema.ema_model.normalizer.to(device)

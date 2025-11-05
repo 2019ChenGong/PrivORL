@@ -7,9 +7,9 @@ import subprocess
 
 datasets = [
             # "kitchen-partial-v0",
-            "maze2d-umaze-dense-v1", 
-            "maze2d-medium-dense-v1", 
-            "maze2d-large-dense-v1", 
+            # "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1", 
             "halfcheetah-medium-replay-v2", 
             ]
 
@@ -29,6 +29,7 @@ max_workers = 20
 
 pretraining_rate = 1.0
 finetuning_rates = [0.8]
+# finetuning_rates = [0.5]
 curiosity_driven_rates = [0.3]
 
 accountant = 'rdp'  # 'prv' or 'rdp'
@@ -57,7 +58,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # dp diffusion
                             dataset_name = datasets_name[dataset]
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
-                            results_folder = f"./results_{dataset}_{curiosity_driven_rate}_{accountant}"
+                            results_folder = f"./results_{dataset}_{curiosity_driven_rate}_{accountant}_24"
                             # results_folder = f"./same_environment_results_{dataset}_{pretraining_rate}"               
                             # results_folder = f"./alter_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_for_mia_curiosity_driven_results_{dataset}_{pretraining_rate}"

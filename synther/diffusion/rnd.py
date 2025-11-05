@@ -53,11 +53,8 @@ class Rnd(nn.Module):
         target_out = self.target_net(x)
         prediction_out = self.prediction_net(x)
         rnd_loss = F.mse_loss(prediction_out, target_out)
-        return rnd_loss
-    
-    def train_step(self, x):
-        rnd_loss = self.forward(x)
         self.rnd_optimizer.zero_grad()
         rnd_loss.backward()
         self.rnd_optimizer.step()
+        
         return rnd_loss
