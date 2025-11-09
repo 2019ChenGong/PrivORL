@@ -21,7 +21,12 @@ PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Lear
     - [3.1 Installation](#31-installation)
     - [3.2 Dataset](#32-dataset)
   - [4. Running Instructions](#running-instructions)
-  - [5. Acknowledgment](#5-acknowledgment)
+    - [4.1 PrviORL-n](#41-prviorl-n)
+    - [4.2 PrviORL-j](#42-prviorl-j)
+    - [4.3 Abalation](#43-abalation)
+    - [4.4 Baselines](#44-baselines-results-in-table-i)
+  - [5. Computational Resource Requirements](#5-computational-resource-requirements)
+  - [6. Acknowledgments](#6-acknowledgements)
 
 
 ## 2. Project structure
