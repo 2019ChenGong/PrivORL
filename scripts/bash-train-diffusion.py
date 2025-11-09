@@ -14,7 +14,7 @@ datasets = [
             ]
 
 
-datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-expert-v2', 'walker2d-medium-v2'],
+datasets_name = {"halfcheetah-medium-replay-v2": ['walker2d-full-replay-v2', 'halfcheetah-full-replay-v2', 'walker2d-medium-v2'],
                  "maze2d-umaze-dense-v1":     ['maze2d-open-dense-v0', 'maze2d-medium-dense-v1', 'maze2d-large-dense-v1'], 
                  "maze2d-medium-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1'],
                  "maze2d-large-dense-v1":    ['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-medium-dense-v1'],
@@ -25,6 +25,7 @@ dp_epsilons = [10]
 num_samples = [1e6]
 seeds = [0]
 gpus = ['0', '1', '2']
+gpus = ['2']
 max_workers = 20
 
 pretraining_rate = 1.0
@@ -88,7 +89,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                                 '--dataset', dataset,
                                 '--datasets_name', dataset_name,
                                 '--seed', seed,
-                                '--load_checkpoint',
+                                # '--load_checkpoint',
                                 '--curiosity_driven',
                                 '--curiosity_driven_rate', curiosity_driven_rate,
                                 '--dp_epsilon', dp_epsilon,

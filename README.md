@@ -171,7 +171,13 @@ python evaluation/eval-agent/iql.py --env <the-name-of-synthetic-transitions> --
 For example, 
 
 ```
-python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ./results_maze2d-medium-dense-v1_0.3/cleaned_pretrain_samples.npz --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
+python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ./results_maze2d-medium-dense-v1_0.3/cleaned_pretrain_samples.npz --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
+```
+
+We provide synthetic offline reinforcement learning datasets of each dataset on [ZhengLiu33/PrivORL-n-Synthetic-1M](https://huggingface.co/datasets/ZhengLiu33/PrivORL-n-Synthetic-1M), just replace the ```diffusion.path``` as "ZhengLiu33/PrivORL-n-Synthetic-1M" to download the datasets and evaluate, for example,
+
+```
+python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ZhengLiu33/PrivORL-n-Synthetic-1M --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
 ```
 
 After training, we can find the result in the folder ```./corl_logs_param_analysis_v1_maze2d_prv/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202509260435```, including the evaluation result ```eval_0.json```.

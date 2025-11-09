@@ -326,6 +326,40 @@ def prepare_replay_buffer(
             **buffer_args,
         )
         replay_buffer.load_d4rl_dataset(diffusion_dataset)
+    elif "/" in diffusion_config.path and not diffusion_config.path.startswith("/"):
+        # HuggingFace dataset path pattern (e.g., "ZhengLiu33/PrivORL-n-Synthetic-1M")
+        print(f'Loading dataset from HuggingFace: {diffusion_config.path}')
+        from huggingface_hub import hf_hub_download
+
+        # Download the dataset file from HuggingFace
+        dataset_file = f"splits/{env_name}.npz"
+        try:
+            local_path = hf_hub_download(
+                repo_id=diffusion_config.path,
+                filename=dataset_file,
+                repo_type="dataset"
+            )
+            print(f'Downloaded dataset from HuggingFace to: {local_path}')
+
+            # Load the downloaded npz file
+            diffusion_dataset = np.load(local_path)
+            diffusion_dataset = {key: diffusion_dataset[key] for key in diffusion_dataset.files}
+
+            if diffusion_config.sample_limit != -1:
+                # Limit the number of samples
+                for key in diffusion_dataset.keys():
+                    diffusion_dataset[key] = diffusion_dataset[key][:diffusion_config.sample_limit]
+                print('Limited diffusion dataset to {} samples'.format(diffusion_config.sample_limit))
+
+            replay_buffer = ReplayBuffer(
+                state_dim=state_dim,
+                action_dim=action_dim,
+                buffer_size=diffusion_dataset['rewards'].shape[0],
+                **buffer_args,
+            )
+            replay_buffer.load_d4rl_dataset(diffusion_dataset)
+        except Exception as e:
+            raise ValueError(f"Failed to download dataset from HuggingFace: {e}")
     elif diffusion_config.path.endswith(".pt"):
         print('Loading diffusion model.')
         # Load gin config from the same directory.

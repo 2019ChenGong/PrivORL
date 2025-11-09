@@ -24,9 +24,9 @@ class Parser(utils.Parser):
     dataset: str = 'halfcheetah-medium-replay-v2'
     config: str = 'config.locomotion'
     # sample_checkpoint_path: str = "logs/halfcheetah-medium-replay-v2/pretrain/horizon32/state_500000.pt"
-    # output_csv_path: str = "logs/halfcheetah-medium-replay-v2/pretrain/horizon32/state_500000/sampled_trajectories.csv"
+    # output_path: str = "logs/halfcheetah-medium-replay-v2/pretrain/horizon32/state_500000/sampled_trajectories.npz"
     sample_checkpoint_path: str = "logs/halfcheetah-medium-replay-v2/finetune/epsilon5_horizon32/state_200000.pt"
-    output_csv_path: str = "logs/halfcheetah-medium-replay-v2/finetune/epsilon5_horizon32/state_200000/sampled_trajectories.csv"
+    output_path: str = "logs/halfcheetah-medium-replay-v2/finetune/epsilon5_horizon32/state_200000/sampled_trajectories.npz"
     num_trajectories: int = 1000
     max_length: int = 1000
 
@@ -139,16 +139,59 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
 
 
 
-def save_trajectories_to_csv(trajectories, output_csv_path, state_dim, action_dim):
-    state_cols = [f'state_{i}' for i in range(state_dim)]
-    action_cols = [f'action_{i}' for i in range(action_dim)]
-    next_state_cols = [f'next_state_{i}' for i in range(state_dim)]
-    columns = ['trajectory_id', 'step_id'] + state_cols + action_cols + ['reward', 'terminal'] + next_state_cols
+def save_trajectories_to_npz(trajectories, output_npz_path, state_dim, action_dim):
+    """
+    Save trajectories directly to NPZ format compatible with D4RL/buffer.py
 
-    df = pd.DataFrame(trajectories, columns=columns)
-    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
-    df.to_csv(output_csv_path, index=False)
-    print(f'Trajectories saved to {output_csv_path}')
+    The buffer.py expects:
+    - observations: [N, state_dim]
+    - actions: [N, action_dim]
+    - rewards: [N,] (1D array, buffer.py will add dimension with [..., None])
+    - terminals: [N,] (1D array, buffer.py will add dimension with [..., None])
+    - next_observations: [N, state_dim]
+    """
+    # Convert list of trajectories to numpy array
+    trajectories = np.array(trajectories)
+
+    # Extract columns: [trajectory_id, step_id, state_0...state_n, action_0...action_m, reward, terminal, next_state_0...next_state_n]
+    # Skip trajectory_id (col 0) and step_id (col 1)
+    col_idx = 2
+
+    observations = trajectories[:, col_idx:col_idx + state_dim]
+    col_idx += state_dim
+
+    actions = trajectories[:, col_idx:col_idx + action_dim]
+    col_idx += action_dim
+
+    # IMPORTANT: Keep rewards and terminals as 1D arrays
+    # buffer.py will add the extra dimension with [..., None]
+    rewards = trajectories[:, col_idx]  # Shape: [N,]
+    col_idx += 1
+
+    terminals = trajectories[:, col_idx]  # Shape: [N,]
+    col_idx += 1
+
+    next_observations = trajectories[:, col_idx:col_idx + state_dim]
+
+    # Create the data dictionary
+    data = {
+        "observations": observations,
+        "actions": actions,
+        "rewards": rewards,
+        "terminals": terminals,
+        "next_observations": next_observations
+    }
+
+    # Save to NPZ file
+    os.makedirs(os.path.dirname(output_npz_path), exist_ok=True)
+    np.savez(output_npz_path, **data)
+    print(f'Trajectories saved to {output_npz_path}')
+    print(f'Data shapes:')
+    print(f'  observations: {observations.shape}')
+    print(f'  actions: {actions.shape}')
+    print(f'  rewards: {rewards.shape}')
+    print(f'  terminals: {terminals.shape}')
+    print(f'  next_observations: {next_observations.shape}')
 
 
 def sample_trajectory(rank, world_size, args):
@@ -224,7 +267,7 @@ def sample_trajectory(rank, world_size, args):
 
     if rank == 0:
         all_trajectories = [item for sublist in gathered_trajectories for item in sublist]
-        save_trajectories_to_csv(all_trajectories, args.output_csv_path, dataset.observation_dim, dataset.action_dim)
+        save_trajectories_to_npz(all_trajectories, args.output_path, dataset.observation_dim, dataset.action_dim)
 
     cleanup()
 
