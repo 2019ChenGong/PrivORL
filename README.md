@@ -26,9 +26,6 @@ PrivORL: Differentially Private Synthetic Dataset for Offline Reinforcement Lear
 
 ## 2. Project structure
 
-> **Note:** I should clean the structure after editing.
-
-
 The structure of this project is as follows:
 ```
 MuJoCo
@@ -120,6 +117,16 @@ We list the key hyper-parameters below, including their explanations,
 - `load_path`: the path of the saved pretraining model checkpoint for further fine-tuning.
 - `load_checkpoint`: the action config, add to choose DP fine-tuning, otherwise Non-DP pretraining.
 
+#### Quick Verification
+
+We provide synthetic offline reinforcement learning datasets of each dataset on [ZhengLiu33/PrivORL-n-Synthetic-1M](https://huggingface.co/datasets/ZhengLiu33/PrivORL-n-Synthetic-1M), just replace the ```diffusion.path``` as "ZhengLiu33/PrivORL-n-Synthetic-1M" to download the datasets and evaluate, for example,
+
+```
+python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ZhengLiu33/PrivORL-n-Synthetic-1M --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
+```
+
+After training, we can find the result in the folder ```./corl_logs_param_analysis_v1_maze2d_prv/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202509260435```, including the evaluation result ```eval_0.json```.
+
 
 #### Step1: Curiosity-driven Pre-training
 
@@ -135,11 +142,6 @@ python synther/training/train_diffuser.py --dataset maze2d-medium-dense-v1 --dat
 ```
 
 After training, we can find the result in the folder ```./results_maze2d-medium-dense-v1_0.3```, including the checkpoint ```pretraining-model-9.pt```.
-
-
-> [!Note]
->
-> We provide .
 
 
 #### Step2: Fine-tuning on Sensitive Datasets
@@ -173,14 +175,6 @@ For example,
 ```
 python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ./results_maze2d-medium-dense-v1_0.3/cleaned_pretrain_samples.npz --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
 ```
-
-We provide synthetic offline reinforcement learning datasets of each dataset on [ZhengLiu33/PrivORL-n-Synthetic-1M](https://huggingface.co/datasets/ZhengLiu33/PrivORL-n-Synthetic-1M), just replace the ```diffusion.path``` as "ZhengLiu33/PrivORL-n-Synthetic-1M" to download the datasets and evaluate, for example,
-
-```
-python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_path corl_logs_param_analysis_v1_maze2d_pretrain/ --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml --dp_epsilon 10 --diffusion.path ZhengLiu33/PrivORL-n-Synthetic-1M --name CurDPsynthER --prefix 0.3CurRate --save_checkpoints False
-```
-
-After training, we can find the result in the folder ```./corl_logs_param_analysis_v1_maze2d_prv/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202509260435```, including the evaluation result ```eval_0.json```.
 
 #### Step4: Marginal and Correlation Computing (Fidelity, Results in Table III)
 
