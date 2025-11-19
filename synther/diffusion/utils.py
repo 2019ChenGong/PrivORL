@@ -90,7 +90,14 @@ def split_diffusion_samples_epicare(
     terminal_threshold: Optional[float] = None,
 ):
     obs = samples[:, :obs_dim]
-    actions = samples[:, obs_dim:obs_dim + action_dim]
+    actions_onehot = samples[:, obs_dim:obs_dim + action_dim]
+
+    # Convert one-hot back to discrete actions using argmax
+    if isinstance(actions_onehot, torch.Tensor):
+        actions = torch.argmax(actions_onehot, dim=1, keepdim=True).float()
+    else:
+        actions = np.argmax(actions_onehot, axis=1, keepdims=True).astype(np.float32)
+
     rewards = samples[:, obs_dim + action_dim]
     next_obs = samples[:, obs_dim + action_dim + 1: obs_dim + action_dim + 1 + obs_dim]
     if modelled_terminals:
@@ -173,36 +180,47 @@ def load_custom_dataset(dataset_path, episodes_avail=None) -> Dict[str, np.ndarr
 def make_inputs_epicare(
     dataset_path,
     episodes_avail=None,
-    modelled_terminals=True
+    modelled_terminals=True,
+    num_actions=16
 ) -> np.ndarray:
     dataset = load_custom_dataset(dataset_path, episodes_avail)
     obs = dataset["observations"]
     actions = dataset["actions"]
     rewards = dataset["rewards"]
     next_obs = dataset["next_observations"]
+
+    # Convert discrete actions to one-hot encoding
+    actions_onehot = np.zeros((len(actions), num_actions), dtype=np.float32)
+    actions_onehot[np.arange(len(actions)), actions.astype(int)] = 1.0
+
     if modelled_terminals:
         terminals = dataset["terminals"].astype(np.float32)
-        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs, terminals[:, None]], axis=1)
+        inputs = np.concatenate([obs, actions_onehot, rewards[:, None], next_obs, terminals[:, None]], axis=1)
     else:
-        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs], axis=1)
+        inputs = np.concatenate([obs, actions_onehot, rewards[:, None], next_obs], axis=1)
     return inputs
 
 def make_part_inputs_epicare(
     dataset_path,
     sample_ratio,
     episodes_avail=None,
-    modelled_terminals=True
+    modelled_terminals=True,
+    num_actions=16
 ):
     dataset = load_custom_dataset(dataset_path, episodes_avail)
     obs = dataset["observations"]
     actions = dataset["actions"]
     rewards = dataset["rewards"]
     next_obs = dataset["next_observations"]
+
+    # Convert discrete actions to one-hot encoding
+    actions_onehot = np.zeros((len(actions), num_actions), dtype=np.float32)
+    actions_onehot[np.arange(len(actions)), actions.astype(int)] = 1.0
+
     if modelled_terminals:
         terminals = dataset["terminals"].astype(np.float32)
-        # pdb.set_trace()
-        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs, terminals[:, None]], axis=1)
+        inputs = np.concatenate([obs, actions_onehot, rewards[:, None], next_obs, terminals[:, None]], axis=1)
     else:
-        inputs = np.concatenate([obs, actions[:, None], rewards[:, None], next_obs], axis=1)
+        inputs = np.concatenate([obs, actions_onehot, rewards[:, None], next_obs], axis=1)
     inputs_pretrain, inputs_finetune = train_test_split(inputs, test_size=1-sample_ratio, random_state=10, shuffle=True)
     return inputs_pretrain, inputs_finetune

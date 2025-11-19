@@ -192,3 +192,8 @@ clean.sh
 
 # src
 src
+
+synther/training/*epicare*
+
+plot/tsne*
+

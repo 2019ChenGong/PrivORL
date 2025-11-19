@@ -7,6 +7,9 @@ import torch
 import gin
 import d4rl
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import split_diffusion_samples, construct_diffusion_model
@@ -66,7 +69,7 @@ class SimpleDiffusionGenerator:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="maze2d-medium-dense-v1")
+    parser.add_argument("--dataset", type=str, default="halfcheetah-medium-replay-v2")
     parser.add_argument("--gin_config_files", nargs="*", type=str, default=["config/resmlp_denoiser.gin"])
     parser.add_argument("--gin_params", nargs="*", type=str, default=[])
     parser.add_argument("--results_folder", type=str, default="./results")
@@ -79,7 +82,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.load_path = f"/bigtemp/fzv6en/SynthER/results_{args.dataset}_0.3_prv/pretraining-model-4.pt"
+    args.load_path = f"/bigtemp/fzv6en/SynthER/results_{args.dataset}_0.3_rdp_pretrain_only_without_cur/pretraining-model-9.pt"
     args.results_folder = args.load_path.rsplit('/', 1)[0]
     print(f"[INFO] Load path set to {args.load_path}")
     print(f"[INFO] Results folder set to {args.results_folder}")

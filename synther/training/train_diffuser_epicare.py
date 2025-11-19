@@ -10,6 +10,9 @@ import torch
 import wandb
 import ast
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from synther.diffusion.elucidated_diffusion import Trainer
 from synther.diffusion.norm import MinMaxNormalizer
 from synther.diffusion.utils import make_inputs, make_part_inputs, make_inputs_epicare, make_part_inputs_epicare, split_diffusion_samples, split_diffusion_samples_epicare, construct_diffusion_model, load_custom_dataset
@@ -257,17 +260,19 @@ if __name__ == '__main__':
     if args.load_checkpoint:
         dataset = load_custom_dataset(args.dataset)
         obs_dim = dataset["observations"].shape[1]
-        action_dim = 1
+        action_dim = 16  # 16 discrete actions with one-hot encoding
 
         generator = SimpleDiffusionGenerator(
             obs_dim=obs_dim,
             action_dim=action_dim,
             ema_model=trainer.ema.ema_model,
-            modelled_terminals=True, 
+            modelled_terminals=True,
         )
         observations, actions, rewards, next_observations, terminals = generator.sample(
             num_samples=args.save_num_samples,
         )
+
+        # Save continuous format (npz) - actions are still float from argmax
         np.savez_compressed(
             results_folder / args.save_file_name,
             observations=observations,
@@ -279,3 +284,14 @@ if __name__ == '__main__':
 
         # check nan data, delete if exist
         remove_errors(results_folder, args.save_file_name)
+
+        # Save discrete format (hdf5) - convert actions to int
+        discrete_file_name = args.save_file_name.replace('.npz', '_discrete.hdf5')
+        import h5py
+        with h5py.File(results_folder / discrete_file_name, 'w') as f:
+            f.create_dataset('observations', data=observations.astype(np.float64))
+            f.create_dataset('actions', data=actions.squeeze().astype(np.int64))  # Convert to int64
+            f.create_dataset('rewards', data=rewards.astype(np.float64))
+            f.create_dataset('next_observations', data=next_observations.astype(np.float64))
+            f.create_dataset('terminals', data=terminals.astype(bool))
+        print(f"Saved discrete format to {discrete_file_name}")
