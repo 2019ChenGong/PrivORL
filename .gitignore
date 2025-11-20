@@ -194,6 +194,10 @@ clean.sh
 src
 
 synther/training/*epicare*
+scripts/*epicare*
 
 plot/tsne*
+plot/pretrain_tsne
+plot/halfcheetah*
 
+synther/diffusion/delete_nan.py

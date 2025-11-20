@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--gin_config_files", nargs="*", type=str, default=["config/resmlp_denoiser.gin"])
     parser.add_argument("--gin_params", nargs="*", type=str, default=[])
     parser.add_argument("--results_folder", type=str, default="./results")
-    parser.add_argument("--load_path", type=str, default="/bigtemp/fzv6en/SynthER/results_maze2d-large-dense-v1_0.3_prv/pretraining-model-9.pt")
+    parser.add_argument("--load_path", type=str, default="/bigtemp/fzv6en/SynthER/results_halfcheetah-medium-replay-v2_0.5/pretraining-model-9.pt")
     parser.add_argument("--use_gpu", action="store_true", default=True)
     parser.add_argument("--num_sample_steps", type=int, default=128)
     parser.add_argument("--sample_batch_size", type=int, default=100000)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.load_path = f"/bigtemp/fzv6en/SynthER/results_{args.dataset}_0.3_rdp_pretrain_only_without_cur/pretraining-model-9.pt"
+    args.load_path = f"results_halfcheetah-medium-replay-v2_0.3_rdp_pretrain_only_without_cur/pretraining-model-1.pt"
     args.results_folder = args.load_path.rsplit('/', 1)[0]
     print(f"[INFO] Load path set to {args.load_path}")
     print(f"[INFO] Results folder set to {args.results_folder}")

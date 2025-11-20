@@ -6,10 +6,10 @@ import time
 import subprocess
 
 datasets = [
-            "kitchen-partial-v0",
-            "maze2d-umaze-dense-v1", 
-            "maze2d-medium-dense-v1", 
-            "maze2d-large-dense-v1", 
+            # "kitchen-partial-v0",
+            # "maze2d-umaze-dense-v1", 
+            # "maze2d-medium-dense-v1", 
+            # "maze2d-large-dense-v1", 
             "halfcheetah-medium-replay-v2", 
             ]
 
