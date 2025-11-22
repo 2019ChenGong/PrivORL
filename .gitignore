@@ -200,4 +200,4 @@ plot/tsne*
 plot/pretrain_tsne
 plot/halfcheetah*
 
-synther/diffusion/delete_nan.py
+synther/diffusion/delete*

@@ -118,7 +118,7 @@ def merge_data(cleaned_data_list):
 def save_cleaned_data(original_path, sample_name, cleaned_data):
     for key in cleaned_data.keys():
         cleaned_data[key] = np.array(cleaned_data[key])
-    np.savez(os.path.join(original_path, f'cleaned_{sample_name}'), **cleaned_data)
+    np.savez(os.path.join(original_path, sample_name), **cleaned_data)
 
 def remove_errors(original_path, sample_name):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -147,7 +147,7 @@ def remove_errors(original_path, sample_name):
     merged_data = merge_data(cleaned_data_list)
 
     save_cleaned_data(original_path, sample_name, merged_data)
-    print(f"Cleaned data saved as cleaned_{sample_name}")
+    print(f"Cleaned data saved as {sample_name}")
     print(f"Removed {total_samples - len(valid_indices_list)} samples with errors.")
 
 
