@@ -78,12 +78,13 @@ if __name__ == '__main__':
         dpsynther_experience.rename(columns={'rewards_1': 'rewards'}, inplace=True)
 
     quality_report = evaluate_quality(
-        dataset=args.dataset,
+        # dataset=args.dataset,
         real_data=original_experience,
         synthetic_data=dpsynther_experience,
         metadata=metadata,
-        cur_rate=args.cur_rate,
-        epsilon=args.dp_epsilon)
+        # cur_rate=args.cur_rate,
+        # epsilon=args.dp_epsilon
+        )
     
     # save_path = f'marginal_results/{args.dataset}_quality_report.pkl'
     # os.makedirs(os.path.dirname(save_path), exist_ok=True)

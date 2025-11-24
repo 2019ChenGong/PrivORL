@@ -26,7 +26,7 @@ python evaluation/eval-agent/iql.py \
   --checkpoints_path corl_logs_param_analysis_v1_maze2d/ \
   --config synther/corl/yaml/iql/maze2d/medium-dense-v1.yaml \
   --dp_epsilon 10 \
-  --diffusion.path ./results_maze2d-medium-dense-v1_0.3/cleaned_pretrain_samples.npz \
+  --diffusion.path ./results_maze2d-medium-dense-v1_0.3/maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz \
   --name CurDPsynthER \
   --prefix 0.3CurRate \
   --save_checkpoints False

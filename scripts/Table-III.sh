@@ -7,5 +7,5 @@
 python evaluation/eval-fidelity/marginal.py \
   --dataset maze2d-medium-dense-v1 \
   --dp_epsilon 10 \
-  --load_path alter_0.3curiosity_driven_results_maze2d-medium-dense-v1_1.0/cleaned_maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz \
+  --load_path ./results_maze2d-medium-dense-v1_0.3/maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz \
   --cur_rate 0.3
