@@ -323,7 +323,7 @@ class Trainer(object):
             ema_decay: float = 0.995,
             adam_betas: Tuple[float, float] = (0.9, 0.99),
             save_and_sample_every: int = 10000,
-            save_and_sample_epoch_every: int = 2,
+            save_and_sample_epoch_every: int = 5,
             weight_decay: float = 0.,
             results_folder: str = './results',
             amp: bool = False,
