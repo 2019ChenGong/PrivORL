@@ -132,12 +132,6 @@ python evaluation/eval-agent/iql.py --env maze2d-medium-dense-v1 --checkpoints_p
 
 After training, we can find the result in the folder ```./corl_logs_param_analysis_v1_maze2d_prv/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202509260435```, including the evaluation result ```eval_0.json```.
 
-#### Main Claim Validation
-
-非常好！以下是根据您细化后的内容，按照您之前提供的学术写作风格（简洁、指令明确、与 HuggingFace 集成一致）撰写的段落，可直接用于 README 或 Artifact Evaluation 补充说明：
-
----
-
 #### Main Claim Verification
 
 Considering the time constraints of the artifact evaluation, we focus validation on the **main results reported in Table 1 and Table 3** of the paper, which represent the core claims of our work: (i) the utility and (ii) fidelity of synthetic data.
