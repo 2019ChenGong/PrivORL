@@ -291,3 +291,94 @@ def process_maze2d_episode(episode):
         episode[key] = val[:-1]
     episode['next_observations'] = next_observations
     return episode
+
+
+#-----------------------------------------------------------------------------#
+#------------------------------- EpiCare dataset -----------------------------#
+#-----------------------------------------------------------------------------#
+
+def get_cutoff(dataset, episodes_avail=None):
+    """Get cutoff index for limiting number of episodes"""
+    if episodes_avail is None:
+        return len(dataset["terminals"])
+    terminals = dataset["terminals"][:]
+    terminals_cumsum = np.cumsum(terminals)
+    cutoff_indices = np.where(terminals_cumsum == episodes_avail)[0]
+    if len(cutoff_indices) == 0:
+        return len(terminals)
+    return cutoff_indices[0] + 1
+
+
+def load_epicare_dataset(dataset_path_list, episodes_avail=None, num_actions=16):
+    """
+    Load EpiCare datasets from multiple hdf5 files.
+
+    Args:
+        dataset_path_list: List of paths to hdf5 files
+        episodes_avail: Optional limit on number of episodes per file
+        num_actions: Number of discrete actions (for one-hot encoding)
+
+    Yields:
+        episode_data: Dictionary containing episode data
+    """
+    print(f"[INFO] Loading EpiCare datasets from {len(dataset_path_list)} files...")
+
+    for dataset_path in dataset_path_list:
+        print(f"[INFO] Loading dataset: {dataset_path}")
+
+        # Load data from hdf5 file
+        with h5py.File(dataset_path, "r") as dataset_file:
+            cutoff = get_cutoff(dataset_file, episodes_avail)
+            observations = dataset_file["observations"][:cutoff]
+            actions = dataset_file["actions"][:cutoff]
+            rewards = dataset_file["rewards"][:cutoff]
+            next_observations = dataset_file["next_observations"][:cutoff]
+            terminals = dataset_file["terminals"][:cutoff]
+
+        # Convert to appropriate types
+        observations = observations.astype(np.float32)
+        actions = actions.astype(np.int64)
+        rewards = rewards.astype(np.float32)
+        next_observations = next_observations.astype(np.float32)
+        terminals = terminals.astype(np.bool_)
+
+        # Convert discrete actions to one-hot encoding
+        actions_onehot = np.zeros((len(actions), num_actions), dtype=np.float32)
+        actions_onehot[np.arange(len(actions)), actions] = 1.0
+
+        # Parse into episodes
+        N = len(observations)
+        data_ = collections.defaultdict(list)
+        episode_step = 0
+
+        for i in range(N):
+            done_bool = bool(terminals[i])
+
+            # Add data
+            data_['observations'].append(observations[i])
+            data_['actions'].append(actions_onehot[i])  # Use one-hot encoded actions
+            data_['rewards'].append(rewards[i])
+            data_['next_observations'].append(next_observations[i])
+            data_['terminals'].append(np.array([terminals[i]], dtype=np.float32))
+
+            if done_bool:
+                episode_step = 0
+                episode_data = {}
+                for k in data_:
+                    episode_data[k] = np.array(data_[k])
+
+                # Add task identifier (dataset path)
+                episode_data['task'] = dataset_path
+
+                yield episode_data
+                data_ = collections.defaultdict(list)
+
+            episode_step += 1
+
+        # Handle remaining data if any
+        if len(data_['observations']) > 0:
+            episode_data = {}
+            for k in data_:
+                episode_data[k] = np.array(data_[k])
+            episode_data['task'] = dataset_path
+            yield episode_data

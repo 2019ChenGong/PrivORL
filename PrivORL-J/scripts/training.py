@@ -29,7 +29,11 @@ datasets_name = {
     "antmaze-large-play-v1": ['antmaze-medium-play-v1', 'antmaze-umaze-v1'],
     "kitchen-complete-v0": ["kitchen-partial-v0", "kitchen-mixed-v0"],
     "kitchen-partial-v0": ['kitchen-complete-v0', 'kitchen-mixed-v0'],
-    "kitchen-mixed-v0": ["kitchen-complete-v0", "kitchen-partial-v0"]
+    "kitchen-mixed-v0": ["kitchen-complete-v0", "kitchen-partial-v0"],
+    # epicare
+    "EpiCare/data/smart/train_seed_1.hdf5":    ['EpiCare/data/smart/train_seed_2.hdf5',
+                                                'EpiCare/data/smart/train_seed_3.hdf5', 
+                                                'EpiCare/data/smart/train_seed_4.hdf5'],  
 }
 
 #-----------------------------------------------------------------------------#
@@ -56,6 +60,9 @@ def cycle(dl):
 def main(args):
     device = args.device
     setup(device)
+
+    # 检测是否是EpiCare数据集
+    is_epicare = args.dataset.endswith('.hdf5')
 
     if args.finetune:
         args.privacy = True
@@ -84,7 +91,9 @@ def main(args):
         normed=args.normed,
         meta_world=False,
         seq_length=5,
-        use_d4rl=True,
+        use_d4rl=(not is_epicare),  # 如果是EpiCare则不使用D4RL
+        use_epicare=is_epicare,      # 添加EpiCare标志
+        num_actions=16,               # EpiCare的动作数
         double_samples=double_samples
     )
     dataset = dataset_config()

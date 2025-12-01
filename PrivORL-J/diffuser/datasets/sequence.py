@@ -204,10 +204,11 @@ class SequenceDataset(torch.utils.data.Dataset):
 class MetaSequenceDataset(torch.utils.data.Dataset):
     def __init__(self, replay_dir_list=[], task_list=[], horizon=64,
                  normalizer='LimitsNormalizer', preprocess_fns=[], max_path_length=1000,
-                 max_n_episodes=200000, termination_penalty=0, use_padding=True, 
-                 seed=None, meta_world=False, maze2d=False, antmaze=False, 
-                 optimal=True, use_d4rl=False, pad_to_max_length=True):  # 添加参数
-        
+                 max_n_episodes=200000, termination_penalty=0, use_padding=True,
+                 seed=None, meta_world=False, maze2d=False, antmaze=False,
+                 optimal=True, use_d4rl=False, pad_to_max_length=True,
+                 use_epicare=False, num_actions=16):  # 添加EpiCare参数
+
         self.replay_dir_list = replay_dir_list
         self.task_list = task_list
         self.reward_scale = 400.0
@@ -216,11 +217,21 @@ class MetaSequenceDataset(torch.utils.data.Dataset):
         self.use_padding = use_padding
         self.pad_to_max_length = pad_to_max_length  # 设置属性
         self.record_values = []
+        self.use_epicare = use_epicare
+        self.num_actions = num_actions
 
-        if use_d4rl:
+        if use_epicare:
+            print("[INFO] Loading datasets from EpiCare (HDF5 files)...")
+            assert len(task_list) > 0, "EpiCare requires at least one dataset path."
+
+            # Load EpiCare datasets using load_epicare_dataset
+            itr = load_epicare_dataset(task_list, episodes_avail=None, num_actions=num_actions)
+            all_trajectories = list(itr)
+
+        elif use_d4rl:
             print("[INFO] Loading datasets from D4RL...")
             assert len(task_list) > 0, "D4RL requires at least one dataset name."
-            
+
             all_trajectories = []
             for dataset_name in task_list:
                 print(f"[INFO] Loading dataset: {dataset_name}")
@@ -229,7 +240,7 @@ class MetaSequenceDataset(torch.utils.data.Dataset):
                 trajectories = self.parse_d4rl_dataset(dataset)
                 all_trajectories.extend(trajectories)
         else:
-            raise NotImplementedError("Only D4RL is supported in this configuration.")
+            raise NotImplementedError("Only D4RL and EpiCare are supported in this configuration.")
 
         fields = ReplayBuffer(max_n_episodes, max_path_length, termination_penalty)
         for episode in all_trajectories:

@@ -361,15 +361,11 @@ class AugTrainer(object):
         diffusion_samples = torch.cat(diffusion_samples, dim=0)
 
         # 计算RND loss并选择high-curiosity samples
+        # 注意：每次调用rnd.forward()都会自动更新prediction network
         sample_loss_list = []
-        rnd_loss_total = 0.0
         for sample in diffusion_samples:
-            sample_loss = self.rnd.forward(sample)
+            sample_loss = self.rnd(sample)  # forward() now handles training automatically
             sample_loss_list.append(sample_loss.item())
-            rnd_loss_total += sample_loss
-
-        rnd_loss_total = rnd_loss_total / len(diffusion_samples)
-        self.rnd.train_step(rnd_loss_total)
 
         diffusion_samples_loss = torch.tensor(sample_loss_list, device=self.device)
         _, selected_idx = torch.topk(diffusion_samples_loss, k=int(self.sample_batch_size * self.curiosity_rate))
