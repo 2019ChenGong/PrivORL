@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script reproduces the PrivORL-n utility results for maze2d-medium-dense-v1 in Table I
-# Expected output: Normalized return approximately 90.7 ± 8.6
+# Expected output: Normalized return approximately 90.7 ± 8.6, calculated over 5 seeds using converged values. For example, one result of a seed are saved in corl_logs_param_analysis_v1_maze2d/0.3CurRate_CurDPsynthER-iql-maze2d-medium-dense-v1-epsilon_10-seed_0-202511231037/eval_0.json 
 # Runtime: ~3.5 hours on NVIDIA A6000
 
 # Step 1: Pre-training (1.5h)

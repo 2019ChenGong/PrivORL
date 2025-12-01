@@ -686,6 +686,8 @@ class Trainer(object):
     def finetuning_without_dp(self):
         accelerator = self.accelerator
         device = accelerator.device
+        self.finetune_epochs = 150
+        self.save_and_sample_epoch_every = 50
 
         with tqdm(initial=self.epoch, total=self.finetune_epochs, disable=not accelerator.is_main_process) as pbar:
             for epoch in range(self.finetune_epochs):
@@ -734,7 +736,7 @@ class Trainer(object):
 
                 print(f"Hello, finetuning epoch: {epoch}")
                 if epoch != 0 and (epoch + 1) % self.save_and_sample_epoch_every == 0:
-                    self.save(epoch, '1e3data-300epoch finetuning without dp')
+                    self.save(epoch, 'finetuning_without_dp')
 
         accelerator.print('training complete')
 

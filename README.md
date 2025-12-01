@@ -134,13 +134,14 @@ After training, we can find the result in the folder ```./corl_logs_param_analys
 
 #### Main Claim Verification
 
-Considering the time constraints of the artifact evaluation, we focus validation on the **main results reported in Table 1 and Table 3** of the paper, which represent the core claims of our work: (i) the utility and (ii) fidelity of synthetic data.
+Considering the time constraints of the artifact evaluation, we focus validation on the **main results reported in Table 1, Table 3, and Table 13** of the paper, which represent the core claims of our work: (i) the utility and (ii) fidelity of synthetic data, (iii) defending against MIAs.
 
-To reproduce these results, please run the following two scripts **in order**:
+To reproduce these results, please run the following three scripts **in order**:
 
 ```bash
 bash scripts/Table-I.sh
 bash scripts/Table-III.sh
+bash scripts/Table-XII.sh
 ```
 
 Each script automates the full pipeline—including agent training, evaluation, and result logging.  

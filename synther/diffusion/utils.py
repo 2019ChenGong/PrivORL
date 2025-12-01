@@ -141,7 +141,6 @@ def construct_diffusion_model(
     )
 
 
-# --------- EpiCare数据加载部分 BEGIN ---------
 
 def get_cutoff(dataset, episodes_avail=None):
     if episodes_avail is None:

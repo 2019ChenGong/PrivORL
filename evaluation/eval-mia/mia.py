@@ -6,6 +6,8 @@ import d4rl
 import os
 from typing import Optional, List
 
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from synther.diffusion.denoiser_network import ResidualMLPDenoiser
 from synther.diffusion.elucidated_diffusion import ElucidatedDiffusion
@@ -73,7 +75,7 @@ def construct_diffusion_model(
 
 
 def get_data_and_model(config):
-    results_folder = f"./alter_for_mia_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}"
+    results_folder = f"./evaluation/eval-mia/alter_for_mia_curiosity_driven_results_{config.dataset}"
     ckpt_path = os.path.join(results_folder, config.nondp_weight)
     # ckpt_path = os.path.join(f"./alter_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}", config.nondp_weight)
     dp1_ckpt_path = os.path.join(results_folder, config.dp1_weight)
@@ -127,10 +129,10 @@ def get_data_and_model(config):
     dp10_diffusion.eval()
 
     # maze2d 12
-    # config.sigma = [0.13, 0.12, 0.11, 0.1,]
-
-    # kitchen 41
     config.sigma = [0.13, 0.12, 0.11, 0.1,]
+
+    # # kitchen 41
+    # config.sigma = [0.13, 0.12, 0.11, 0.1,]
 
     # 4
     # config.sigma = [0.003, 0.001, 0.0008]
@@ -173,21 +175,21 @@ def get_data_and_model(config):
             tpr_at_low_fpr_3 = get_metrics(labels, results, fixed_fpr=0.001)
             tpr_at_low_fpr_4 = get_metrics(labels, results, fixed_fpr=0.2)
 
-            print("sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+            print("nondp sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
 
             tpr_at_low_fpr_1 = get_metrics(labels, dp1_results, fixed_fpr=0.1)
             tpr_at_low_fpr_2 = get_metrics(labels, dp1_results, fixed_fpr=0.01)
             tpr_at_low_fpr_3 = get_metrics(labels, dp1_results, fixed_fpr=0.001)
             tpr_at_low_fpr_4 = get_metrics(labels, dp1_results, fixed_fpr=0.2)
 
-            print("dp1sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+            print("dp1 sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
 
             tpr_at_low_fpr_1 = get_metrics(labels, dp10_results, fixed_fpr=0.1)
             tpr_at_low_fpr_2 = get_metrics(labels, dp10_results, fixed_fpr=0.01)
             tpr_at_low_fpr_3 = get_metrics(labels, dp10_results, fixed_fpr=0.001)
             tpr_at_low_fpr_4 = get_metrics(labels, dp10_results, fixed_fpr=0.2)
 
-            print("dp10sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
+            print("dp10 sigma: %.3f TPR@10%%FPR: %.3f TPR@1%%FPR: %.4f TPR@0.1%%FPR: %.5f TPR@20%%FPR: %.6f" % (sigma, tpr_at_low_fpr_1, tpr_at_low_fpr_2, tpr_at_low_fpr_3, tpr_at_low_fpr_4))
 
     return train_data, test_data, diffusion
 
@@ -196,7 +198,7 @@ if __name__ == '__main__':
     parser.add_argument("--dataset", "-d", type=str, default="halfcheetah-medium-replay-v2")
     parser.add_argument("--pretraining_rate", type=float, default=1.0)
     parser.add_argument("--finetuning_rate", type=float, default=0.8)
-    parser.add_argument("--nondp_weight", type=str, default="1e3data-300epoch finetuning without dp-model-299.pt")
+    parser.add_argument("--nondp_weight", type=str, default="1e3data_300epoch_finetuning_without_dp-model-299.pt")
     # parser.add_argument("--nondp_weight", type=str, default="pretraining-model-9.pt")
     parser.add_argument("--dp1_weight", type=str, default="finetuning_dp1.0-model-4.pt")
     parser.add_argument("--dp10_weight", type=str, default="finetuning_dp10.0-model-4.pt")

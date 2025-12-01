@@ -1,6 +1,7 @@
 #!/bin/bash
 # This script reproduces the PrivORL-n fidelity results for maze2d-medium-dense-v1 in Table III
 # Expected output: 0.947 (for Marginal) and 0.983 (for Correlation)
+# The results are printed in the terminal after evaluation.
 # Runtime: ~2 mins on NVIDIA A6000
 
 
