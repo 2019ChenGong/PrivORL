@@ -34,7 +34,7 @@ finetuning_rates = [0.8]
 curiosity_driven_rates = [0.3]
 
 accountant = 'rdp'  # 'prv' or 'rdp'
-
+ 
 
 def get_directories(path):
     directories = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
