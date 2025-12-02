@@ -552,6 +552,36 @@ def train(config: TrainConfig):
             # wandb.log(log_dict, step=trainer.total_it)
             logger.log({'step': trainer.total_it, **log_dict}, mode='eval')
 
+    # Calculate statistics for last 10 scores
+    if len(evaluations) >= 10:
+        last_ten_scores = evaluations[-10:]
+    else:
+        last_ten_scores = evaluations
+
+    if len(last_ten_scores) > 0:
+        avg_last_ten = float(np.mean(last_ten_scores))
+        std_last_ten = float(np.std(last_ten_scores))
+
+        # Add statistics to eval.json
+        if config.checkpoints_path is not None:
+            import json
+            eval_file = os.path.join(config.checkpoints_path, f"eval_{config.seed}.json")
+            if os.path.exists(eval_file):
+                with open(eval_file, 'r') as f:
+                    eval_data = json.load(f)
+
+                eval_data['average_last_ten_scores'] = avg_last_ten
+                eval_data['standard_deviation_last_ten_scores'] = std_last_ten
+
+                with open(eval_file, 'w') as f:
+                    json.dump(eval_data, f, indent=4)
+
+                print("---------------------------------------")
+                print(f"Statistics for last {len(last_ten_scores)} evaluation(s):")
+                print(f"Average: {avg_last_ten:.6f}")
+                print(f"Standard Deviation: {std_last_ten:.6f}")
+                print("---------------------------------------")
+
 
 if __name__ == "__main__":
     train()
