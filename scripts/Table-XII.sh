@@ -16,12 +16,12 @@ python synther/training/train_diffuser.py \
   --datasets_name "['maze2d-open-dense-v0', 'maze2d-umaze-dense-v1', 'maze2d-large-dense-v1']" \
   --curiosity_driven \
   --curiosity_driven_rate 0.3 \
-  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1 
+  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1 
 
 python synther/training/train_diffuser_mia.py \
   --dataset maze2d-medium-dense-v1 \
-  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1 \
-  --load_path ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1/pretraining-model-4.pt \
+  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1 \
+  --load_path ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1/pretraining-model-4.pt \
   --save_file_name maze2d-medium-dense-v1_samples_1000000.0_nondp_0.8.npz \
   --load_checkpoint
 
@@ -30,8 +30,8 @@ python synther/training/train_diffuser_mia.py \
 python synther/training/train_diffuser_mia.py \
   --dataset maze2d-medium-dense-v1 \
   --dp_epsilon 1 \
-  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1 \
-  --load_path ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1/pretraining-model-4.pt \
+  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1 \
+  --load_path ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1/pretraining-model-4.pt \
   --save_file_name maze2d-medium-dense-v1_samples_1000000.0_1dp_0.8.npz \
   --load_checkpoint
 
@@ -40,8 +40,8 @@ python synther/training/train_diffuser_mia.py \
 python synther/training/train_diffuser_mia.py \
   --dataset maze2d-medium-dense-v1 \
   --dp_epsilon 10 \
-  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1 \
-  --load_path ./evaluation/eval-mia/mia_curiosity_driven_results_maze2d-medium-dense-v1/pretraining-model-4.pt \
+  --results_folder ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1 \
+  --load_path ./evaluation/eval-mia/mia_curiosity_driven_result_maze2d-medium-dense-v1/pretraining-model-4.pt \
   --save_file_name maze2d-medium-dense-v1_samples_1000000.0_10dp_0.8.npz \
   --load_checkpoint
 
