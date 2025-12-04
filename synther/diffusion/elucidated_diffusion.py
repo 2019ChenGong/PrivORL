@@ -15,7 +15,7 @@ import wandb
 from accelerate import Accelerator
 from einops import reduce
 from ema_pytorch import EMA
-from redq.algos.core import ReplayBuffer
+# from redq.algos.core import ReplayBuffer
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
