@@ -82,6 +82,7 @@ To install, clone the repository and run the following:
 ```bash 
 git submodule update --init --recursive
 pip install -r requirements.txt
+sudo apt-get install libosmesa6-dev
 ```
 
 For baseline, we refer to the public repository in [SynMeter](https://github.com/zealscott/SynMeter)
