@@ -75,7 +75,7 @@ def construct_diffusion_model(
 
 
 def get_data_and_model(config):
-    results_folder = f"./evaluation/eval-mia/alter_for_mia_curiosity_driven_results_{config.dataset}"
+    results_folder = f"./evaluation/eval-mia/mia_curiosity_driven_result_{config.dataset}"
     ckpt_path = os.path.join(results_folder, config.nondp_weight)
     # ckpt_path = os.path.join(f"./alter_curiosity_driven_results_{config.dataset}_{config.pretraining_rate}", config.nondp_weight)
     dp1_ckpt_path = os.path.join(results_folder, config.dp1_weight)
