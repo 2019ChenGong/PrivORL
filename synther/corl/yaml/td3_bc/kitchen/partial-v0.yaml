@@ -9,7 +9,8 @@ eval_freq: 25000
 expl_noise: 0.1
 group: td3-bc-kitchen-partial-v0-multiseed-v1
 load_model: ''
-max_timesteps: 1000000
+# max_timesteps: 1000000
+max_timesteps: 500000
 n_episodes: 100
 name: TD3-BC
 noise_clip: 0.5
