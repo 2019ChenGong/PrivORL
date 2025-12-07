@@ -108,7 +108,8 @@ base = {
 
         # finetune
         'finetune': True,
-        'checkpoint_path':'logs/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000.pt'
+        'checkpoint_path':'logs/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000.pt',
+        # 'output_path': ''
     },
 
 

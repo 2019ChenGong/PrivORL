@@ -7,10 +7,21 @@ import copy
 
 from collections import namedtuple
 
-from opacus import GradSampleModule, PrivacyEngine
-from opacus.validators import ModuleValidator
-from opacus.utils.batch_memory_manager import BatchMemoryManager
-from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+# Opacus imports commented out - now using manual DP-SGD
+# from opacus import GradSampleModule, PrivacyEngine
+# from opacus.validators import ModuleValidator
+# from opacus.utils.batch_memory_manager import BatchMemoryManager
+# from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
+# ModelWrapper for privacy mode sampling
+class ModelWrapper(torch.nn.Module):
+    """Simple wrapper to match the structure of models saved during privacy training"""
+    def __init__(self, module):
+        super().__init__()
+        self._module = module
+
+    def forward(self, *args, **kwargs):
+        return self._module(*args, **kwargs)
 
 DiffusionExperiment = namedtuple('Diffusion', 'dataset renderer model trainermodel diffusion ema trainer epoch')
 mtdtExperiment = namedtuple('mtdtExperiment', 'dataset model ema trainer epoch')
@@ -69,28 +80,17 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, sample
 
     print(f'\n[ utils/serialization ] Loading model epoch: {epoch}\n')
 
+    # Privacy模式下需要包装模型（采样和训练都需要，以匹配保存的state_dict）
     if args.privacy:
-        trainer.privacy_engine = PrivacyEngine()
-        # print("before ModuleValidator, model is:\n", self.model)
-        trainer.model = ModuleValidator.fix(trainer.model)
-        # print("after ModuleValidator, model is:\n", self.model)
+        if sample:
+            # 采样模式：只需要包装模型以加载state_dict
+            trainer.model = ModelWrapper(trainer.model).to(device)
+            trainer.ema_model = ModelWrapper(trainer.ema_model).to(device)
+        else:
+            # 训练模式：之前的Opacus代码已注释，现在使用手动DP-SGD
+            # 模型包装在training.py中完成
+            pass
 
-        # trainer.model = DPDDP(trainer.model)
-            
-        trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=trainer.train_lr)
-        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon_j(
-            module=trainer.model,
-            optimizer=trainer.optimizer,
-            data_loader=trainer.raw_dataloader,
-            target_epsilon=args.target_epsilon,
-            target_delta=args.target_delta,
-            epochs=int(args.n_train_steps // args.n_steps_per_epoch),
-            max_grad_norm=trainer.max_grad_norm,
-            avg_fragments_per_trajectory=1
-        )
-        trainer.dataloader = cycle(trainer.raw_dataloader)
-        trainer.ema_model = copy.deepcopy(trainer.model)
-    
     trainer.load_for_sample(epoch)
 
     return DiffusionExperiment(dataset, renderer, model, trainer.model, diffusion, trainer.ema_model, trainer, epoch)

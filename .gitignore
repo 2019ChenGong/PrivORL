@@ -183,7 +183,14 @@ clean.sh
 # privorl-j
 PrivORL-J/srun_*.slurm
 PrivORL-J/logs*
-
+PrivORL-J/scripts/bash-sample-diffusion_privorl_j_no_cond.sh
+PrivORL-J/scripts/bash-train-diffusion_privorl_j_epicare.sh
+PrivORL-J/scripts/bash-sample-diffusion_unet.sh
+PrivORL-J/scripts/bash-train-diffusion_privorl_j_no_cond.sh
+PrivORL-J/scripts/sample_no_cond.py
+PrivORL-J/scripts/training_no_cond.py
+PrivORL-J/diffuser/datasets/sequence_no_cond.py
+PrivORL-J/diffuser/models/diffusion_no_cond.py
 
 # utils
 score_calculate.py

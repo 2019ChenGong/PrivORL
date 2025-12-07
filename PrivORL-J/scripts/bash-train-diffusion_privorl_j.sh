@@ -2,10 +2,10 @@
 
 # Define parameters
 gpus=(0 1 2 3)
-# gpus=(0 1)
+gpus=(2 1 0)
 # gpus=(0)
 
-# finetune="False"
+finetune="False"
 finetune="True"
 
 # horizons=( 16 32 64 128)
@@ -22,7 +22,7 @@ epsilons=(10  )
 datasets=(
     'maze2d-umaze-dense-v1'
     'maze2d-medium-dense-v1'
-    'maze2d-large-dense-v1'
+    # 'maze2d-large-dense-v1'
     # 'kitchen-partial-v0'
     'halfcheetah-medium-replay-v2'
 )
@@ -42,7 +42,7 @@ for horizon in "${horizons[@]}"; do
                 gpu=${gpus[$gpu_index]}
             
                 if [ "$finetune" == "False" ]; then
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python scripts/mtdiff_s.py \
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
@@ -51,10 +51,10 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset\
-                        --logbase 'logs_transition_cond'"
+                        --logbase 'PrivORL-J/logs_transition_cond_v1'"
                 else
-                    checkpoint_path="logs_transition_cond/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python scripts/mtdiff_s.py \
+                    checkpoint_path="PrivORL-J/logs_transition_cond/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
@@ -65,7 +65,7 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset \
-                        --logbase 'logs_transition_cond' \
+                        --logbase 'PrivORL-J/logs_transition_cond_v1' \
                         --accountant 'rdp'"
                 fi
 

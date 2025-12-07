@@ -29,6 +29,7 @@ class Parser(utils.Parser):
     output_path: str = "logs/halfcheetah-medium-replay-v2/finetune/epsilon5_horizon32/state_200000/sampled_trajectories.npz"
     num_trajectories: int = 1000
     max_length: int = 1000
+    sample_batch_size: int = 8  # 批量采样的batch size
 
 
 def setup(rank, world_size):
@@ -50,7 +51,7 @@ def load_model(_, device, args):
             # loadbase=os.path.dirname(checkpoint_path),   # Base directory of the checkpoint
             # dataset=None,                                # Dataset is optional, based on how `utils.load_diffusion` works
             os.path.dirname(args.sample_checkpoint_path),                    # Full checkpoint path
-            epoch=500000,                                  # Load the latest epoch or specify if needed
+            epoch='final',                                  # Load the latest epoch or specify if needed
             # epoch=200000,                                  # Load the latest epoch or specify if needed
             device=device,
             seed=None,                                    # Optional, if you need deterministic results
@@ -82,6 +83,7 @@ def load_model(_, device, args):
 
 
 def sample_complete_trajectory(diffusion, initial_condition, args, max_length, trajectory_index, dataset):
+    """单个轨迹采样 - 保留用于兼容性"""
     state_dim = dataset.observation_dim
     action_dim = dataset.action_dim
     trajectory = []
@@ -108,7 +110,11 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
                 horizon=args.horizon
             )
 
-        sampled_transitions = samples.cpu().numpy().squeeze(0)
+        # 处理返回值：可能是Sample对象或直接是tensor
+        if isinstance(samples, torch.Tensor):
+            sampled_transitions = samples.cpu().numpy().squeeze(0)
+        else:
+            sampled_transitions = samples.trajectories.cpu().numpy().squeeze(0)
 
         for i, sampled_transition in enumerate(sampled_transitions):
             states = sampled_transition[:state_dim]
@@ -136,6 +142,112 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
         current_state = torch.tensor(next_states, dtype=torch.float32).unsqueeze(0).to(args.device)
 
     return trajectory
+
+
+def sample_trajectories_batch(diffusion, initial_conditions_batch, args, max_length, start_indices, dataset):
+    """批量采样多个轨迹
+
+    Args:
+        diffusion: 扩散模型
+        initial_conditions_batch: 初始条件列表 [batch_size, state_dim]
+        args: 参数
+        max_length: 最大轨迹长度
+        start_indices: 轨迹起始索引列表
+        dataset: 数据集
+
+    Returns:
+        trajectories: 列表的列表，每个元素是一个轨迹
+    """
+    batch_size = len(initial_conditions_batch)
+    state_dim = dataset.observation_dim
+    action_dim = dataset.action_dim
+
+    # 为每个轨迹初始化
+    trajectories = [[] for _ in range(batch_size)]
+    active_mask = torch.ones(batch_size, dtype=torch.bool, device=args.device)  # 标记哪些轨迹还在采样
+    step_counts = torch.zeros(batch_size, dtype=torch.long, device=args.device)  # 每个轨迹的步数
+
+    # 初始化prev_transitions
+    prev_transitions = torch.zeros((batch_size, state_dim * 2 + action_dim + 2), dtype=torch.float32, device=args.device)
+
+    max_steps = max_length // args.horizon
+
+    for step in range(max_steps):
+        if not active_mask.any():
+            break
+
+        # 只对还未结束的轨迹采样
+        active_indices = torch.where(active_mask)[0]
+        active_batch_size = len(active_indices)
+
+        if active_batch_size == 0:
+            break
+
+        # 获取active trajectories的条件
+        conditions = prev_transitions[active_indices]  # [active_batch_size, cond_dim]
+
+        # 批量采样
+        if args.privacy:
+            samples = diffusion.module._module.conditional_sample(
+                cond=conditions,
+                task=torch.zeros(active_batch_size, dtype=torch.long, device=args.device),
+                value=torch.zeros(active_batch_size, dtype=torch.long, device=args.device),
+                horizon=args.horizon
+            )
+        else:
+            samples = diffusion.module.conditional_sample(
+                cond=conditions,
+                horizon=args.horizon
+            )
+
+        # 处理返回值：可能是Sample对象或直接是tensor
+        # shape: [active_batch_size, horizon, transition_dim]
+        if isinstance(samples, torch.Tensor):
+            sampled_transitions = samples.cpu().numpy()
+        else:
+            sampled_transitions = samples.trajectories.cpu().numpy()
+
+        # 处理每个active trajectory
+        for batch_idx, global_idx in enumerate(active_indices):
+            global_idx_item = global_idx.item()
+
+            if not active_mask[global_idx_item]:
+                continue
+
+            current_step_count = step_counts[global_idx_item].item()
+
+            # 处理这个trajectory的所有transitions
+            for i in range(args.horizon):
+                sampled_transition = sampled_transitions[batch_idx, i]
+
+                states = sampled_transition[:state_dim]
+                actions = sampled_transition[state_dim:state_dim + action_dim]
+                reward = sampled_transition[state_dim + action_dim]
+                terminal_flag = int(sampled_transition[state_dim + action_dim + 1] >= 0.5)
+                next_states = sampled_transition[state_dim + action_dim + 2:]
+
+                trajectories[global_idx_item].append([
+                    start_indices[global_idx_item],
+                    current_step_count * args.horizon + i,
+                    *states, *actions, reward, terminal_flag, *next_states
+                ])
+
+                # 更新prev_transition
+                prev_transitions[global_idx_item] = torch.tensor(
+                    np.concatenate([states, actions, [reward], [terminal_flag], next_states]),
+                    dtype=torch.float32,
+                    device=args.device
+                )
+
+                # 如果遇到终止状态，标记为inactive
+                if terminal_flag == 1:
+                    active_mask[global_idx_item] = False
+                    break
+
+            # 更新步数
+            step_counts[global_idx_item] += 1
+
+    return trajectories
 
 
 
@@ -257,10 +369,30 @@ def sample_trajectory(rank, world_size, args):
     start_idx = rank * per_gpu_samples
     end_idx = min(start_idx + per_gpu_samples, args.num_trajectories)
 
-    for i in tqdm(range(start_idx, end_idx), desc=f"GPU {rank} Sampling"):
-        initial_condition = np.random.randn(dataset.observation_dim)
-        trajectory = sample_complete_trajectory(diffusion, initial_condition, args, args.max_length, i, dataset)
-        trajectories.extend(trajectory)
+    # 使用批量采样
+    sample_batch_size = args.sample_batch_size
+    num_batches = (end_idx - start_idx + sample_batch_size - 1) // sample_batch_size
+
+    for batch_idx in tqdm(range(num_batches), desc=f"GPU {rank} Sampling"):
+        batch_start = start_idx + batch_idx * sample_batch_size
+        batch_end = min(batch_start + sample_batch_size, end_idx)
+        actual_batch_size = batch_end - batch_start
+
+        # 生成一批初始条件
+        initial_conditions_batch = [
+            np.random.randn(dataset.observation_dim)
+            for _ in range(actual_batch_size)
+        ]
+        start_indices = list(range(batch_start, batch_end))
+
+        # 批量采样
+        batch_trajectories = sample_trajectories_batch(
+            diffusion, initial_conditions_batch, args, args.max_length, start_indices, dataset
+        )
+
+        # 展开所有轨迹
+        for traj in batch_trajectories:
+            trajectories.extend(traj)
 
     gathered_trajectories = [None for _ in range(world_size)]
     dist.all_gather_object(gathered_trajectories, trajectories)

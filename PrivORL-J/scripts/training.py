@@ -5,16 +5,9 @@ parentdir = os.path.dirname(currentdir)
 os.sys.path.insert(0, parentdir)
 import diffuser.utils as utils
 import numpy as np
-import pdb
 import copy
 import torch
-import torch.multiprocessing as mp
 import torch.distributed as dist
-from tqdm import tqdm
-from opacus import GradSampleModule, PrivacyEngine
-from opacus.validators import ModuleValidator
-from opacus.utils.batch_memory_manager import BatchMemoryManager
-from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
 
 # datasets_name dictionary (unchanged)
 datasets_name = {
@@ -44,7 +37,7 @@ class Parser(utils.Parser):
     dataset: str = 'maze2d-medium-dense-v1'
     config: str = 'config.locomotion'
     # 新增参数
-    max_fragments_per_trajectory: int = 128
+    max_fragments_per_trajectory: int = 32
 
 def setup(device):
     torch.cuda.set_device(device)
@@ -115,7 +108,7 @@ def main(args):
         horizon=args.horizon,
         state_dim=observation_dim,
         transition_dim=observation_dim * 2 + action_dim + 2,
-        cond_dim=observation_dim,
+        cond_dim=observation_dim * 2 + action_dim + 2,  # condition is a transition (5-tuple)
         num_tasks=1,
         device=device,
         action_dim=action_dim,
@@ -190,23 +183,30 @@ def main(args):
 
     if args.finetune:
         trainer.load_for_finetune(args.checkpoint_path)
-        trainer.privacy_engine = PrivacyEngine(accountant=args.accountant)
-        trainer.model = ModuleValidator.fix(trainer.model)
-        trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=trainer.train_lr)
 
-        trainer.model, trainer.optimizer, trainer.raw_dataloader = trainer.privacy_engine.make_private_with_epsilon(
-            module=trainer.model,
-            optimizer=trainer.optimizer,
-            data_loader=trainer.raw_dataloader,
-            target_epsilon=args.target_epsilon,
-            target_delta=args.target_delta,
-            epochs=n_epochs,
-            max_grad_norm=trainer.max_grad_norm,
-            avg_fragments_per_trajectory=avg_fragments_per_trajectory
-        )
-        
-        trainer.ema_model = copy.deepcopy(trainer.model)
+        # 不再使用Opacus的自动DPSGD，改用手动实现
+        # 只需要包装模型以便访问_module
+        from torch.nn.parallel import DataParallel
+
+        # 创建一个简单的wrapper来模拟Opacus的结构
+        class ModelWrapper(torch.nn.Module):
+            def __init__(self, module):
+                super().__init__()
+                self._module = module
+
+            def forward(self, *args, **kwargs):
+                return self._module(*args, **kwargs)
+
+        trainer.model = ModelWrapper(trainer.model).to(device)
+        trainer.optimizer = torch.optim.Adam(trainer.model._module.parameters(), lr=trainer.train_lr)
+        trainer.ema_model = copy.deepcopy(trainer.model._module)
         trainer.dataloader = cycle(trainer.raw_dataloader)
+
+        print(f"[INFO] Manual trajectory-level DP-SGD enabled")
+        print(f"[INFO] Noise multiplier: {trainer.noise_multiplier}")
+        print(f"[INFO] Max grad norm: {trainer.max_grad_norm}")
+        print(f"[INFO] Target epsilon: {args.target_epsilon}, delta: {args.target_delta}")
+        print(f"[INFO] Note: Privacy accounting is manual - track trajectories, not subtrajectories")
 
     utils.report_parameters(model)
 

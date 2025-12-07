@@ -47,11 +47,11 @@ datasets = ["halfcheetah-medium-replay-v2"]
 
 # datasets = ["halfcheetah-medium-v2", "walker2d-medium-v2"]
 
-datasets = ["maze2d-large-dense-v1", "halfcheetah-medium-replay-v2", "maze2d-medium-dense-v1"]
+datasets = ["maze2d-umaze-dense-v1", "halfcheetah-medium-replay-v2", "maze2d-medium-dense-v1"]
 # datasets = ["kitchen-partial-v0", "halfcheetah-medium-v2"]
 
 # datasets = ["maze2d-medium-dense-v1", "maze2d-umaze-dense-v1"]
-# datasets = ["maze2d-umaze-dense-v1"]
+# datasets = ["maze2d-medium-dense-v1"]
 
 pretraining_rate = 1.0
 finetuning_rate = 0.8
@@ -67,9 +67,11 @@ accountant = 'rdp'  # 'prv' or 'rdp'
 horizons = [32]
 seeds = [0, 1, 2]
 gpus = ['0', '1', '2']
+# gpus = ['3']
+# gpus = ['0', '1']
 max_workers = 6
-# algos = ['td3_bc', 'iql', 'edac', 'cql']
 algos = ['td3_bc', 'iql', 'edac']
+# algos = ['td3_bc', 'edac']
 # algos = ['iql']
 
 # offline RL
@@ -99,7 +101,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # offline RL 
                             env, version = dataset.split('-', 1)
                             # checkpoints_path = f"corl_logs_{env}/"
-                            checkpoints_path = f"PrivORL-J/corl_logs_param_analysis_v1_{env}_{accountant}/"
+                            checkpoints_path = f"PrivORL-J/corl_logs_param_analysis_v1_{env}_{accountant}_v1/"
                             # checkpoints_path = f"corl_logs_param_analysis_v1_{env}_pretrain/"
                             # checkpoints_path = f"corl_logs_without_dp_{env}/"
                             # checkpoints_path = f"corl_logs_ablation_{env}/"
@@ -112,7 +114,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                             # results_folder = f"./alter_without_pretraining_curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./alter_{curiosity_driven_rate}curiosity_driven_results_{dataset}_{pretraining_rate}"
                             # results_folder = f"./results_{dataset}_{pretraining_rate}"
-                            results_folder = f"./PrivORL-J/results_transition_cond/{dataset}/finetune/epsilon{dp_epsilon}_horizon{horizon}_curiosity{curiosity_driven_rate}_{accountant}/state_final"
+                            results_folder = f"./PrivORL-J/results_transition_cond_v1/{dataset}/finetune/epsilon{dp_epsilon}_horizon{horizon}_curiosity{curiosity_driven_rate}_{accountant}/state_final"
                             # results_folder = f"./results_{dataset}_{curiosity_driven_rate}"
                             # results_folder = f"./alter_whole_mujoco_full_results_{dataset}_{pretraining_rate}"
 

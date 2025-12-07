@@ -230,11 +230,18 @@ class GaussianDiffusion(nn.Module):
             conditions : [ (time, state), ... ]
         '''
         device = self.betas.device
-        batch_size = len(cond[0])
+        # 支持cond为tensor或list
+        if isinstance(cond, torch.Tensor):
+            batch_size = cond.shape[0]
+        else:
+            batch_size = len(cond[0])
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.transition_dim)
-        task = task.repeat(batch_size)
-        value = value.repeat(batch_size)
+        # 只有当task/value比batch_size小时才repeat
+        if task.shape[0] < batch_size:
+            task = task.repeat(batch_size)
+        if value.shape[0] < batch_size:
+            value = value.repeat(batch_size)
         #task = [one_hot_dict[t] for t in task]
         return self.p_sample_loop(shape, cond, task, value, **sample_kwargs)
 
@@ -436,7 +443,11 @@ class GaussianInvDiffusion(nn.Module):
             conditions : [ (time, state), ... ]
         '''
         device = self.betas.device
-        batch_size = len(cond[0])
+        # 支持cond为tensor或list
+        if isinstance(cond, torch.Tensor):
+            batch_size = cond.shape[0]
+        else:
+            batch_size = len(cond[0])
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.observation_dim)
         return self.p_sample_loop(shape, cond, task, value, **sample_kwargs)
@@ -580,7 +591,8 @@ class AugDiffusion(GaussianInvDiffusion):
 
     def conditional_sample(self, cond=None, horizon=None, transition_steps=5, **sample_kwargs):
         device = self.betas.device
-        batch_size = 1
+        # 从cond推断batch_size，如果没有cond则默认为1
+        batch_size = cond.shape[0] if cond is not None else 1
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.transition_dim)
         return self._sample_loop(shape, transition_steps, init_state=cond, **sample_kwargs)
@@ -590,17 +602,14 @@ class AugDiffusion(GaussianInvDiffusion):
         device = self.betas.device
         batch_size, horizon, transition_dim = shape
         
+        # Initialize with random noise for all timesteps
+        x = torch.randn(shape, device=device)
+
+        # Validate condition if provided
         if init_state is not None:
             init_state = init_state.to(device)
-            if init_state.shape[-1] <= transition_dim:
-                # initialize x with normal noise then overwrite the prefix dims of the first timestep
-                x = torch.randn(shape, device=device)
-                x[:, 0, :init_state.shape[-1]] = init_state
-            else:
-                raise ValueError(f"init_state dimension mismatch, expected last dim <= {transition_dim}, but got {init_state.shape[-1]}")
-
-        else:
-            x = torch.randn(shape, device=device)
+            # Condition is passed to model via x_condition, not by overwriting x
+            # The model learns to generate subtrajectory conditioned on previous transition
 
         chain = [x] if return_chain else None
         progress = utils.Progress(self.n_timesteps) if verbose else utils.Silent()
@@ -624,8 +633,10 @@ class AugDiffusion(GaussianInvDiffusion):
         for _ in range(current_steps):
             model_mean, _, model_log_variance = self._mean_variance(x, t, cond=cond)
             noise = torch.randn_like(x)
-            nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1))) 
+            nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1)))
             x = model_mean + nonzero_mask * (1.0 * model_log_variance).exp() * noise
+            # Note: condition is passed via x_condition to the model, not by inpainting x
+            # The entire subtrajectory is generated from noise, conditioned on previous transition
             t = torch.clamp(t - 1, min=0)
         return x
 

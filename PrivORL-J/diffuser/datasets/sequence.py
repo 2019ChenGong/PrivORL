@@ -433,15 +433,17 @@ class AugDataset(MetaSequenceDataset):
 
     def calculate_fragments_info(self):
         """
-        预计算每个trajectory的fragment信息
+        预计算每个trajectory的可采样subtrajectory信息
+        现在计算的是可以采样的连续subtrajectory的数量（允许重叠）
         """
         self.trajectory_fragments = []
         self.total_fragments = 0
-        
+
         for idx in range(self.n_episodes):
             path_length = self.path_lengths[idx]
-            # 计算这个trajectory可以分成多少个完整的fragments
-            num_fragments = (path_length + self.horizon - 1) // self.horizon
+            # 计算可以采样多少个长度为horizon的连续subtrajectory（允许重叠）
+            # 如果path_length < horizon，至少可以采样1个（会padding）
+            num_fragments = max(1, path_length - self.horizon + 1)
             self.trajectory_fragments.append({
                 'trajectory_id': idx,
                 'num_fragments': num_fragments,
@@ -449,10 +451,10 @@ class AugDataset(MetaSequenceDataset):
                 'start_fragment_idx': self.total_fragments
             })
             self.total_fragments += num_fragments
-        
+
         print(f"[INFO] Total trajectories: {self.n_episodes}")
-        print(f"[INFO] Total fragments: {self.total_fragments}")
-        print(f"[INFO] Average fragments per trajectory: {self.total_fragments / self.n_episodes:.2f}")
+        print(f"[INFO] Total possible subtrajectories (with overlap): {self.total_fragments}")
+        print(f"[INFO] Average subtrajectories per trajectory: {self.total_fragments / self.n_episodes:.2f}")
 
     def double_samples(self, n=2):
         """
@@ -479,69 +481,67 @@ class AugDataset(MetaSequenceDataset):
         # 现在返回trajectory数量，而不是fragment数量
         return self.n_episodes
 
-    def get_fragment(self, trajectory_id, local_fragment_idx):
+    def get_subtrajectory(self, trajectory_id, start_idx):
         """
-        根据trajectory ID和本地fragment索引获取fragment数据
-        
+        从trajectory中提取一个连续的subtrajectory
+
         Args:
             trajectory_id: trajectory的ID
-            local_fragment_idx: 在trajectory内的fragment索引
-            
+            start_idx: subtrajectory的起始位置索引
+
         Returns:
-            trajectory_fragment: fragment数据 (shape: [horizon, transition_dim])
-            condition: 上一个连贯fragment的最后一个transition（五元组），shape: (transition_dim,)
-            actual_length: fragment的实际长度
+            subtrajectory: 连续的subtrajectory数据 (shape: [horizon, transition_dim])
+            condition: subtrajectory前一个transition（五元组），shape: (transition_dim,)
+            actual_length: subtrajectory的实际长度
         """
         trajectory_info = self.trajectory_fragments[trajectory_id]
         path_length = trajectory_info['path_length']
-        
-        # 计算fragment的起始和结束位置
-        start = local_fragment_idx * self.horizon
-        end = min(start + self.horizon, path_length)
-        
-        # 获取trajectory数据（已归一化）
-        actions = self.fields.normed_actions[trajectory_id, start:end]
+
+        # 确保start_idx有效
+        if start_idx >= path_length:
+            start_idx = max(0, path_length - self.horizon)
+
+        # 计算subtrajectory的起始和结束位置（连续的horizon个transitions）
+        end = min(start_idx + self.horizon, path_length)
+        start = start_idx
+
+        # 获取连续的trajectory数据（已归一化）
         observations = self.fields.normed_observations[trajectory_id, start:end]
+        actions = self.fields.normed_actions[trajectory_id, start:end]
         rewards = self.fields.normed_rewards[trajectory_id, start:end].reshape(-1, 1)
         terminals = self.fields.normed_terminals[trajectory_id, start:end].reshape(-1, 1)
-        
+
+        # 获取next_observations（连续的）
         next_observations = self.fields.normed_observations[trajectory_id, start+1:end+1]
         if len(next_observations) < len(observations):
             padding = np.repeat(next_observations[-1:], len(observations) - len(next_observations), axis=0)
             next_observations = np.concatenate([next_observations, padding], axis=0)
-        
-        # --- 计算 condition：前一个连贯 fragment 的最后一个 transition（state, action, reward, terminal, next_state） ---
-        # transition_dim = obs + action + reward + terminal + next_obs
+
+        # --- 计算 condition：subtrajectory 之前的那个 transition ---
         transition_dim = self.action_dim + 2 * self.observation_dim + 2
-        
-        if local_fragment_idx > 0:
-            # 上一个 fragment 的最后一个 transition 的索引（在 trajectory 中）
+
+        if start > 0:
+            # 取前一个transition
             prev_idx = start - 1
-            # 若 prev_idx 超出（理论上不会，因为 local_fragment_idx>0），做安全处理
-            if prev_idx < 0:
-                # fallback: zeros
-                condition = np.zeros((transition_dim,), dtype=np.float32)
+            prev_state = self.fields.normed_observations[trajectory_id, prev_idx]
+            prev_action = self.fields.normed_actions[trajectory_id, prev_idx]
+            prev_reward = self.fields.normed_rewards[trajectory_id, prev_idx].reshape(-1)
+            prev_terminal = self.fields.normed_terminals[trajectory_id, prev_idx].reshape(-1)
+
+            if prev_idx + 1 < self.path_lengths[trajectory_id]:
+                prev_next_state = self.fields.normed_observations[trajectory_id, prev_idx + 1]
             else:
-                # 取 prev transition 的各个组成部分
-                prev_state = self.fields.normed_observations[trajectory_id, prev_idx]
-                prev_action = self.fields.normed_actions[trajectory_id, prev_idx]
-                prev_reward = self.fields.normed_rewards[trajectory_id, prev_idx].reshape(-1)  # scalar -> (1,)
-                prev_terminal = self.fields.normed_terminals[trajectory_id, prev_idx].reshape(-1)
-                # prev next_state，如果 prev_idx+1 超出 path_length 则复制 prev_state（安全填充）
-                if prev_idx + 1 < self.path_lengths[trajectory_id]:
-                    prev_next_state = self.fields.normed_observations[trajectory_id, prev_idx + 1]
-                else:
-                    prev_next_state = prev_state
-                # 按照 trajectory_fragment 中拼接顺序合并（observations, actions, rewards, terminals, next_observations）
-                condition = np.concatenate(
-                    [prev_state, prev_action, prev_reward.reshape(1,), prev_terminal.reshape(1,), prev_next_state],
-                    axis=-1
-                ).astype(np.float32)
+                prev_next_state = prev_state
+
+            condition = np.concatenate(
+                [prev_state, prev_action, prev_reward.reshape(1,), prev_terminal.reshape(1,), prev_next_state],
+                axis=-1
+            ).astype(np.float32)
         else:
-            # 第一个 fragment，没有前置 fragment，使用全零向量作为 condition
+            # 这是trajectory的开始，使用全零向量
             condition = np.zeros((transition_dim,), dtype=np.float32)
-        
-        # Pad to horizon if needed (fragment本身需要保持固定长度)
+
+        # Pad to horizon if needed
         actual_length = end - start
         if actual_length < self.horizon:
             pad_length = self.horizon - actual_length
@@ -550,10 +550,11 @@ class AugDataset(MetaSequenceDataset):
             rewards = np.concatenate([rewards, np.repeat(rewards[-1:], pad_length, axis=0)], axis=0)
             terminals = np.concatenate([terminals, np.repeat(terminals[-1:], pad_length, axis=0)], axis=0)
             next_observations = np.concatenate([next_observations, np.repeat(next_observations[-1:], pad_length, axis=0)], axis=0)
-        
-        trajectory_fragment = np.concatenate([observations, actions, rewards, terminals, next_observations], axis=-1)
-        
-        return trajectory_fragment, condition, actual_length
+
+        # 拼接成完整的transition: [state, action, reward, terminal, next_state]
+        subtrajectory = np.concatenate([observations, actions, rewards, terminals, next_observations], axis=-1)
+
+        return subtrajectory, condition, actual_length
 
 
     def __getitem__(self, idx):

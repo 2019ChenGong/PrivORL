@@ -20,10 +20,16 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from collections import defaultdict
 from torch.nn.parallel import DistributedDataParallel as DDP
-from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
-from opacus import PrivacyEngine
-from opacus.validators import ModuleValidator
-from opacus.utils.batch_memory_manager import BatchMemoryManager
+# from opacus.distributed import DifferentiallyPrivateDistributedDataParallel as DPDDP
+
+# Create a dummy class for DPDDP to avoid import errors
+class DPDDP:
+    pass
+
+# Opacus imports commented out - now using manual DP-SGD
+# from opacus import PrivacyEngine
+# from opacus.validators import ModuleValidator
+# from opacus.utils.batch_memory_manager import BatchMemoryManager
 
 
 DTYPE = torch.float
@@ -101,7 +107,7 @@ class AugTrainer(object):
         privacy=False,
         noise_multiplier=1.0,
         max_grad_norm=1.0,
-        max_fragments_per_trajectory=32,
+        max_fragments_per_trajectory=128,
     ):
         super().__init__()
         self.original_model = diffusion_model
@@ -152,7 +158,8 @@ class AugTrainer(object):
         self.renderer = renderer
         self.train_lr = train_lr
         self.privacy = privacy
-        self.noise_multiplier = noise_multiplier * math.sqrt(self.avg_fragments_per_trajectory)
+        # 不再乘以sqrt(avg_fragments)，因为现在是trajectory-level DP
+        self.noise_multiplier = noise_multiplier
         self.max_grad_norm = max_grad_norm
 
         print("self.privacy is : ", self.privacy)
@@ -189,119 +196,82 @@ class AugTrainer(object):
                 )
             self.rnd = Rnd(input_dim=diffusion_samples.shape[2], device=self.device)
 
-    def sample_fragments_from_trajectory(self, trajectory_id, num_fragments, max_samples):
+    def sample_subtrajectories_from_trajectory(self, trajectory_id, num_possible_subtrajs, max_samples):
         """
-        从单个trajectory中采样fragments
-        
+        从单个trajectory中随机采样连续的subtrajectories（允许重叠）
+
         Args:
             trajectory_id: trajectory的ID
-            num_fragments: 该trajectory总的fragment数
+            num_possible_subtrajs: 该trajectory可以采样的subtrajectory总数
             max_samples: 最大采样数
-            
+
         Returns:
-            sampled_fragments: 采样的fragment数据列表
+            sampled_subtrajs: 采样的subtrajectory数据列表
             sampled_conditions: 对应的条件列表
             sampled_lengths: 对应的实际长度列表
             actual_samples: 实际采样数量
         """
+        trajectory_info = self.dataset.trajectory_fragments[trajectory_id]
+        path_length = trajectory_info['path_length']
+
         # 确定实际采样数量
-        actual_samples = min(max_samples, num_fragments)
-        
-        # 随机采样fragment索引
-        if actual_samples == num_fragments:
-            # 如果采样数等于总数，直接使用所有fragments
-            sampled_indices = list(range(num_fragments))
+        actual_samples = min(max_samples, num_possible_subtrajs)
+
+        # 随机采样起始位置（允许重叠）
+        max_start = max(0, path_length - self.horizon)
+        if actual_samples == num_possible_subtrajs and path_length >= self.horizon:
+            # 如果采样所有可能的subtrajectory，使用所有起始位置
+            sampled_starts = list(range(num_possible_subtrajs))
         else:
-            # 随机采样
-            sampled_indices = random.sample(range(num_fragments), actual_samples)
-        
-        sampled_fragments = []
+            # 随机采样起始位置
+            sampled_starts = [random.randint(0, max_start) for _ in range(actual_samples)]
+
+        sampled_subtrajs = []
         sampled_conditions = []
         sampled_lengths = []
-        
-        for local_fragment_idx in sampled_indices:
-            fragment, condition, actual_length = self.dataset.get_fragment(trajectory_id, local_fragment_idx)
-            sampled_fragments.append(fragment)
+
+        for start_idx in sampled_starts:
+            subtraj, condition, actual_length = self.dataset.get_subtrajectory(trajectory_id, start_idx)
+            sampled_subtrajs.append(subtraj)
             sampled_conditions.append(condition)
             sampled_lengths.append(actual_length)
-        
-        return sampled_fragments, sampled_conditions, sampled_lengths, actual_samples
+
+        return sampled_subtrajs, sampled_conditions, sampled_lengths, actual_samples
 
     def process_trajectory_batch(self, trajectory_batch):
         """
-        处理trajectory batch，采样fragments并组织成训练数据
-        
+        处理trajectory batch，采样连续的subtrajectories并组织成训练数据
+
         Args:
             trajectory_batch: 包含trajectory信息的batch
-            
+
         Returns:
-            processed_steps: 每一步的训练数据列表
-            max_steps: 需要的最大步数
+            all_trajectory_subtrajs: 所有trajectory的subtrajectory数据，按trajectory组织
+            total_subtrajs: 总的subtrajectory数量
         """
         trajectory_ids = trajectory_batch.trajectory_ids
         batch_size = len(trajectory_ids)
-        
-        # 为每个trajectory采样fragments
-        all_trajectory_fragments = []
-        max_sampled_fragments = 0
-        
+
+        # 为每个trajectory采样连续的subtrajectories
+        all_trajectory_subtrajs = []
+
         for i, traj_id in enumerate(trajectory_ids):
             traj_data = trajectory_batch.trajectory_data[i]
-            num_fragments = traj_data['num_fragments']
-            
-            fragments, conditions, lengths, actual_samples = self.sample_fragments_from_trajectory(
-                traj_id, num_fragments, self.max_fragments_per_trajectory
+            num_possible_subtrajs = traj_data['num_fragments']  # 重命名但含义变了，现在是可能的subtrajectory数
+
+            subtrajs, conditions, lengths, actual_samples = self.sample_subtrajectories_from_trajectory(
+                traj_id, num_possible_subtrajs, self.max_fragments_per_trajectory
             )
-            
-            all_trajectory_fragments.append({
+
+            all_trajectory_subtrajs.append({
                 'trajectory_id': traj_id,
-                'fragments': fragments,
+                'subtrajectories': subtrajs,
                 'conditions': conditions,
                 'lengths': lengths,
                 'num_samples': actual_samples
             })
-            
-            max_sampled_fragments = max(max_sampled_fragments, actual_samples)
-        
-        # 组织成步骤数据：每步包含batch_size个fragments，每个来自不同trajectory
-        processed_steps = []
-        
-        for step_idx in range(max_sampled_fragments):
-            step_fragments = []
-            step_conditions = []
-            step_lengths = []
-            step_trajectory_ids = []
-            
-            for traj_data in all_trajectory_fragments:
-                if step_idx < traj_data['num_samples']:
-                    # 该trajectory在此步骤有fragment
-                    step_fragments.append(traj_data['fragments'][step_idx])
-                    step_conditions.append(traj_data['conditions'][step_idx])
-                    step_lengths.append(traj_data['lengths'][step_idx])
-                    step_trajectory_ids.append(traj_data['trajectory_id'])
-                else:
-                    # 该trajectory在此步骤没有fragment，随机选择一个已有的fragment
-                    random_idx = random.randint(0, traj_data['num_samples'] - 1)
-                    step_fragments.append(traj_data['fragments'][random_idx])
-                    step_conditions.append(traj_data['conditions'][random_idx])
-                    step_lengths.append(traj_data['lengths'][random_idx])
-                    step_trajectory_ids.append(traj_data['trajectory_id'])
-            
-            # 转换为tensor
-            step_fragments_tensor = torch.tensor(np.array(step_fragments), dtype=torch.float32)
-            step_conditions_tensor = torch.tensor(np.array(step_conditions), dtype=torch.float32)
-            step_lengths_tensor = torch.tensor(step_lengths, dtype=torch.long)
-            step_trajectory_ids_tensor = torch.tensor(step_trajectory_ids, dtype=torch.long)
-            
-            processed_steps.append({
-                'fragments': step_fragments_tensor,
-                'conditions': step_conditions_tensor,
-                'lengths': step_lengths_tensor,
-                'trajectory_ids': step_trajectory_ids_tensor,
-                'tasks': torch.zeros(batch_size, dtype=torch.long) 
-            })
-        
-        return processed_steps, max_sampled_fragments
+
+        return all_trajectory_subtrajs
 
     def reset_parameters(self):
         """重置EMA模型参数"""
@@ -372,189 +342,230 @@ class AugTrainer(object):
         selected_samples = diffusion_samples[selected_idx]
         self.idx = list(range(selected_samples.shape[0]))
 
-        # Per-trajectory训练循环
-        progress_bar = tqdm(total=target_fragment_steps, desc="Training (Per-Trajectory)")
+        # Per-trajectory训练循环（非隐私模式，简化版）
+        progress_bar = tqdm(total=target_fragment_steps, desc="Training (Non-Privacy)")
         completed_fragment_steps = 0
-        
+
         for i, trajectory_batch in enumerate(self.dataloader):
             if completed_fragment_steps >= target_fragment_steps:
                 break
-        
+
             # 直接使用 save_freq 和 label_freq（现在表示 global steps）
             if self.global_step % self.save_freq == 0 and self.global_step > 0:
                 label = self.global_step // self.label_freq * self.label_freq
-                # 用self.step作为保存的文件名（总的fragment步数）
-                self.save(self.step)
-            
-            # 处理trajectory batch，得到多个训练步骤
-            processed_steps, num_steps = self.process_trajectory_batch(trajectory_batch)
-            
-            # === 关键修改：使用trajectory-level loss聚合 ===
-            trajectory_losses = defaultdict(list)
-            
-            # 对每个步骤计算loss
-            for step_data in processed_steps:
-                step_data = {k: v.to(self.device) for k, v in step_data.items()}
-                
-                trajectories = step_data['fragments']
-                conditions = step_data['conditions']
-                tasks = step_data['tasks']
-                trajectory_ids = step_data['trajectory_ids']
+                self.save(self.global_step)
 
-                # 添加curiosity-driven augmentation
-                if len(self.idx) > 0:
-                    batch_size = len(trajectories)
-                    num_augment = int(batch_size * self.curiosity_rate)
-                    if num_augment > 0:
-                        random_idx = random.sample(self.idx, min(len(self.idx), num_augment))
-                        random_samples = selected_samples[random_idx]
-                        
-                        # 扩展到与batch_size匹配
-                        if len(random_samples) < batch_size:
-                            # 重复样本以匹配batch_size
-                            repeat_times = (batch_size + len(random_samples) - 1) // len(random_samples)
-                            random_samples = random_samples.repeat(repeat_times, 1, 1)[:batch_size]
-                        
-                        trajectories_aug = torch.cat((trajectories, random_samples[:batch_size]), dim=0)
-                        cond_aug = torch.cat((conditions, conditions[:batch_size]), dim=0)
-                        tasks_aug = torch.cat((tasks, tasks[:batch_size]), dim=0)
-                        
-                        trajectory_ids_aug = torch.cat((trajectory_ids, trajectory_ids), dim=0)
+            # 处理trajectory batch
+            all_trajectory_subtrajs = self.process_trajectory_batch(trajectory_batch)
+
+            # === 使用与finetune相同的梯度聚合逻辑，但不加DP噪声 ===
+            trajectory_gradients = {}
+            total_subtrajs = 0
+
+            for traj_data in all_trajectory_subtrajs:
+                traj_id = traj_data['trajectory_id']
+                subtrajs = traj_data['subtrajectories']
+                conditions = traj_data['conditions']
+                num_samples = traj_data['num_samples']
+
+                # 累积该trajectory的所有subtrajectory的梯度
+                traj_grads = []
+
+                for subtraj_idx in range(num_samples):
+                    # 转换为tensor
+                    subtraj_tensor = torch.tensor(subtrajs[subtraj_idx], dtype=torch.float32).unsqueeze(0).to(self.device)
+                    # Handle None condition (for no-condition version)
+                    if conditions[subtraj_idx] is not None:
+                        cond_tensor = torch.tensor(conditions[subtraj_idx], dtype=torch.float32).unsqueeze(0).to(self.device)
                     else:
-                        trajectories_aug = trajectories
-                        cond_aug = conditions
-                        tasks_aug = tasks
-                        trajectory_ids_aug = trajectory_ids
-                else:
-                    trajectories_aug = trajectories
-                    cond_aug = conditions
-                    tasks_aug = tasks
-                    trajectory_ids_aug = trajectory_ids
-                
-                loss, infos = self.model.compute_loss(trajectories_aug, tasks_aug, cond_aug)
-                
-                for i, traj_id in enumerate(trajectory_ids_aug):
-                    traj_id_item = traj_id.item()
-                    trajectory_losses[traj_id_item].append(loss / len(trajectory_ids_aug))
-            
-            total_loss = None
-            num_trajectories = len(trajectory_losses)
-            
-            for traj_id, losses in trajectory_losses.items():
-                traj_loss = sum(losses) / len(losses) 
-                
-                if total_loss is None:
-                    total_loss = traj_loss / num_trajectories
-                else:
-                    total_loss = total_loss + traj_loss / num_trajectories
-            
-            total_loss.backward()
+                        cond_tensor = None
+                    task_tensor = torch.zeros(1, dtype=torch.long).to(self.device)
+
+                    # 计算loss
+                    loss, infos = self.model.compute_loss(subtraj_tensor, task_tensor, cond_tensor)
+
+                    # 计算梯度（不累积，每次独立计算）
+                    self.model.zero_grad()
+                    loss.backward()
+
+                    # 收集该subtrajectory的梯度
+                    subtraj_grad = [p.grad.clone().detach() if p.grad is not None else torch.zeros_like(p)
+                                   for p in self.model.parameters()]
+                    traj_grads.append(subtraj_grad)
+
+                # 聚合该trajectory的所有subtrajectory梯度（平均）
+                aggregated_grad = []
+                for param_idx in range(len(traj_grads[0])):
+                    param_grads = [traj_grads[i][param_idx] for i in range(num_samples)]
+                    avg_grad = torch.stack(param_grads).mean(dim=0)
+                    aggregated_grad.append(avg_grad)
+
+                trajectory_gradients[traj_id] = aggregated_grad
+                total_subtrajs += num_samples
+
+            # 平均所有trajectory的梯度（不加噪声，这是与finetune的唯一区别）
+            num_trajectories = len(trajectory_gradients)
+            averaged_gradients = []
+            for param_idx in range(len(list(trajectory_gradients.values())[0])):
+                param_grads = [list(trajectory_gradients.values())[i][param_idx] for i in range(num_trajectories)]
+                avg_grad = torch.stack(param_grads).mean(dim=0)
+                averaged_gradients.append(avg_grad)
+
+            # 应用梯度到模型
+            self.model.zero_grad()
+            for param, grad in zip(self.model.parameters(), averaged_gradients):
+                param.grad = grad
+
             self.optimizer.step()
-            self.optimizer.zero_grad()
-            
-            completed_fragment_steps += num_steps
-            self.step += num_steps  # 更新总的fragment步数
-            
-            self.writer.add_scalar('Loss', total_loss.item(), global_step=self.global_step)
-            
+
+            # 更新计数
+            completed_fragment_steps += total_subtrajs
+            self.step += total_subtrajs
+
+            # 注意：现在使用梯度聚合，没有统一的loss值，暂时记录0
+            self.writer.add_scalar('Loss', 0.0, global_step=self.global_step)
+
             if self.global_step % self.log_freq == 0:
-                infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
-                print(f'global_step: {self.global_step} | fragment_step: {self.step} | loss: {total_loss.item():8.5f} | {infos_str} | trajectories: {num_trajectories} | steps_per_traj: {num_steps} | completed_fragments: {completed_fragment_steps} | t: {timer():8.4f}', flush=True)
-                self._log_to_json(self.global_step, total_loss.item())
+                print(f'global_step: {self.global_step} | subtraj_step: {self.step} | trajectories: {num_trajectories} | subtrajs: {total_subtrajs} | completed: {completed_fragment_steps} | t: {timer():8.4f}', flush=True)
+                self._log_to_json(self.global_step, 0.0)
 
             if self.global_step % self.update_ema_every == 0:
                 self.step_ema()
 
-            self.global_step += 1  # 每个trajectory batch处理后全局步数加1
-            progress_bar.update(num_steps)
+            self.global_step += 1
+            progress_bar.update(total_subtrajs)
 
             if completed_fragment_steps >= target_fragment_steps:
                 break
-                
+
         progress_bar.close()
-        
+
         return completed_fragment_steps
 
     def finetune(self, target_fragment_steps, timer):
         print(f"[INFO] Save frequency: every {self.save_freq} global steps (trajectory batches)")
         print(f"[INFO] Label frequency: every {self.label_freq} global steps (trajectory batches)")
-        
+        print(f"[INFO] Using manual gradient computation with trajectory-level DP-SGD")
+
         progress_bar = tqdm(total=target_fragment_steps, desc="Training (Privacy)")
         completed_fragment_steps = 0
-        
-        while completed_fragment_steps < target_fragment_steps:
-            with BatchMemoryManager(
-                data_loader=self.raw_dataloader,
-                max_physical_batch_size=self.batch_size // self.gradient_accumulate_every,
-                optimizer=self.optimizer
-            ) as memory_safe_dataloader:
-                for trajectory_batch in memory_safe_dataloader:
-                    if completed_fragment_steps >= target_fragment_steps:
-                        break
 
-                    # 直接使用 save_freq 和 label_freq（现在表示 global steps）
-                    if self.global_step % self.save_freq == 0 and self.global_step > 0:
-                        label = self.global_step // self.label_freq * self.label_freq
-                        # 用self.step作为保存的文件名（总的fragment步数）
-                        self.save(self.step)
+        # 不使用BatchMemoryManager，手动实现DPSGD
+        for trajectory_batch in self.raw_dataloader:
+            if completed_fragment_steps >= target_fragment_steps:
+                break
 
-                    processed_steps, num_steps = self.process_trajectory_batch(trajectory_batch)
-                    
-                    trajectory_losses = defaultdict(list)
-                    
-                    for step_data in processed_steps:
-                        step_data = {k: v.to(self.device) for k, v in step_data.items()}
-                        
-                        trajectories = step_data['fragments']
-                        conditions = step_data['conditions']
-                        tasks = step_data['tasks']
-                        trajectory_ids = step_data['trajectory_ids']
+            # 直接使用 save_freq 和 label_freq（现在表示 global steps）
+            if self.global_step % self.save_freq == 0 and self.global_step > 0:
+                label = self.global_step // self.label_freq * self.label_freq
+                self.save(self.global_step)
 
-                        loss, infos = self.model._module.compute_loss(trajectories, tasks, conditions)
-                        
-                        for i, traj_id in enumerate(trajectory_ids):
-                            traj_id_item = traj_id.item()
-                            trajectory_losses[traj_id_item].append(loss / len(trajectory_ids))
-                    
-                    # 计算每个trajectory的平均loss，然后计算总的平均loss
-                    total_loss = None
-                    num_trajectories = len(trajectory_losses)
-                    
-                    for traj_id, losses in trajectory_losses.items():
-                        traj_loss = sum(losses) / len(losses)  # 该trajectory的平均loss
-                        
-                        if total_loss is None:
-                            total_loss = traj_loss / num_trajectories
-                        else:
-                            total_loss = total_loss + traj_loss / num_trajectories
-                    
-                    # Backward and optimize (一次gradient update)
-                    total_loss.backward()
-                    self.optimizer.step()
-                    self.optimizer.zero_grad()
-                    
-                    # 更新完成的fragment steps数
-                    completed_fragment_steps += num_steps
-                    self.step += num_steps  # 更新总的fragment步数
-                    
-                    # 记录日志
-                    self.writer.add_scalar('Loss', total_loss.item(), global_step=self.global_step)
-                    
-                    if self.global_step % self.log_freq == 0:
-                        infos_str = ' | '.join([f'{key}: {val:8.5f}' for key, val in infos.items()])
-                        print(f'global_step: {self.global_step} | fragment_step: {self.step} | loss: {total_loss.item():8.5f} | {infos_str} | trajectories: {num_trajectories} | steps_per_traj: {num_steps} | completed_fragments: {completed_fragment_steps} | t: {timer():8.4f}', flush=True)
-                        self._log_to_json(self.global_step, total_loss.item())
+            all_trajectory_subtrajs = self.process_trajectory_batch(trajectory_batch)
 
-                    if self.global_step % self.update_ema_every == 0:
-                        self.step_ema()
+            # === 核心修改：per-subtrajectory梯度计算，然后trajectory-level聚合 ===
+            trajectory_gradients = {}  # {traj_id: aggregated_gradient}
+            total_subtrajs = 0
 
-                    self.global_step += 1  # 每个trajectory batch处理后全局步数加1
-                    progress_bar.update(num_steps)
+            for traj_data in all_trajectory_subtrajs:
+                traj_id = traj_data['trajectory_id']
+                subtrajs = traj_data['subtrajectories']
+                conditions = traj_data['conditions']
+                num_samples = traj_data['num_samples']
 
-                    if completed_fragment_steps >= target_fragment_steps:
-                        break
+                # 累积该trajectory的所有subtrajectory的梯度
+                traj_grads = []
+
+                for subtraj_idx in range(num_samples):
+                    # 转换为tensor
+                    subtraj_tensor = torch.tensor(subtrajs[subtraj_idx], dtype=torch.float32).unsqueeze(0).to(self.device)
+                    # Handle None condition (for no-condition version)
+                    if conditions[subtraj_idx] is not None:
+                        cond_tensor = torch.tensor(conditions[subtraj_idx], dtype=torch.float32).unsqueeze(0).to(self.device)
+                    else:
+                        cond_tensor = None
+                    task_tensor = torch.zeros(1, dtype=torch.long).to(self.device)
+
+                    # 计算loss
+                    loss, infos = self.model._module.compute_loss(subtraj_tensor, task_tensor, cond_tensor)
+
+                    # 计算梯度（不累积，每次独立计算）
+                    self.model.zero_grad()
+                    loss.backward()
+
+                    # 收集该subtrajectory的梯度
+                    subtraj_grad = [p.grad.clone().detach() if p.grad is not None else torch.zeros_like(p)
+                                   for p in self.model._module.parameters()]
+                    traj_grads.append(subtraj_grad)
+
+                # 聚合该trajectory的所有subtrajectory梯度（平均）
+                aggregated_grad = []
+                for param_idx in range(len(traj_grads[0])):
+                    param_grads = [traj_grads[i][param_idx] for i in range(num_samples)]
+                    avg_grad = torch.stack(param_grads).mean(dim=0)
+                    aggregated_grad.append(avg_grad)
+
+                trajectory_gradients[traj_id] = aggregated_grad
+                total_subtrajs += num_samples
+
+            # === 应用trajectory-level DPSGD: Clipping + Noise ===
+            num_trajectories = len(trajectory_gradients)
+
+            # Step 1: Per-trajectory gradient clipping
+            clipped_gradients = []
+            for traj_id, traj_grad in trajectory_gradients.items():
+                # 计算该trajectory梯度的L2 norm
+                grad_norm = torch.sqrt(sum([g.norm(2) ** 2 for g in traj_grad]))
+
+                # Clip梯度
+                clip_factor = min(1.0, self.max_grad_norm / (grad_norm + 1e-6))
+                clipped_grad = [g * clip_factor for g in traj_grad]
+                clipped_gradients.append(clipped_grad)
+
+            # Step 2: 平均所有trajectory的clipped gradients
+            averaged_gradients = []
+            for param_idx in range(len(clipped_gradients[0])):
+                param_grads = [clipped_gradients[i][param_idx] for i in range(num_trajectories)]
+                avg_grad = torch.stack(param_grads).mean(dim=0)
+                averaged_gradients.append(avg_grad)
+
+            # Step 3: 添加高斯噪声
+            noisy_gradients = []
+            noise_scale = self.noise_multiplier * self.max_grad_norm / num_trajectories
+            for grad in averaged_gradients:
+                noise = torch.randn_like(grad) * noise_scale
+                noisy_grad = grad + noise
+                noisy_gradients.append(noisy_grad)
+
+            # Step 4: 应用梯度到模型
+            self.model.zero_grad()
+            for param, grad in zip(self.model._module.parameters(), noisy_gradients):
+                param.grad = grad
+
+            self.optimizer.step()
+
+            # 更新完成的subtrajectory steps数
+            completed_fragment_steps += total_subtrajs
+            self.step += total_subtrajs
+
+            # 注意：现在使用梯度聚合，没有统一的loss值，暂时记录0
+            self.writer.add_scalar('Loss', 0.0, global_step=self.global_step)
+
+            # 记录日志
+            if self.global_step % self.log_freq == 0:
+                print(f'global_step: {self.global_step} | subtraj_step: {self.step} | trajectories: {num_trajectories} | subtrajs: {total_subtrajs} | completed: {completed_fragment_steps} | t: {timer():8.4f}', flush=True)
+                self._log_to_json(self.global_step, 0.0)
+
+            if self.global_step % self.update_ema_every == 0:
+                self.step_ema()
+
+            self.global_step += 1
+            progress_bar.update(total_subtrajs)
+
+            if completed_fragment_steps >= target_fragment_steps:
+                break
+
         progress_bar.close()
-        
+
         return completed_fragment_steps
 
     def _log_to_json(self, step, loss):
