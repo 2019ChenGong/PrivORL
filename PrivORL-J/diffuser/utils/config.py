@@ -37,6 +37,8 @@ class Config(collections.abc.Mapping):
 
         if savepath is not None:
             savepath = os.path.join(*savepath) if type(savepath) is tuple else savepath
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(savepath), exist_ok=True)
             pickle.dump(self, open(savepath, 'wb'))
             print(f'[ utils/config ] Saved config to: {savepath}\n')
     def __repr__(self):

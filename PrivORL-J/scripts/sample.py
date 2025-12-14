@@ -329,7 +329,14 @@ def sample_trajectory(rank, world_size, args):
     )
 
     dataset = dataset_config()
-    
+
+    # Determine whether to use 5-token condition based on dataset
+    # maze2d-umaze-dense-v1 uses 1-token, all others use 5-token
+    use_5token_cond = not (args.dataset == 'maze2d-umaze-dense-v1')
+    if rank == 0:
+        print(f"[INFO] Dataset: {args.dataset}")
+        print(f"[INFO] Using {'5-token' if use_5token_cond else '1-token'} condition encoding")
+
     model_config = utils.Config(
         args.model,
         savepath=(args.savepath, 'model_config.pkl'),
@@ -341,6 +348,7 @@ def sample_trajectory(rank, world_size, args):
         device=rank,
         verbose=False,
         action_dim=dataset.action_dim,
+        use_5token_cond=use_5token_cond,  # Pass the flag to model
     )
 
     diffusion_config = utils.Config(

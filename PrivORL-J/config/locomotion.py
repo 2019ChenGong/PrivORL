@@ -15,10 +15,7 @@ args_to_watch = [
     ('discount', 'd'),
 ]
 
-# logbase = 'logs_horizon64'
-# logbase = 'logs_horizon100'
 logbase = 'logs'
-# logbase = 'logs_horizon16'
 
 base = {
     'diffusion': {
@@ -82,7 +79,7 @@ base = {
         'learning_rate': 2e-4,
         'gradient_accumulate_every': 2,
         'ema_decay': 0.995,
-        'save_freq': 5000,
+        'save_freq': 200,
         # 'save_freq': 100,
         'sample_freq': 20000,
         'n_saves': 20,
@@ -109,12 +106,7 @@ base = {
         # finetune
         'finetune': True,
         'checkpoint_path':'logs/maze2d-medium-dense-v1/-Apr02_13-09-58/state_500000.pt',
-        # 'output_path': ''
     },
 
 
 }
-
-
-#------------------------ overrides ------------------------#
-

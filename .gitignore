@@ -192,6 +192,20 @@ PrivORL-J/scripts/training_no_cond.py
 PrivORL-J/diffuser/datasets/sequence_no_cond.py
 PrivORL-J/diffuser/models/diffusion_no_cond.py
 
+PrivORL-J/scripts/training_*
+PrivORL-J/scripts/sample_*
+PrivORL-J/scripts/bash-train-diffusion_privorl_j_*
+PrivORL-J/scripts/convert_to_npz.py
+PrivORL-J/scripts/bash-agent-training_*
+PrivORL-J/scripts/bash-sample-diffusion_privorl_j_*
+PrivORL-J/scripts/TrajScore.py
+PrivORL-J/diffuser/datasets/sequence_*
+PrivORL-J/diffuser/models/diffusion_*
+PrivORL-J/diffuser/models/temporal_dp_*
+PrivORL-J/diffuser/utils/training_*
+
+
+
 # utils
 score_calculate.py
 download_original_data.py

@@ -186,8 +186,15 @@ class AugTrainer(object):
             for name, param in self.model.named_parameters():
                 print(f"{name}: requires_grad={param.requires_grad}")
 
-                transition_dim = self.dataset.action_dim + 2 * self.dataset.observation_dim + 2
-                initial_cond = torch.zeros((1, transition_dim), device=self.device)
+                # Infer condition dimension from a sample
+                # Get a sample subtrajectory to determine condition dimension
+                sample_subtraj, sample_cond, _ = self.dataset.get_subtrajectory(0, 0)
+                if sample_cond is not None:
+                    cond_dim = sample_cond.shape[0]
+                else:
+                    cond_dim = self.dataset.observation_dim  # fallback
+
+                initial_cond = torch.zeros((1, cond_dim), device=self.device)
                 diffusion_samples = self.model.conditional_sample(
                     cond=initial_cond,
                     task=torch.tensor([0], device=self.device),
@@ -636,37 +643,97 @@ class AugTrainer(object):
         print("successfully load!!")
 
     def load_for_finetune(self, checkpoint_path):
-        """加载模型用于微调"""
+        """加载模型用于微调 (支持不同 condition encoding 架构)"""
         data = torch.load(checkpoint_path, map_location=self.device)
         if 'global_step' in data:
             self.global_step = data['global_step']
+
+        model_state_dict = data['model']
+
+        # Check if checkpoint has different condition encoding architecture
+        # First, check for 5-token architecture (has cond_state_mlp)
+        checkpoint_has_5token = any('cond_state_mlp' in key for key in model_state_dict.keys())
+
+        # Also check if 1-token cond_mlp has different size (old vs new state-only)
+        checkpoint_cond_mlp_key = None
+        checkpoint_cond_mlp_shape = None
+        for key in model_state_dict.keys():
+            # Look for cond_mlp weight in checkpoint (with any prefix)
+            if 'cond_mlp.0.weight' in key:
+                checkpoint_cond_mlp_key = key
+                checkpoint_cond_mlp_shape = model_state_dict[key].shape
+                break
+
+        # Get the actual model (handle privacy wrapper)
         if self.privacy:
-            model_state_dict = data['model']
-            new_model_state_dict = {}
-            for key, value in model_state_dict.items():
-                new_key = key
-                if not new_key.startswith('_module.'):
-                    new_key = '_module.module.' + new_key
-                new_model_state_dict[new_key] = value
-            self.model.load_state_dict(model_state_dict)
+            # In privacy mode, model is wrapped: AugDiffusion -> GradSampleModule -> model
+            # Access the actual TasksAug model through: self.model._module (diffusion) -> .model (TasksAug)
+            actual_model = self.model._module.model if hasattr(self.model, '_module') else self.model.model
         else:
-            model_state_dict = data['model']
-            new_model_state_dict = {}
-            for key, value in model_state_dict.items():
-                new_key = key
-                if new_key.startswith("_module.module."):
-                    new_key = new_key.replace("_module.module.", "_module.")
-                elif new_key.startswith("module."):
-                    new_key = new_key.replace("module.", "_module.")
-                new_model_state_dict[new_key] = value
-            self.model.load_state_dict(new_model_state_dict)
+            # In non-privacy mode, model is AugDiffusion, access .model to get TasksAug
+            actual_model = self.model._module.model if hasattr(self.model, '_module') else self.model.model
+
+        current_has_5token = hasattr(actual_model, 'cond_state_mlp')
+
+        # Check if there's a size mismatch for 1-token cond_mlp
+        cond_mlp_size_mismatch = False
+        if not checkpoint_has_5token and not current_has_5token and checkpoint_cond_mlp_shape is not None:
+            # Both use 1-token, check if sizes match
+            if hasattr(actual_model, 'cond_mlp'):
+                current_cond_mlp_shape = actual_model.cond_mlp[0].weight.shape
+                if checkpoint_cond_mlp_shape != current_cond_mlp_shape:
+                    cond_mlp_size_mismatch = True
+                    print(f"[WARNING] 1-token cond_mlp size mismatch: checkpoint has {checkpoint_cond_mlp_shape}, "
+                          f"current model has {current_cond_mlp_shape}")
+                    print("[INFO] This is expected when switching from old (transition_dim) to new (state_dim) conditioning")
+
+        if checkpoint_has_5token != current_has_5token or cond_mlp_size_mismatch:
+            print(f"[WARNING] Checkpoint uses {'5-token' if checkpoint_has_5token else '1-token'} condition encoding, "
+                  f"but current model uses {'5-token' if current_has_5token else '1-token'}.")
+            print("[INFO] Loading with strict=False to skip condition MLP parameters")
+            strict_loading = False
+        else:
+            strict_loading = True
+
+        # Handle different wrapper prefixes:
+        # Checkpoint might have: "_module.module.*" (DDP + wrapper), "_module.*" (single wrapper), or no prefix
+        # Current model: just the base AugDiffusion model, no wrappers (self.model is AugDiffusion directly)
+
+        # Remove all wrapper prefixes from checkpoint
+        new_model_state_dict = {}
+        for key, value in model_state_dict.items():
+            new_key = key
+            # Remove any wrapper prefixes
+            if new_key.startswith('_module.module.'):
+                new_key = new_key.replace('_module.module.', '')
+            elif new_key.startswith('_module.'):
+                new_key = new_key.replace('_module.', '')
+            elif new_key.startswith('module.'):
+                new_key = new_key.replace('module.', '')
+            new_model_state_dict[new_key] = value
+
+        self.model.load_state_dict(new_model_state_dict, strict=strict_loading)
+
+        # Handle EMA model loading (also remove wrappers)
+        if 'ema' in data:
             ema_state_dict = data['ema']
             new_ema_state_dict = {}
             for key, value in ema_state_dict.items():
-                new_key = key.replace("_module.module.", "_module.")
+                new_key = key
+                # Remove any wrapper prefixes
+                if new_key.startswith('_module.module.'):
+                    new_key = new_key.replace('_module.module.', '')
+                elif new_key.startswith('_module.'):
+                    new_key = new_key.replace('_module.', '')
+                elif new_key.startswith('module.'):
+                    new_key = new_key.replace('module.', '')
                 new_ema_state_dict[new_key] = value
             self.ema_model.load_state_dict(new_ema_state_dict, strict=False)
-        print("successfully load!!")
+
+        if strict_loading:
+            print("Successfully loaded checkpoint with matching architecture!")
+        else:
+            print("Successfully loaded checkpoint (with architecture mismatch - condition MLPs randomly initialized)!")
 
 
         

@@ -102,6 +102,13 @@ def main(args):
 
     observation_dim = dataset.observation_dim
     action_dim = dataset.action_dim
+
+    # Determine whether to use 5-token condition based on dataset
+    # maze2d-umaze-dense-v1 uses 1-token, all others use 5-token
+    use_5token_cond = not (args.dataset == 'maze2d-umaze-dense-v1')
+    print(f"[INFO] Dataset: {args.dataset}")
+    print(f"[INFO] Using {'5-token' if use_5token_cond else '1-token'} condition encoding")
+
     model_config = utils.Config(
         args.model,
         savepath=(args.savepath, 'model_config.pkl'),
@@ -112,6 +119,7 @@ def main(args):
         num_tasks=1,
         device=device,
         action_dim=action_dim,
+        use_5token_cond=use_5token_cond,  # Pass the flag to model
     )
     diffusion_config = utils.Config(
         args.diffusion,
