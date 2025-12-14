@@ -3,7 +3,7 @@
 # Define parameters
 gpus=(0 1 2 3)
 gpus=(2 1 0)
-gpus=(0)
+# gpus=(0)
 
 finetune="False"
 finetune="True"
@@ -21,7 +21,7 @@ epsilons=(1 10 )
 epsilons=(10  )
 
 datasets=(
-    'maze2d-umaze-dense-v1'
+    # 'maze2d-umaze-dense-v1'
     'maze2d-medium-dense-v1'
     'maze2d-large-dense-v1'
     # 'kitchen-partial-v0'
@@ -53,9 +53,9 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset\
-                        --logbase 'PrivORL-J/logs_transition_cond_final'"
+                        --logbase 'PrivORL-J/logs_transition_cond_test'"
                 else
-                    checkpoint_path="PrivORL-J/logs_transition_cond_final/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
+                    checkpoint_path="PrivORL-J/logs_transition_cond_test/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
                     command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
@@ -68,7 +68,7 @@ for horizon in "${horizons[@]}"; do
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
                         --loader datasets.AugDataset \
-                        --logbase 'PrivORL-J/logs_transition_cond_final' \
+                        --logbase 'PrivORL-J/logs_transition_cond_test' \
                         --accountant 'rdp'"
                 fi
 
