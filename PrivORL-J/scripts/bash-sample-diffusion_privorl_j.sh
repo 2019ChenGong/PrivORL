@@ -62,4 +62,4 @@ for dataset in "${datasets[@]}"; do
     done
 done
 
-echo "All tasks have completed.
+echo "All tasks have completed."

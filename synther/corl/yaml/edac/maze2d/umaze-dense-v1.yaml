@@ -19,10 +19,10 @@ max_action: 1.0
 name: "EDAC"
 normalize_reward: false
 num_critics: 10
-# num_epochs: 1000
-num_epochs: 500
-# num_updates_on_epoch: 1000
-num_updates_on_epoch: 500
+num_epochs: 1000
+# num_epochs: 500
+num_updates_on_epoch: 1000
+# num_updates_on_epoch: 500
 project: "CORL"
 tau: 0.005
 seed: 10

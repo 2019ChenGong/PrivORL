@@ -530,6 +530,7 @@ def train(config: TrainConfig):
         logger = Logger('/tmp', seed=config.seed)
 
     total_updates = 0
+    evaluations = []
 
     for epoch in trange(config.num_epochs, desc="Training"):
         # training
@@ -560,6 +561,7 @@ def train(config: TrainConfig):
                 normalized_score = eval_env.get_normalized_score(eval_returns) * 100.0
                 eval_log["d4rl_normalized_score"] = np.mean(normalized_score)
                 eval_log["d4rl_normalized_score_std"] = np.std(normalized_score)
+                evaluations.append(np.mean(normalized_score))
 
             # wandb.log(eval_log)
             logger.log(eval_log, mode='eval')
@@ -569,6 +571,36 @@ def train(config: TrainConfig):
                     trainer.state_dict(),
                     os.path.join(config.checkpoints_path, f"checkpoint_{epoch * config.num_updates_on_epoch}.pt"),
                 )
+
+    # Calculate statistics for top 5 scores
+    if len(evaluations) >= 5:
+        top_five_scores = sorted(evaluations, reverse=True)[:5]
+    else:
+        top_five_scores = sorted(evaluations, reverse=True)
+
+    if len(top_five_scores) > 0:
+        avg_top_five = float(np.mean(top_five_scores))
+        std_top_five = float(np.std(top_five_scores))
+
+        # Add statistics to eval.json
+        if config.checkpoints_path is not None:
+            import json
+            eval_file = os.path.join(config.checkpoints_path, f"eval_{config.seed}.json")
+            if os.path.exists(eval_file):
+                with open(eval_file, 'r') as f:
+                    eval_data = json.load(f)
+
+                eval_data['average_top_five_scores'] = avg_top_five
+                eval_data['standard_deviation_top_five_scores'] = std_top_five
+
+                with open(eval_file, 'w') as f:
+                    json.dump(eval_data, f, indent=4)
+
+                print("---------------------------------------")
+                print(f"Statistics for top {len(top_five_scores)} evaluation(s):")
+                print(f"Average: {avg_top_five:.6f}")
+                print(f"Standard Deviation: {std_top_five:.6f}")
+                print("---------------------------------------")
 
     wandb.finish()
 

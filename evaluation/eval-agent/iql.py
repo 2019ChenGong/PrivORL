@@ -552,15 +552,15 @@ def train(config: TrainConfig):
             # wandb.log(log_dict, step=trainer.total_it)
             logger.log({'step': trainer.total_it, **log_dict}, mode='eval')
 
-    # Calculate statistics for last 10 scores
-    if len(evaluations) >= 10:
-        last_ten_scores = evaluations[-10:]
+    # Calculate statistics for top 5 scores
+    if len(evaluations) >= 5:
+        top_five_scores = sorted(evaluations, reverse=True)[:5]
     else:
-        last_ten_scores = evaluations
+        top_five_scores = sorted(evaluations, reverse=True)
 
-    if len(last_ten_scores) > 0:
-        avg_last_ten = float(np.mean(last_ten_scores))
-        std_last_ten = float(np.std(last_ten_scores))
+    if len(top_five_scores) > 0:
+        avg_top_five = float(np.mean(top_five_scores))
+        std_top_five = float(np.std(top_five_scores))
 
         # Add statistics to eval.json
         if config.checkpoints_path is not None:
@@ -570,16 +570,16 @@ def train(config: TrainConfig):
                 with open(eval_file, 'r') as f:
                     eval_data = json.load(f)
 
-                eval_data['average_last_ten_scores'] = avg_last_ten
-                eval_data['standard_deviation_last_ten_scores'] = std_last_ten
+                eval_data['average_top_five_scores'] = avg_top_five
+                eval_data['standard_deviation_top_five_scores'] = std_top_five
 
                 with open(eval_file, 'w') as f:
                     json.dump(eval_data, f, indent=4)
 
                 print("---------------------------------------")
-                print(f"Statistics for last {len(last_ten_scores)} evaluation(s):")
-                print(f"Average: {avg_last_ten:.6f}")
-                print(f"Standard Deviation: {std_last_ten:.6f}")
+                print(f"Statistics for top {len(top_five_scores)} evaluation(s):")
+                print(f"Average: {avg_top_five:.6f}")
+                print(f"Standard Deviation: {std_top_five:.6f}")
                 print("---------------------------------------")
 
 

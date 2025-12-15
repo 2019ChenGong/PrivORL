@@ -714,13 +714,13 @@ class TasksAug(nn.Module):
 
         # Condition MLPs: choose between state-only (1-token) or 5-token encoding
         if self.use_5token_cond:
-            # 5-Token version: separate MLPs for condition tokens (not shared with input)
+            # 5-Token version: 5 separate MLPs for each condition component
             self.cond_state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
             self.cond_action_mlp = nn.Sequential(nn.Linear(self.action_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
             self.cond_reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
             self.cond_terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
             self.cond_next_state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            print("[INFO] Using 5-token condition encoding with dedicated MLPs")
+            print("[INFO] Using 5-token condition encoding with 5 dedicated MLPs")
         else:
             # 1-Token version: state-only condition (for maze2d-umaze-dense-v1)
             self.cond_mlp = nn.Sequential(
@@ -779,7 +779,7 @@ class TasksAug(nn.Module):
 
         # Process condition based on use_5token_cond flag
         if self.use_5token_cond:
-            # 5-Token version: process condition as 5 separate tokens with dedicated MLPs
+            # 5-Token version: process condition as 5 separate tokens with 4 MLPs (state MLP shared)
             if x_condition is not None:
                 # Split into 5 components: [state, action, reward, terminal, next_state]
                 prev_state = x_condition[:, :self.state_dim]
@@ -788,7 +788,7 @@ class TasksAug(nn.Module):
                 prev_terminal = x_condition[:, self.state_dim + self.action_dim + 1:self.state_dim + self.action_dim + 2]
                 prev_next_state = x_condition[:, -self.state_dim:]
 
-                # Embed each component using DEDICATED condition MLPs (not shared with input MLPs)
+                # Embed each component using dedicated condition MLPs
                 prev_s_emb = self.cond_state_mlp(prev_state).unsqueeze(1)  # [batch, 1, hidden_size]
                 prev_a_emb = self.cond_action_mlp(prev_action).unsqueeze(1)
                 prev_r_emb = self.cond_reward_mlp(prev_reward).unsqueeze(1)
@@ -806,12 +806,15 @@ class TasksAug(nn.Module):
         else:
             # 1-Token version: state-only condition (for maze2d-umaze-dense-v1)
             if x_condition is not None:
-                # Extract only the previous state (first state_dim elements)
+                # STATE_COND VERSION: Extract only previous state from condition
                 # x_condition format: [prev_state, prev_action, prev_reward, prev_terminal, prev_next_state]
+                # We only use the first state_dim elements (previous state)
                 prev_state = x_condition[:, :self.state_dim]
                 cond_tokens = self.cond_mlp(prev_state).unsqueeze(1)  # [batch, 1, hidden_size]
             else:
-                cond_tokens = torch.zeros((x.shape[0], 1, 2 * self.dim), device=x.device)
+                # STATE_COND VERSION: Use nn.Parameter for zero condition
+                cond_tokens = nn.Parameter(torch.zeros(1, 1, 2 * self.dim)).to(x.device)
+                cond_tokens = cond_tokens.repeat(x.shape[0], 1, 1)
 
             num_cond_tokens = 1
 

@@ -192,11 +192,8 @@ def main(args):
     if args.finetune:
         trainer.load_for_finetune(args.checkpoint_path)
 
-        # 不再使用Opacus的自动DPSGD，改用手动实现
-        # 只需要包装模型以便访问_module
         from torch.nn.parallel import DataParallel
 
-        # 创建一个简单的wrapper来模拟Opacus的结构
         class ModelWrapper(torch.nn.Module):
             def __init__(self, module):
                 super().__init__()
