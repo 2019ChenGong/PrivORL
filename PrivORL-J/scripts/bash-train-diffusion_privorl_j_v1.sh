@@ -2,15 +2,14 @@
 
 # Define parameters
 gpus=(0 1 2 3)
-gpus=(2 1 0)
-# gpus=(0)
+# gpus=(2 1 0)
+gpus=(0 1)
 
 finetune="False"
 finetune="True"
 
 # horizons=( 16 32 64 128)
 horizons=(32)
-batch_size=32
 
 curiosity_rates=(0.1 0.2 0.4 0.5)
 curiosity_rates=(0.3)
@@ -21,9 +20,9 @@ epsilons=(1 10 )
 epsilons=(10  )
 
 datasets=(
-    # 'maze2d-umaze-dense-v1'
-    'maze2d-medium-dense-v1'
-    'maze2d-large-dense-v1'
+    'maze2d-umaze-dense-v1'
+    # 'maze2d-medium-dense-v1'
+    # 'maze2d-large-dense-v1'
     # 'kitchen-partial-v0'
     # 'halfcheetah-medium-replay-v2'
 )
@@ -43,32 +42,30 @@ for horizon in "${horizons[@]}"; do
                 gpu=${gpus[$gpu_index]}
             
                 if [ "$finetune" == "False" ]; then
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training.py \
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_v1.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
                         --horizon \"${horizon}\" \
-                        --batch_size \"${batch_size}\" \
-                        --model models.TasksAug \
+                        --model models.TasksAug_v1 \
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
-                        --loader datasets.AugDataset\
-                        --logbase 'PrivORL-J/logs_transition_cond_test'"
+                        --loader datasets.AugDataset_v1\
+                        --logbase 'PrivORL-J/logs_v2'"
                 else
-                    checkpoint_path="PrivORL-J/logs_transition_cond_test/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training.py \
+                    checkpoint_path="PrivORL-J/logs_v2/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_v1.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
                         --horizon \"${horizon}\" \
-                        --batch_size \"${batch_size}\" \
                         --checkpoint_path \"${checkpoint_path}\" \
                         --target_epsilon \"${epsilon}\" \
-                        --model models.TasksAug \
+                        --model models.TasksAug_v1 \
                         --diffusion models.AugDiffusion \
                         --loss_type statehuber \
-                        --loader datasets.AugDataset \
-                        --logbase 'PrivORL-J/logs_transition_cond_test' \
+                        --loader datasets.AugDataset_v1 \
+                        --logbase 'PrivORL-J/logs_v2' \
                         --accountant 'rdp'"
                 fi
 

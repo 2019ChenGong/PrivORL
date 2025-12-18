@@ -88,12 +88,13 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
     action_dim = dataset.action_dim
     trajectory = []
 
-    prev_transition = torch.zeros((1, state_dim * 2 + action_dim + 2), dtype=torch.float32).to(args.device)
+    # STATE_COND VERSION: prev_state只保存state，不保存完整transition
+    prev_state = torch.zeros((1, state_dim), dtype=torch.float32).to(args.device)
 
     current_state = torch.tensor(initial_condition, dtype=torch.float32).unsqueeze(0).to(args.device)
 
     for step_count in range(max_length // args.horizon):
-        conditions = prev_transition  # 形状 [1, cond_dim]
+        conditions = prev_state  # STATE_COND: 形状 [1, state_dim]
 
         if args.privacy:
             samples = diffusion.module._module.conditional_sample(
@@ -129,10 +130,9 @@ def sample_complete_trajectory(diffusion, initial_condition, args, max_length, t
                 *states, *actions, reward, terminal_flag, *next_states
             ])
 
-            prev_transition = torch.tensor(
-                np.concatenate([
-                    states, actions, [reward], [terminal_flag], next_states
-                ]),
+            # STATE_COND VERSION: 只保存next_state作为下一次的condition
+            prev_state = torch.tensor(
+                next_states,
                 dtype=torch.float32
             ).unsqueeze(0).to(args.device)
 
@@ -167,8 +167,8 @@ def sample_trajectories_batch(diffusion, initial_conditions_batch, args, max_len
     active_mask = torch.ones(batch_size, dtype=torch.bool, device=args.device)  # 标记哪些轨迹还在采样
     step_counts = torch.zeros(batch_size, dtype=torch.long, device=args.device)  # 每个轨迹的步数
 
-    # 初始化prev_transitions
-    prev_transitions = torch.zeros((batch_size, state_dim * 2 + action_dim + 2), dtype=torch.float32, device=args.device)
+    # STATE_COND VERSION: 初始化prev_states (只保存state)
+    prev_states = torch.zeros((batch_size, state_dim), dtype=torch.float32, device=args.device)
 
     max_steps = max_length // args.horizon
 
@@ -183,8 +183,8 @@ def sample_trajectories_batch(diffusion, initial_conditions_batch, args, max_len
         if active_batch_size == 0:
             break
 
-        # 获取active trajectories的条件
-        conditions = prev_transitions[active_indices]  # [active_batch_size, cond_dim]
+        # STATE_COND VERSION: 获取active trajectories的条件 (只有state)
+        conditions = prev_states[active_indices]  # [active_batch_size, state_dim]
 
         # 批量采样
         if args.privacy:
@@ -232,9 +232,9 @@ def sample_trajectories_batch(diffusion, initial_conditions_batch, args, max_len
                     *states, *actions, reward, terminal_flag, *next_states
                 ])
 
-                # 更新prev_transition
-                prev_transitions[global_idx_item] = torch.tensor(
-                    np.concatenate([states, actions, [reward], [terminal_flag], next_states]),
+                # STATE_COND VERSION: 更新prev_state (只保存next_state)
+                prev_states[global_idx_item] = torch.tensor(
+                    next_states,
                     dtype=torch.float32,
                     device=args.device
                 )
@@ -329,26 +329,18 @@ def sample_trajectory(rank, world_size, args):
     )
 
     dataset = dataset_config()
-
-    # Determine whether to use 5-token condition based on dataset
-    # maze2d-umaze-dense-v1 uses 1-token, all others use 5-token
-    use_5token_cond = not (args.dataset == 'maze2d-umaze-dense-v1')
-    if rank == 0:
-        print(f"[INFO] Dataset: {args.dataset}")
-        print(f"[INFO] Using {'5-token' if use_5token_cond else '1-token'} condition encoding")
-
+    
     model_config = utils.Config(
         args.model,
         savepath=(args.savepath, 'model_config.pkl'),
         horizon=args.horizon,
         state_dim=dataset.observation_dim,
         transition_dim=dataset.observation_dim * 2 + dataset.action_dim + 2,
-        cond_dim=dataset.observation_dim * 2 + dataset.action_dim + 2,
+        cond_dim=dataset.observation_dim,  # STATE_COND VERSION: condition is only previous state
         num_tasks=1,
         device=rank,
         verbose=False,
         action_dim=dataset.action_dim,
-        use_5token_cond=use_5token_cond,  # Pass the flag to model
     )
 
     diffusion_config = utils.Config(

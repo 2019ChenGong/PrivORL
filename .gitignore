@@ -192,17 +192,18 @@ PrivORL-J/scripts/training_no_cond.py
 PrivORL-J/diffuser/datasets/sequence_no_cond.py
 PrivORL-J/diffuser/models/diffusion_no_cond.py
 
-PrivORL-J/scripts/training_*
-PrivORL-J/scripts/sample_*
-PrivORL-J/scripts/bash-train-diffusion_privorl_j_*
+PrivORL-J/scripts/training-*
+PrivORL-J/scripts/sample-*
+PrivORL-J/scripts/bash-train-diffusion_privorl_j-*
 PrivORL-J/scripts/convert_to_npz.py
-PrivORL-J/scripts/bash-agent-training_*
-PrivORL-J/scripts/bash-sample-diffusion_privorl_j_*
+PrivORL-J/scripts/bash-agent-training-*
+PrivORL-J/scripts/bash-sample-diffusion_privorl_j-*
 PrivORL-J/scripts/TrajScore.py
-PrivORL-J/diffuser/datasets/sequence_*
-PrivORL-J/diffuser/models/diffusion_*
-PrivORL-J/diffuser/models/temporal_dp_*
-PrivORL-J/diffuser/utils/training_*
+PrivORL-J/diffuser/datasets/sequence-*
+PrivORL-J/diffuser/models/diffusion-*
+PrivORL-J/diffuser/models/temporal_dp-*
+PrivORL-J/diffuser/utils/training-*
+PrivORL-J/scripts/bash-sample-diffusion_unet.sh
 
 
 
@@ -222,3 +223,7 @@ plot/pretrain_tsne
 plot/halfcheetah*
 
 synther/diffusion/delete*
+
+
+
+slurm.slurm

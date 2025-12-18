@@ -683,6 +683,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)].to(x.device)
 
 class TasksAug(nn.Module):
+    """STATE_COND VERSION: Condition is only the previous state, not full transition"""
     def __init__(
         self,
         horizon,
@@ -693,7 +694,6 @@ class TasksAug(nn.Module):
         dim=128,
         hidden_size=256,
         action_dim=None,
-        use_5token_cond=False,  # New parameter to control condition encoding
     ):
         super().__init__()
         self.num_tasks = num_tasks
@@ -703,7 +703,7 @@ class TasksAug(nn.Module):
         self.state_dim = state_dim
         self.transition_dim = transition_dim
         self.action_dim = action_dim
-        self.use_5token_cond = use_5token_cond  # Store the flag
+        self.cond_dim = cond_dim  # Should be state_dim for state-only conditioning
 
         self.time_mlp = nn.Sequential(
             SinusoidalPosEmb(2 * dim),
@@ -712,25 +712,13 @@ class TasksAug(nn.Module):
             nn.Linear(dim * 4, 2 * dim),
         )
 
-        # Condition MLPs: choose between state-only (1-token) or 5-token encoding
-        if self.use_5token_cond:
-            # 5-Token version: 5 separate MLPs for each condition component
-            self.cond_state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            self.cond_action_mlp = nn.Sequential(nn.Linear(self.action_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            self.cond_reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            self.cond_terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            self.cond_next_state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
-            print("[INFO] Using 5-token condition encoding with 5 dedicated MLPs")
-        else:
-            # 1-Token version: state-only condition (for maze2d-umaze-dense-v1)
-            self.cond_mlp = nn.Sequential(
-                nn.Linear(self.state_dim, dim * 2),  # Only state_dim, not transition_dim
-                nn.GELU(),
-                nn.Linear(dim * 2, 2 * dim),
-            )
-            print("[INFO] Using 1-token state-only condition encoding")
+        # STATE_COND VERSION: cond_mlp uses state_dim instead of transition_dim
+        self.cond_mlp = nn.Sequential(
+            nn.Linear(self.state_dim, dim * 2),
+            nn.GELU(),
+            nn.Linear(dim * 2, 2 * dim),
+        )
 
-        # Input sequence MLPs (always separate from condition)
         self.reward_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
         self.terminal_mlp = nn.Sequential(nn.Linear(1, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
         self.state_mlp = nn.Sequential(nn.Linear(self.state_dim, dim * 2), nn.GELU(), nn.Linear(dim * 2, 2 * dim))
@@ -777,46 +765,13 @@ class TasksAug(nn.Module):
             print(f"[Warning] Skipping batch due to mismatch: x={x.shape[0]}, x_condition={x_condition.shape[0]}")
             return None
 
-        # Process condition based on use_5token_cond flag
-        if self.use_5token_cond:
-            # 5-Token version: process condition as 5 separate tokens with 4 MLPs (state MLP shared)
-            if x_condition is not None:
-                # Split into 5 components: [state, action, reward, terminal, next_state]
-                prev_state = x_condition[:, :self.state_dim]
-                prev_action = x_condition[:, self.state_dim:self.state_dim + self.action_dim]
-                prev_reward = x_condition[:, self.state_dim + self.action_dim:self.state_dim + self.action_dim + 1]
-                prev_terminal = x_condition[:, self.state_dim + self.action_dim + 1:self.state_dim + self.action_dim + 2]
-                prev_next_state = x_condition[:, -self.state_dim:]
-
-                # Embed each component using dedicated condition MLPs
-                prev_s_emb = self.cond_state_mlp(prev_state).unsqueeze(1)  # [batch, 1, hidden_size]
-                prev_a_emb = self.cond_action_mlp(prev_action).unsqueeze(1)
-                prev_r_emb = self.cond_reward_mlp(prev_reward).unsqueeze(1)
-                prev_t_emb = self.cond_terminal_mlp(prev_terminal).unsqueeze(1)
-                prev_ns_emb = self.cond_next_state_mlp(prev_next_state).unsqueeze(1)
-
-                # Stack as 5 tokens
-                cond_tokens = torch.cat([prev_s_emb, prev_a_emb, prev_r_emb, prev_t_emb, prev_ns_emb], dim=1)
-                # Shape: [batch, 5, hidden_size]
-            else:
-                # Zero condition: 5 zero tokens
-                cond_tokens = torch.zeros((x.shape[0], 5, 2 * self.dim), device=x.device)
-
-            num_cond_tokens = 5
+        if x_condition is not None:
+            # print("x_condition.shape is: ", x_condition.shape)
+            # print("self.cond_mlp is: ", self.cond_mlp)
+            cond_embedding = self.cond_mlp(x_condition).unsqueeze(1)
         else:
-            # 1-Token version: state-only condition (for maze2d-umaze-dense-v1)
-            if x_condition is not None:
-                # STATE_COND VERSION: Extract only previous state from condition
-                # x_condition format: [prev_state, prev_action, prev_reward, prev_terminal, prev_next_state]
-                # We only use the first state_dim elements (previous state)
-                prev_state = x_condition[:, :self.state_dim]
-                cond_tokens = self.cond_mlp(prev_state).unsqueeze(1)  # [batch, 1, hidden_size]
-            else:
-                # STATE_COND VERSION: Use nn.Parameter for zero condition
-                cond_tokens = nn.Parameter(torch.zeros(1, 1, 2 * self.dim)).to(x.device)
-                cond_tokens = cond_tokens.repeat(x.shape[0], 1, 1)
-
-            num_cond_tokens = 1
+            cond_embedding = nn.Parameter(torch.zeros(1, 1, 2 * self.dim)).to(x.device)
+            cond_embedding = cond_embedding.repeat(x.shape[0], 1, 1)
 
         batch_size, seq_length = x.shape[0], x.shape[1]
 
@@ -830,14 +785,13 @@ class TasksAug(nn.Module):
             (state_embeddings, action_embeddings, reward_embeddings, terminal_embeddings, next_state_embeddings), dim=1
         ).permute(0, 2, 1, 3).reshape(batch_size, 5 * seq_length, self.hidden_size)
 
-        # Concatenate: time (1 token) + condition (1 or 5 tokens) + stacked_inputs (5H tokens)
-        # Total sequence length: 1 + num_cond_tokens + 5H
-        all_inputs = torch.cat((t, cond_tokens, stacked_inputs), dim=1)
+        # print("cond_embedding.shape is: ", cond_embedding.shape)
+        # print("stacked_inputs.shape is: ", stacked_inputs.shape)
+        all_inputs = torch.cat((t, cond_embedding, stacked_inputs), dim=1)
         all_inputs = self.pos_enc(all_inputs)
         final_inputs = self.embed_ln(all_inputs)
 
-        # prefix_mask covers time + condition tokens
-        prefix_mask = torch.ones((batch_size, 1 + num_cond_tokens), dtype=torch.bool, device=x.device)
+        prefix_mask = torch.ones((batch_size, 2), dtype=torch.bool, device=x.device)
         stacked_attention_mask = torch.cat((prefix_mask, attention_mask), dim=1)
 
         key_padding_mask = (~stacked_attention_mask).to(torch.bool)

@@ -552,19 +552,16 @@ def train(config: TrainConfig):
                 seed=config.eval_seed,
                 device=config.device,
             )
-            eval_log = {
-                "reward_mean": np.mean(eval_returns),
-                "reward_std": np.std(eval_returns),
-                "step": total_updates,
-            }
             if hasattr(eval_env, "get_normalized_score"):
                 normalized_score = eval_env.get_normalized_score(eval_returns) * 100.0
-                eval_log["d4rl_normalized_score"] = np.mean(normalized_score)
-                eval_log["d4rl_normalized_score_std"] = np.std(normalized_score)
-                evaluations.append(np.mean(normalized_score))
+                normalized_eval_score = np.mean(normalized_score)
+                evaluations.append(normalized_eval_score)
+            else:
+                normalized_eval_score = 0.0
 
-            # wandb.log(eval_log)
-            logger.log(eval_log, mode='eval')
+            log_dict = {"d4rl_normalized_score": normalized_eval_score}
+            # wandb.log(log_dict)
+            logger.log({'step': total_updates, **log_dict}, mode='eval')
 
             if config.checkpoints_path is not None and config.save_checkpoints:
                 torch.save(

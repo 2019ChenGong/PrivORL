@@ -234,13 +234,13 @@ python evaluation/eval-mia/mia.py --dataset maze2d-medium-dense-v1 --nondp_weigh
 Diffusion model pre-training:
 
 ```
-python PrivORL-J/scripts/training.py --dataset <the-name-of-dataset> --finetune "False" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
+python PrivORL-J/scripts/training_v1.py --dataset <the-name-of-dataset> --finetune "False" --curiosity_rate <the-curiosity-rate-of-synthetic-trajectories> --horizon <the-number-of-parallel-trajectories> --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1 --logbase <the-path-of-saving-checkpoints> 
 ```
 
 For example, 
 
 ```
-python PrivORL-J/scripts/training.py --dataset "maze2d-umaze-dense-v1" --finetune "False" --curiosity_rate "0.3" --horizon "32" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
+python PrivORL-J/scripts/training_v1.py --dataset "maze2d-umaze-dense-v1" --finetune "False" --curiosity_rate "0.3" --horizon "32" --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1 --logbase 'logs'
 ```
 
 #### Step2: Fine-tuning on Sensitive Datasets
@@ -248,13 +248,13 @@ python PrivORL-J/scripts/training.py --dataset "maze2d-umaze-dense-v1" --finetun
 Fine-tuning the pre-trained diffusion models:
 
 ```
-python PrivORL-J/scripts/training.py --dataset <the-name-of-dataset> --finetune "True" --horizon <the-number-of-parallel-trajectories> --checkpoint_path <the-path-of-pretraining-model-checkpoint> --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase <the-path-of-saving-checkpoints> 
+python PrivORL-J/scripts/training_v1.py --dataset <the-name-of-dataset> --finetune "True" --horizon <the-number-of-parallel-trajectories> --checkpoint_path <the-path-of-pretraining-model-checkpoint> --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1 --logbase <the-path-of-saving-checkpoints> 
 ```
 
 For example, 
 
 ```
-python PrivORL-J/scripts/training.py --dataset "maze2d-umaze-dense-v1" --finetune "True" --horizon 32 --checkpoint_path "logs/maze2d-umaze-dense-v1/pretrain/horizon32_curiosity0.3/state_500000.pt" --target_epsilon "10" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset --logbase 'logs'
+python PrivORL-J/scripts/training_v1.py --dataset "maze2d-umaze-dense-v1" --finetune "True" --horizon 32 --checkpoint_path "logs/maze2d-umaze-dense-v1/pretrain/horizon32_curiosity0.3/state_500000.pt" --target_epsilon "10" --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1 --logbase 'logs'
 ```
 
 #### Step3: Sampling Synthetic Trajectories
@@ -262,12 +262,12 @@ python PrivORL-J/scripts/training.py --dataset "maze2d-umaze-dense-v1" --finetun
 Sampling synthetic trajectories using the fine-tuned checkpoint:
 
 ```
-python PrivORL-J/scripts/sample.py --dataset <the-name-of-dataset> --finetune "True" --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --sample_checkpoint_path <the-path-of-saving-checkpoints> --output_csv_path <the-path-of-saving-synthetic-trajectories>  --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
+python PrivORL-J/scripts/sample_v1.py --dataset <the-name-of-dataset> --finetune "True" --target_epsilon <the-privacy-budget-of-synthetic-trajectories> --sample_checkpoint_path <the-path-of-saving-checkpoints> --output_csv_path <the-path-of-saving-synthetic-trajectories>  --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1
 ```
 
 For example, 
 ```
-python PrivORL-J/scripts/sample.py --dataset "maze2d-umaze-dense-v1" --finetune "True" --target_epsilon "1" --sample_checkpoint_path "logs/maze2d-umaze-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final.pt" --output_csv_path "results/maze2d-umaze-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final/sampled_trajectories.csv" --model models.TasksAug --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset
+python PrivORL-J/scripts/sample_v1.py --dataset "maze2d-umaze-dense-v1" --finetune "True" --target_epsilon "1" --sample_checkpoint_path "logs/maze2d-umaze-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final.pt" --output_csv_path "results/maze2d-umaze-dense-v1/finetune/epsilon1_horizon32_curiosity0.3/state_final/sampled_trajectories.csv" --model models.TasksAug_v1 --diffusion models.AugDiffusion --loss_type statehuber --loader datasets.AugDataset_v1
 ```
 
 ### 4.3 Abalation

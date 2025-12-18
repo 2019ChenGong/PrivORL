@@ -102,13 +102,6 @@ def main(args):
 
     observation_dim = dataset.observation_dim
     action_dim = dataset.action_dim
-
-    # Determine whether to use 5-token condition based on dataset
-    # maze2d-umaze-dense-v1 uses 1-token, all others use 5-token
-    use_5token_cond = not (args.dataset == 'maze2d-umaze-dense-v1')
-    print(f"[INFO] Dataset: {args.dataset}")
-    print(f"[INFO] Using {'5-token' if use_5token_cond else '1-token'} condition encoding")
-
     model_config = utils.Config(
         args.model,
         savepath=(args.savepath, 'model_config.pkl'),
@@ -119,7 +112,6 @@ def main(args):
         num_tasks=1,
         device=device,
         action_dim=action_dim,
-        use_5token_cond=use_5token_cond,  # Pass the flag to model
     )
     diffusion_config = utils.Config(
         args.diffusion,
@@ -136,8 +128,9 @@ def main(args):
         loss_discount=args.loss_discount,
         device=device,
     )
+    # 5TOKEN_COND VERSION: Use AugTrainer_5TokenCond
     trainer_config = utils.Config(
-        utils.AugTrainer,
+        utils.AugTrainer_v2,
         savepath=(args.savepath, 'trainer_config.pkl'),
         train_batch_size=args.batch_size,
         train_lr=args.learning_rate,
@@ -192,8 +185,11 @@ def main(args):
     if args.finetune:
         trainer.load_for_finetune(args.checkpoint_path)
 
+        # 不再使用Opacus的自动DPSGD，改用手动实现
+        # 只需要包装模型以便访问_module
         from torch.nn.parallel import DataParallel
 
+        # 创建一个简单的wrapper来模拟Opacus的结构
         class ModelWrapper(torch.nn.Module):
             def __init__(self, module):
                 super().__init__()

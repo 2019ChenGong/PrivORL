@@ -1,7 +1,6 @@
 from .serialization import *
-from .training import *
-from .training_state_cond import AugTrainer as AugTrainer_StateCond
-from .training_5token_cond import AugTrainer as AugTrainer_5TokenCond
+from .training_v1 import AugTrainer as AugTrainer_v1
+from .training_v2 import AugTrainer as AugTrainer_v2
 from .progress import *
 from .setup import *
 from .config import *
