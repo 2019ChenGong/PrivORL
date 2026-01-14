@@ -26,34 +26,34 @@ for dataset in "${datasets[@]}"; do
         for curiosity_rate in "${curiosity_rates[@]}"; do
             # 5TOKEN_COND VERSION: Use sample_5token_cond.py with 5token models
             if [ "$finetune" == "False" ]; then
-                sample_checkpoint_path="PrivORL-J/logs_5token_cond_test/${dataset}/pretrain/horizon32_curiosity${curiosity_rate}/state_final.pt"
-                output_path="PrivORL-J/results_5token_cond_test/${dataset}/pretrain/horizon32_curiosity${curiosity_rate}/state_final/sampled_trajectories.npz"
+                sample_checkpoint_path="PrivORL-J/logs_v6/${dataset}/pretrain/horizon32_curiosity${curiosity_rate}/state_final.pt"
+                output_path="PrivORL-J/results_v6/${dataset}/pretrain/horizon32_curiosity${curiosity_rate}/state_final/sampled_trajectories.npz"
 
-                command="python PrivORL-J/scripts/sample_5token_cond.py \
+                command="python PrivORL-J/scripts/sample_v2.py \
                     --dataset \"${dataset}\" \
                     --finetune \"${finetune}\" \
                     --sample_checkpoint_path \"${sample_checkpoint_path}\" \
                     --output_path \"${output_path}\" \
                     --sample_batch_size 100 \
-                    --model models.TasksAug_5TokenCond \
-                    --diffusion models.AugDiffusion_5TokenCond \
+                    --model models.TasksAug_v2 \
+                    --diffusion models.AugDiffusion \
                     --loss_type statehuber \
-                    --loader datasets.AugDataset_5TokenCond"
+                    --loader datasets.AugDataset_v2"
             else
-                sample_checkpoint_path="PrivORL-J/logs_5token_cond_test/${dataset}/finetune/epsilon${epsilon}_horizon32_curiosity${curiosity_rate}_${accountant}/state_final.pt"
-                output_path="PrivORL-J/results_5token_cond_test/${dataset}/finetune/epsilon${epsilon}_horizon32_curiosity${curiosity_rate}_${accountant}/state_final/sampled_trajectories.npz"
+                sample_checkpoint_path="PrivORL-J/logs_v6/${dataset}/finetune/epsilon${epsilon}_horizon32_curiosity${curiosity_rate}_${accountant}/state_final.pt"
+                output_path="PrivORL-J/results_v6/${dataset}/finetune/epsilon${epsilon}_horizon32_curiosity${curiosity_rate}_${accountant}/state_final/sampled_trajectories.npz"
 
-                command="python PrivORL-J/scripts/sample_5token_cond.py \
+                command="python PrivORL-J/scripts/sample_v2.py \
                     --dataset \"${dataset}\" \
                     --finetune \"${finetune}\" \
                     --target_epsilon \"${epsilon}\" \
                     --sample_checkpoint_path \"${sample_checkpoint_path}\" \
                     --output_path \"${output_path}\" \
                     --sample_batch_size 100 \
-                    --model models.TasksAug_5TokenCond \
-                    --diffusion models.AugDiffusion_5TokenCond \
+                    --model models.TasksAug_v2 \
+                    --diffusion models.AugDiffusion \
                     --loss_type statehuber \
-                    --loader datasets.AugDataset_5TokenCond"
+                    --loader datasets.AugDataset_v2"
             fi
             
             echo "Running: ${command}"

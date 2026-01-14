@@ -785,8 +785,9 @@ class TasksAug(nn.Module):
             cond_tokens = torch.cat([prev_s_emb, prev_a_emb, prev_r_emb, prev_t_emb, prev_ns_emb], dim=1)
             # Shape: [batch, 5, hidden_size]
         else:
-            # Zero condition: 5 zero tokens
-            cond_tokens = torch.zeros((x.shape[0], 5, 2 * self.dim), device=x.device)
+            # Zero condition: 5 zero tokens (using nn.Parameter for consistency with v1)
+            cond_tokens = nn.Parameter(torch.zeros(1, 5, 2 * self.dim)).to(x.device)
+            cond_tokens = cond_tokens.repeat(x.shape[0], 1, 1)
 
         batch_size, seq_length = x.shape[0], x.shape[1]
 

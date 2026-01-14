@@ -192,7 +192,7 @@ class AugTrainer(object):
                 if sample_cond is not None:
                     cond_dim = sample_cond.shape[0]
                 else:
-                    cond_dim = self.dataset.observation_dim  # fallback
+                    cond_dim = 2 * self.dataset.observation_dim + self.dataset.action_dim + 2
 
                 initial_cond = torch.zeros((1, cond_dim), device=self.device)
                 diffusion_samples = self.model.conditional_sample(

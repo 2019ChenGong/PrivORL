@@ -205,6 +205,12 @@ PrivORL-J/diffuser/models/temporal_dp-*
 PrivORL-J/diffuser/utils/training-*
 PrivORL-J/scripts/bash-sample-diffusion_unet.sh
 
+PrivORL-J/diffuser/utils/training_v2_*
+PrivORL-J/diffuser/models/temporal_dp_v2_*
+PrivORL-J/diffuser/datasets/sequence_v2_*
+PrivORL-J/scripts/bash-sample-diffusion_privorl_j_v2_*
+PrivORL-J/scripts/bash-agent-training_v2_*
+PrivORL-J/scripts/bash-train-diffusion_privorl_j_v2_*
 
 
 # utils

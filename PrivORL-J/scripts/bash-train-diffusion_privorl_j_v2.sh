@@ -2,7 +2,7 @@
 
 # Define parameters
 gpus=(0 1 2 3)
-gpus=(2 1 0)
+gpus=(1 0)
 # gpus=(0)
 
 finetune="False"
@@ -44,20 +44,20 @@ for horizon in "${horizons[@]}"; do
             
                 # 5TOKEN_COND VERSION: Use training_5token_cond.py with 5token models
                 if [ "$finetune" == "False" ]; then
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_5token_cond.py \
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_v2.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
                         --horizon \"${horizon}\" \
                         --batch_size \"${batch_size}\" \
-                        --model models.TasksAug_5TokenCond \
-                        --diffusion models.AugDiffusion_5TokenCond \
+                        --model models.TasksAug_v2 \
+                        --diffusion models.AugDiffusion \
                         --loss_type statehuber \
-                        --loader datasets.AugDataset_5TokenCond\
-                        --logbase 'PrivORL-J/logs_5token_cond_test'"
+                        --loader datasets.AugDataset_v2\
+                        --logbase 'PrivORL-J/logs_v6'"
                 else
-                    checkpoint_path="PrivORL-J/logs_5token_cond/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
-                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_5token_cond.py \
+                    checkpoint_path="PrivORL-J/logs_v6/${dataset}/pretrain/horizon${horizon}_curiosity${curiosity_rate}/state_final.pt"
+                    command="CUDA_VISIBLE_DEVICES=${gpu} python PrivORL-J/scripts/training_v2.py \
                         --dataset \"${dataset}\" \
                         --finetune \"${finetune}\" \
                         --curiosity_rate \"${curiosity_rate}\" \
@@ -65,11 +65,11 @@ for horizon in "${horizons[@]}"; do
                         --batch_size \"${batch_size}\" \
                         --checkpoint_path \"${checkpoint_path}\" \
                         --target_epsilon \"${epsilon}\" \
-                        --model models.TasksAug_5TokenCond \
-                        --diffusion models.AugDiffusion_5TokenCond \
+                        --model models.TasksAug_v2 \
+                        --diffusion models.AugDiffusion \
                         --loss_type statehuber \
-                        --loader datasets.AugDataset_5TokenCond \
-                        --logbase 'PrivORL-J/logs_5token_cond_test' \
+                        --loader datasets.AugDataset_v2 \
+                        --logbase 'PrivORL-J/logs_v6' \
                         --accountant 'rdp'"
                 fi
 
